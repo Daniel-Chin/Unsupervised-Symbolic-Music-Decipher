@@ -1,0 +1,2 @@
+del /q .\inspect\*.*
+pause
