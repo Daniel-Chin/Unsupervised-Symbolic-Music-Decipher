@@ -9,6 +9,8 @@ DATA_DIR    = path.join(PROJ_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 INSPECT_DIR = path.join(DATA_DIR, 'inspect')
 os.makedirs(INSPECT_DIR, exist_ok=True)
+PIANO_LA_DATASET_DIR = path.join(DATA_DIR, 'piano_la_dataset')
+os.makedirs(PIANO_LA_DATASET_DIR, exist_ok=True)
 
 def getEnv(name: str):
     v = os.getenv(name)

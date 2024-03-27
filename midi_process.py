@@ -5,6 +5,8 @@ import copy
 import os
 from os import path
 import random
+from pprint import pprint
+import json
 
 import pretty_midi
 import tqdm
@@ -87,5 +89,68 @@ def test():
         filename = random.choice(os.listdir(path.join(LA_MIDI_DIR, dir_)))
         inspect(path.join(LA_MIDI_DIR, dir_, filename))
 
+def main(limit: Optional[int] = None):
+    all_dir_ = os.listdir(LA_MIDI_DIR)
+    for dir_ in all_dir_:
+        OK = 'OK'
+        midi_exceptions = { OK: 0 }
+        os.makedirs(path.join(
+            PIANO_LA_DATASET_DIR, dir_, 
+        ), exist_ok=True)
+        srcs = os.listdir(path.join(LA_MIDI_DIR, dir_))
+        if limit is not None:
+            srcs = random.choices(srcs, k=limit)
+        dests = []
+        for src_name in tqdm.tqdm(
+            srcs, desc=f'midi {dir_}/{len(all_dir_)}',
+        ):
+            src = path.join(LA_MIDI_DIR, dir_, src_name)
+            basename = path.basename(src)
+            try:
+                original = pretty_midi.PrettyMIDI(src)
+            except Exception as e:
+                midi_exceptions[str(e)] = midi_exceptions.get(str(e), 0) + 1
+            else:
+                midi_exceptions[OK] += 1
+            smart_piano = everythingPiano(filterInstruments(original))
+            dest_name = basename + '.mid'
+            smart_piano.write(path.join(
+                PIANO_LA_DATASET_DIR, dir_, dest_name, 
+            ))
+            dests.append(dest_name)
+        with open(path.join(
+            PIANO_LA_DATASET_DIR, 'index.json', 
+        ), 'w', encoding='utf-8') as f:
+            json.dump(dests, f)
+        print()
+        pprint(midi_exceptions)
+    with open(path.join(
+        PIANO_LA_DATASET_DIR, 'index.json', 
+    ), 'w', encoding='utf-8') as f:
+        json.dump(all_dir_, f)
+
+def noteStats():
+    with open(path.join(
+        PIANO_LA_DATASET_DIR, 'index.json', 
+    ), 'w', encoding='utf-8') as f:
+        all_dir_ = json.load(f)
+    for dir_ in tqdm.tqdm(all_dir_):
+        with open(path.join(
+            PIANO_LA_DATASET_DIR, dir_, 'index.json', 
+        ), 'r', encoding='utf-8') as f:
+            filenames = json.load(f)
+        for filename in filenames:
+            midi = pretty_midi.PrettyMIDI(path.join(
+                PIANO_LA_DATASET_DIR, dir_, filename,
+            ))
+            start = 0.0
+            end = np.inf
+            for instrument in midi.instruments:
+                instrument: pretty_midi.Instrument
+                for note in instrument.notes:
+                    note: pretty_midi.Note
+                    print(note.pitch, note.start, note.end)
+
 if __name__ == '__main__':
-    test()
+    # test()
+    main()
