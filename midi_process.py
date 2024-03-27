@@ -10,6 +10,8 @@ import json
 
 import pretty_midi
 import tqdm
+from matplotlib import pyplot as plt
+from scipy.stats import norm
 
 from shared import *
 
@@ -41,14 +43,19 @@ def isPianoable(instrument: pretty_midi.Instrument):
 
 def everythingPiano(midi: pretty_midi.PrettyMIDI):
     # turn every instrument into piano. 
-    new_midi = copy.deepcopy(midi)
-    for instrument in new_midi.instruments:
+    new_midi = pretty_midi.PrettyMIDI()
+    piano = pretty_midi.Instrument(0, is_drum=False, name='Piano')
+    piano.pitch_bends = []
+    piano.control_changes = []
+    new_midi.instruments.append(piano)
+    for instrument in midi.instruments:
         instrument: pretty_midi.Instrument
-        instrument.program = 0
-        instrument.name = 'Piano'
-        instrument.is_drum = False
-        instrument.pitch_bends = []
-        instrument.control_changes = []
+        for note in instrument.notes:
+            note: pretty_midi.Note
+            piano.notes.append(pretty_midi.Note(
+                note.velocity, note.pitch, note.start, note.end,
+            ))
+    piano.notes.sort(key=lambda note: note.start)
     return new_midi
 
 def filterInstruments(midi: pretty_midi.PrettyMIDI):
@@ -91,9 +98,11 @@ def test():
 
 def main(limit: Optional[int] = None):
     all_dir_ = os.listdir(LA_MIDI_DIR)
-    for dir_ in all_dir_:
+    for dir_i, dir_ in enumerate(all_dir_):
         OK = 'OK'
         midi_exceptions = { OK: 0 }
+        def accException(e: Exception):
+            midi_exceptions[repr(e)] = midi_exceptions.get(repr(e), 0) + 1
         os.makedirs(path.join(
             PIANO_LA_DATASET_DIR, dir_, 
         ), exist_ok=True)
@@ -101,25 +110,27 @@ def main(limit: Optional[int] = None):
         if limit is not None:
             srcs = random.choices(srcs, k=limit)
         dests = []
-        for src_name in tqdm.tqdm(
-            srcs, desc=f'midi {dir_}/{len(all_dir_)}',
+        for src_basename in tqdm.tqdm(
+            srcs, desc=f'midi {dir_i}/{len(all_dir_)}',
         ):
-            src = path.join(LA_MIDI_DIR, dir_, src_name)
-            basename = path.basename(src)
+            src_abs_name = path.join(LA_MIDI_DIR, dir_, src_basename)
             try:
-                original = pretty_midi.PrettyMIDI(src)
+                original = pretty_midi.PrettyMIDI(src_abs_name)
             except Exception as e:
-                midi_exceptions[str(e)] = midi_exceptions.get(str(e), 0) + 1
-            else:
-                midi_exceptions[OK] += 1
+                accException(e)
+                continue
             smart_piano = everythingPiano(filterInstruments(original))
-            dest_name = basename + '.mid'
+            if not smart_piano.instruments[0].notes:
+                accException(ValueError('No notes in piano track'))
+                continue
+            dest_basename = src_basename
             smart_piano.write(path.join(
-                PIANO_LA_DATASET_DIR, dir_, dest_name, 
+                PIANO_LA_DATASET_DIR, dir_, dest_basename, 
             ))
-            dests.append(dest_name)
+            midi_exceptions[OK] += 1
+            dests.append(dest_basename)
         with open(path.join(
-            PIANO_LA_DATASET_DIR, 'index.json', 
+            PIANO_LA_DATASET_DIR, dir_, 'index.json', 
         ), 'w', encoding='utf-8') as f:
             json.dump(dests, f)
         print()
@@ -129,28 +140,81 @@ def main(limit: Optional[int] = None):
     ), 'w', encoding='utf-8') as f:
         json.dump(all_dir_, f)
 
-def noteStats():
+def noteStats(limit: Optional[int] = None):
     with open(path.join(
         PIANO_LA_DATASET_DIR, 'index.json', 
-    ), 'w', encoding='utf-8') as f:
+    ), 'r', encoding='utf-8') as f:
         all_dir_ = json.load(f)
+    densities = []
+    durations = []
+    velocities = []
+    pitches = []
     for dir_ in tqdm.tqdm(all_dir_):
         with open(path.join(
             PIANO_LA_DATASET_DIR, dir_, 'index.json', 
         ), 'r', encoding='utf-8') as f:
             filenames = json.load(f)
+        if limit is not None:
+            filenames = random.choices(filenames, k=limit)
         for filename in filenames:
             midi = pretty_midi.PrettyMIDI(path.join(
                 PIANO_LA_DATASET_DIR, dir_, filename,
             ))
-            start = 0.0
-            end = np.inf
-            for instrument in midi.instruments:
-                instrument: pretty_midi.Instrument
-                for note in instrument.notes:
-                    note: pretty_midi.Note
-                    print(note.pitch, note.start, note.end)
+            ( piano, ) = midi.instruments
+            piano: pretty_midi.Instrument
+            for note in piano.notes:
+                note: pretty_midi.Note
+                durations.append(note.end - note.start)
+                velocities.append(note.velocity)
+                pitches.append(note.pitch)
+            density = len(piano.notes) / piano.get_end_time()
+            densities.append(density)
+    log_densities = [np.log(x) for x in densities]
+    log_durations = [np.log(x) for x in durations]
+    density_mu, density_sigma = norm.fit(log_densities)
+    duration_mu, duration_sigma = norm.fit(log_durations)
+    velocity_mu, velocity_sigma = norm.fit(velocities)
+    pitch_mu, pitch_sigma = norm.fit(pitches)
+    print(f'{(density_mu, density_sigma) = }')
+    print(f'{(duration_mu, duration_sigma) = }')
+    print(f'{(velocity_mu, velocity_sigma) = }')
+    print(f'{(pitch_mu, pitch_sigma) = }')
+    
+    def show(
+        densities_bins=30, durations_bins=80, 
+        velocities_bins=127, pitches_bins=88, 
+    ):
+        plt.hist(velocities, density=True, bins=velocities_bins)
+        X = np.linspace(min(velocities), max(velocities), 100)
+        Y = norm.pdf(X, velocity_mu, velocity_sigma)
+        plt.plot(X, Y, 'r--', linewidth=2)
+        plt.title('Velocity')
+        plt.show()
+
+        plt.hist(pitches, density=True, bins=pitches_bins)
+        X = np.linspace(min(pitches), max(pitches), 100)
+        Y = norm.pdf(X, pitch_mu, pitch_sigma)
+        plt.plot(X, Y, 'r--', linewidth=2)
+        plt.title('Pitch')
+        plt.show()
+
+        plt.hist(log_densities, density=True, bins=densities_bins)
+        X = np.linspace(min(log_densities), max(log_densities), 100)
+        Y = norm.pdf(X, density_mu, density_sigma)
+        plt.plot(X, Y, 'r--', linewidth=2)
+        plt.title('Log Note Density, ln(notes / sec)')
+        plt.show()
+
+        plt.hist(log_durations, density=True, bins=durations_bins)
+        X = np.linspace(min(log_durations), max(log_durations), 100)
+        Y = norm.pdf(X, duration_mu, duration_sigma)
+        plt.plot(X, Y, 'r--', linewidth=2)
+        plt.title('Log Note Duration, ln(sec)')
+        plt.show()
+    show()
+    import IPython; IPython.embed()
 
 if __name__ == '__main__':
     # test()
     main()
+    # noteStats(30)
