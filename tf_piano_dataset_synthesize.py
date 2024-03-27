@@ -100,7 +100,7 @@ def main(dataset_size: int):
     finally:
         with open(path.join(
             TRANSFORMER_PIANO_DATASET_DIR, 'index.json',
-        ), 'w') as f:
+        ), 'w', encoding='utf-8') as f:
             json.dump(stems, f)
 
 if __name__ == '__main__':
