@@ -5,12 +5,17 @@ import init as _
 
 PROJ_DIR = path.dirname(path.abspath(__file__))
 
-DATA_DIR    = path.join(PROJ_DIR, 'data')
+DATA_DIR = path.join(PROJ_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 INSPECT_DIR = path.join(DATA_DIR, 'inspect')
 os.makedirs(INSPECT_DIR, exist_ok=True)
 PIANO_LA_DATASET_DIR = path.join(DATA_DIR, 'piano_la_dataset')
 os.makedirs(PIANO_LA_DATASET_DIR, exist_ok=True)
+TRANSFORMER_PIANO_DATASET_DIR = path.join(DATA_DIR, 'transformer_piano_dataset')
+os.makedirs(TRANSFORMER_PIANO_DATASET_DIR, exist_ok=True)
+
+ASSET_DIR = path.join(PROJ_DIR, 'assets')
+SOUNDFONT_FILE = path.join(ASSET_DIR, 'MuseScore_Basic.sf3')
 
 def getEnv(name: str):
     v = os.getenv(name)
