@@ -1,6 +1,7 @@
 from typing import *
 import json
 from os import path
+from time import perf_counter, sleep
 
 import torch
 from torch import Tensor
@@ -55,6 +56,75 @@ class TransformerPianoDataset(Dataset):
     def __getitem__(self, index: int):
         return self.X[index], self.Y[index, :, :]
 
+class CollateCandidates:
+    @staticmethod
+    def usingZip(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+        X, Y = zip(*data)
+        X: Tuple[Tensor]
+        Y: Tuple[Tensor]
+        X_lens = [x.shape[0] for x in X]
+        return (
+            torch.nn.utils.rnn.pad_sequence([*X], batch_first=True), 
+            torch.stack(Y, dim=0),
+            X_lens,
+        )
+
+    @staticmethod
+    def usingInplace(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+        device = data[0][0].device
+        batch_size = len(data)
+        X_lens = [x.shape[0] for x, _ in data]
+        X_width = max(X_lens)
+        X = torch.zeros((batch_size, X_width, data[0][0].shape[1]), device=device)
+        Y = torch.zeros((
+            batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
+        ), dtype=torch.int16, device=device)
+        for i, (x, y) in enumerate(data):
+            X[i, :x.shape[0], :] = x
+            Y[i, :, :] = y
+        return X, Y, X_lens
+
+    @staticmethod
+    def usingStack(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+        X: List[Tensor] = []
+        Y: List[Tensor] = []
+        for x, y in data:
+            X.append(x)
+            Y.append(y)
+        X_lens = [x.shape[0] for x in X]
+        return (
+            torch.nn.utils.rnn.pad_sequence(X, batch_first=True), 
+            torch.stack(Y, dim=0), 
+            X_lens,
+        )
+
+    @staticmethod
+    def profile():
+        candidates: List[Tuple[str, Callable[
+            [List[Tuple[Tensor, Tensor]]], Tuple[Tensor, Tensor, List[int]]
+        ]]] = [
+            ('zip',     CollateCandidates.usingZip), 
+            ('inplace', CollateCandidates.usingInplace), 
+            ('stack',   CollateCandidates.usingStack), 
+        ]
+        dataset = TransformerPianoDataset(limit_n_notes=10000)
+        data = [dataset[i] for i in range(64)]
+        while True:
+            for name, f in candidates:
+                print(name)
+                dts = []
+                for _ in range(1000):
+                    start = perf_counter()
+                    f(data)
+                    dt = perf_counter() - start
+                    dts.append(dt)
+                print(np.mean(dts) * 1e3, 'ms')
+            sleep(0.1)
+
+collate = CollateCandidates.usingZip
+
 if __name__ == '__main__':
     dataset = TransformerPianoDataset(limit_n_notes=10000)
     import IPython; IPython.embed()
+
+    # CollateCandidates.profile()
