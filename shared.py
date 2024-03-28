@@ -8,6 +8,9 @@ TWO_PI = np.pi * 2
 
 SEC_PER_DATAPOINT = 30
 ENCODEC_SR = 32000
+ENCODEC_N_BOOKS = 4
+ENCODEC_FPS = 50
+N_TOKENS_PER_DATAPOINT = SEC_PER_DATAPOINT * ENCODEC_FPS
 
 HAS_CUDA = torch.cuda.is_available()
 CUDA = torch.device("cuda:0")

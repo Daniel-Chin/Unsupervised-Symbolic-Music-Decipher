@@ -87,6 +87,7 @@ def main(dataset_size: int):
                 # x[note_i, 2 + note.pitch - PIANO_RANGE[0]] = 1.0
                 x[note_i, 2] = float(note.pitch)
             y = codes[0, :, :].to(torch.int16).cpu()
+            assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
 
             print('Writing datapoint')
             stem = str(i)
