@@ -67,7 +67,8 @@ def main(dataset_size: int):
             
             print('Loading audio')
             wave, _ = librosa.load(wav_path, sr=ENCODEC_SR, mono=True)
-            wave_gpu = torch.Tensor(wave).to(DEVICE)
+            wave_trunc = wave[:int(np.ceil(song_len * ENCODEC_SR))]
+            wave_gpu = torch.Tensor(wave_trunc).to(DEVICE)
 
             print('Encodec')
             with torch.no_grad():
