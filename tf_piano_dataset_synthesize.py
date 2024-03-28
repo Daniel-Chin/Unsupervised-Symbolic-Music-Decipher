@@ -22,9 +22,9 @@ def main(dataset_size: int):
     )
     assert isinstance(encodec, HFEncodecCompressionModel)
     encodec.eval()
-    stems = []
+    data_ids = []
     try:
-        for i in tqdm.trange(dataset_size):
+        for datapoint_i in tqdm.trange(dataset_size):
             print()
             print('Generating MIDI')
             midi = pretty_midi.PrettyMIDI()
@@ -51,7 +51,7 @@ def main(dataset_size: int):
             
             print('Writing MIDI file')
             midi_path = path.join(
-                TRANSFORMER_PIANO_DATASET_DIR, f'{i}.mid',
+                TRANSFORMER_PIANO_DATASET_DIR, f'{datapoint_i}.mid',
             )
             midi.write(midi_path)
 
@@ -80,30 +80,29 @@ def main(dataset_size: int):
                 # 1 + 1 + 88, 
                 1 + 1 + 1, 
             ))
-            for note_i, note in enumerate(piano.notes):
+            for i, note in enumerate(piano.notes):
                 note: pretty_midi.Note
-                x[note_i, 0] = note.start / float(SEC_PER_DATAPOINT)
-                x[note_i, 1] = note.velocity / 127.0
+                x[i, 0] = note.start / float(SEC_PER_DATAPOINT)
+                x[i, 1] = note.velocity / 127.0
                 # x[note_i, 2 + note.pitch - PIANO_RANGE[0]] = 1.0
-                x[note_i, 2] = float(note.pitch)
+                x[i, 2] = float(note.pitch)
             y = codes[0, :, :].to(torch.int16).cpu()
             assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
 
             print('Writing datapoint')
-            stem = str(i)
             torch.save(x, path.join(
-                TRANSFORMER_PIANO_DATASET_DIR, f'{stem}_x.pt',
+                TRANSFORMER_PIANO_DATASET_DIR, f'{datapoint_i}_x.pt',
             ))
             torch.save(y, path.join(
-                TRANSFORMER_PIANO_DATASET_DIR, f'{stem}_y.pt',
+                TRANSFORMER_PIANO_DATASET_DIR, f'{datapoint_i}_y.pt',
             ))
 
-            stems.append(stem)
+            data_ids.append(str(datapoint_i))
     finally:
         with open(path.join(
             TRANSFORMER_PIANO_DATASET_DIR, 'index.json',
         ), 'w', encoding='utf-8') as f:
-            json.dump(stems, f)
+            json.dump(data_ids, f)
 
 if __name__ == '__main__':
     main(64)
