@@ -13,7 +13,7 @@ from shared import *
 
 class TransformerPianoDataset(Dataset):
     def __init__(
-        self, 
+        self, *, 
         limit_n_notes: int, # in case positional encoding repeats
         dir_path: str = TRANSFORMER_PIANO_DATASET_DIR, 
         offset: int = 0, 
