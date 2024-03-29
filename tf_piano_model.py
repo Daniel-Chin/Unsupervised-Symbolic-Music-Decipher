@@ -6,6 +6,8 @@ import torch
 from torch import Tensor
 from torch.nn.modules.transformer import Transformer
 
+from shared import *
+
 class KeyEventEncoder(torch.nn.Module):
     def __init__(self, d_model: int, d_hidden: int, n_layers: int):
         super().__init__()
@@ -46,13 +48,45 @@ class TransformerPianoModel(Transformer):
         )
 
 @lru_cache()
-def positionalEncoding(max_len: int, d_model: int, device: torch.device) -> Tensor:
-    pe = torch.zeros(max_len, d_model, device=device)
-    ladder = torch.arange(max_len, dtype=pe.dtype, device=device)
+def positionalEncoding(length: int, d_model: int, device: torch.device) -> Tensor:
+    MAX_LEN = 2000
+    assert length < MAX_LEN
+
+    pe = torch.zeros(length, d_model, device=device)
+    ladder = torch.arange(length, dtype=pe.dtype, device=device)
     for i in count():
         try:
-            pe[:, 2 * i    ] = torch.sin(ladder / (max_len ** (2 * i / d_model)))
-            pe[:, 2 * i + 1] = torch.cos(ladder / (max_len ** (2 * i / d_model)))
+            pe[:, 2 * i    ] = torch.sin(ladder / (MAX_LEN ** (2 * i / d_model)))
+            pe[:, 2 * i + 1] = torch.cos(ladder / (MAX_LEN ** (2 * i / d_model)))
         except IndexError:
             break
     return pe
+
+class TFPiano(torch.nn.Module):
+    def __init__(
+        self, keyEventEncoder: KeyEventEncoder, 
+        transformerPianoModel: TransformerPianoModel,
+    ) -> None:
+        super().__init__()
+        self.keyEventEncoder = keyEventEncoder
+        self.transformerPianoModel = transformerPianoModel
+        self.outputProjector = torch.nn.Linear(
+            transformerPianoModel.d_model, 
+            ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
+        )
+    
+    def forward(
+        self, x: Tensor, x_lens: List[int], 
+    ):
+        device = x.device
+        batch_size, _, _ = x.shape
+        key_event_embeddings = self.keyEventEncoder.forward(x)
+        transformer_out = self.transformerPianoModel.forward(
+            key_event_embeddings, positionalEncoding(
+                N_TOKENS_PER_DATAPOINT, self.transformerPianoModel.d_model, device, 
+            ), x_lens,
+        )
+        return self.outputProjector.forward(transformer_out).view(
+            batch_size, ENCODEC_N_BOOKS, 
+            N_TOKENS_PER_DATAPOINT, ENCODEC_N_WORDS_PER_BOOK,
+        )
