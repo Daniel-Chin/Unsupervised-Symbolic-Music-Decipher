@@ -13,8 +13,7 @@ from shared import *
 
 class TransformerPianoDataset(Dataset):
     def __init__(
-        self, *, 
-        limit_n_notes: int, # in case positional encoding repeats
+        self, 
         dir_path: str = TRANSFORMER_PIANO_DATASET_DIR, 
         offset: int = 0, 
         truncate_to_size: Optional[int] = None, 
@@ -47,7 +46,6 @@ class TransformerPianoDataset(Dataset):
             self.Y[i, :, :] = y
         max_notes = round(n_notes_array.max().item())
         print('The densest piece has', max_notes, 'notes.')
-        assert max_notes <= limit_n_notes
         print('mean + 2std:', n_notes_array.mean().item() + 2 * n_notes_array.std().item())
 
     def __len__(self):
@@ -107,7 +105,7 @@ class CollateCandidates:
             ('inplace', CollateCandidates.usingInplace), 
             ('stack',   CollateCandidates.usingStack), 
         ]
-        dataset = TransformerPianoDataset(limit_n_notes=10000)
+        dataset = TransformerPianoDataset()
         data = [dataset[i] for i in range(64)]
         while True:
             for name, f in candidates:
@@ -124,7 +122,7 @@ class CollateCandidates:
 collate = CollateCandidates.usingZip
 
 if __name__ == '__main__':
-    dataset = TransformerPianoDataset(limit_n_notes=10000)
+    dataset = TransformerPianoDataset()
     import IPython; IPython.embed()
 
     # CollateCandidates.profile()
