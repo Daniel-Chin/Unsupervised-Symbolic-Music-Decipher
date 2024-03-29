@@ -1,3 +1,4 @@
 inspect/
 piano_la_dataset/
-transformer_piano_dataset/
+transformer_piano_monkey_dataset/
+transformer_piano_oracle_dataset/
