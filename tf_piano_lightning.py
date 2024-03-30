@@ -74,9 +74,6 @@ class LitPiano(L.LightningModule):
         x, y, x_lens = batch
         y_hat = self.tfPiano.forward(x, x_lens)
 
-        a = y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK)
-        b = y    .view(-1)
-        import IPython; IPython.embed()
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
