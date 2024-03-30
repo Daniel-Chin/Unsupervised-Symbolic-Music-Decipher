@@ -16,6 +16,8 @@ class HParams:
     batch_size: int
     max_epochs: int
 
+    require_repo_working_tree_clean: bool
+
     def __post_init__(self):
         assert (
             self.key_event_encoder_n_layers == 1

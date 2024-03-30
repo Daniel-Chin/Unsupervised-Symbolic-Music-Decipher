@@ -16,10 +16,12 @@ def main():
         lr = 1e-3,
         batch_size = 16,
         max_epochs = 10,
+        require_repo_working_tree_clean = True, 
     )
-    train(hParams, path.join(
-        EXPERIMENTS_DIR, currentTimeDirName() + '_piano_first', 
-    ))
+    exp_name = currentTimeDirName() + '_piano_first'
+    if not hParams.require_repo_working_tree_clean:
+        exp_name += '_dirty_working_tree'
+    train(hParams, path.join(EXPERIMENTS_DIR, exp_name))
 
 if __name__ == '__main__':
     main()

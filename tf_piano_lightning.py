@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, random_split
 import lightning as L
 from lightning.pytorch.callbacks import DeviceStatsMonitor
 from lightning.pytorch.trainer.states import TrainerFn
+from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 
 from shared import *
@@ -23,7 +24,7 @@ class LitPiano(L.LightningModule):
     def __init__(self, hParams: HParams) -> None:
         super().__init__()
         self.hP = hParams
-        writeLightningHparams(hParams, self)
+        writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         self.example_input_array = (
             torch.zeros((hParams.batch_size, 233, 1 + 1 + 88)), 
             [200] * hParams.batch_size, 
@@ -144,15 +145,19 @@ class LitPianoDataModule(L.LightningDataModule):
         ]
 
 def train(hParams: HParams, root_dir: str):
-    os.makedirs(path.join(root_dir, 'lightning_logs'))
+    log_name = 'lightning_logs'
+    os.makedirs(path.join(root_dir, log_name))
     if GPU_NAME == 'NVIDIA GeForce RTX 3050 Ti Laptop GPU':
         torch.set_float32_matmul_precision('high')
     litPiano = LitPiano(hParams)
     profiler = SimpleProfiler(filename='profile.txt')
+    logger = TensorBoardLogger(root_dir, log_name)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
         default_root_dir=root_dir,
-        profiler=profiler, callbacks=[DeviceStatsMonitor()], 
+        logger=logger, profiler=profiler, 
+        callbacks=[DeviceStatsMonitor()], 
+        log_every_n_steps=4, 
     )
     trainer.fit(litPiano, LitPianoDataModule(hParams))
     return litPiano

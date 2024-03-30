@@ -44,15 +44,19 @@ def getGradNorm(params: List[torch.Tensor]):
     return buffer.norm(2).cpu()
 
 @lru_cache(maxsize=1)
-def getCommitHashAndAssertWorkingTreeClean():
+def getCommitHash(do_assert_working_tree_clean: bool = False):
     repo = git.Repo('.', search_parent_directories=True)
-    assert not repo.is_dirty()
+    if do_assert_working_tree_clean:
+        assert not repo.is_dirty()
     return next(repo.iter_commits()).hexsha
 
-def writeLightningHparams(dataclassObject, litModule: L.LightningModule):
+def writeLightningHparams(
+    dataclassObject, litModule: L.LightningModule, 
+    do_assert_working_tree_clean: bool = False, 
+):
     litModule.save_hyperparameters(dataclasses.asdict(dataclassObject))
     litModule.save_hyperparameters(dict(
-        commit_hash = getCommitHashAndAssertWorkingTreeClean(), 
+        commit_hash = getCommitHash(do_assert_working_tree_clean), 
     ))
 
 def currentTimeDirName():
