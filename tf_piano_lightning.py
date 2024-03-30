@@ -29,13 +29,20 @@ class LitPiano(L.LightningModule):
             torch.zeros((hParams.batch_size, 233, 1 + 1 + 88)), 
             [200] * hParams.batch_size, 
         )
+
+        self.did_setup: bool = False
     
     def log(self, *a, **kw):
         hParams = self.hP
         return super().log(*a, batch_size=hParams.batch_size, **kw)
     
     def setup(self, stage: str):
-        print('lit module setup', stage)
+        # Because I've no idea lightning's setup stage logic
+        assert stage == TrainerFn.FITTING
+        # print('lit module setup', stage)
+        assert not self.did_setup
+        self.did_setup = True
+
         hParams = self.hP
         keyEventEncoder = KeyEventEncoder(
             hParams.d_model, 
@@ -100,9 +107,14 @@ class LitPianoDataModule(L.LightningDataModule):
     def __init__(self, hParams: HParams) -> None:
         super().__init__()
         self.hP = hParams
-    
+        self.did_setup: bool = False
+
     def setup(self, stage: Optional[str] = None):
-        print('data module setup', stage)
+        # Because I've no idea lightning's setup stage logic
+        assert stage == TrainerFn.FITTING
+        # print('data module setup', stage)
+        assert not self.did_setup
+        self.did_setup = True
 
         @lru_cache(maxsize=1)
         def monkeyDataset():
