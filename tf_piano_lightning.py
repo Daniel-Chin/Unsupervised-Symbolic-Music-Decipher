@@ -111,8 +111,7 @@ class LitPianoDataModule(L.LightningDataModule):
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkeyDataset(), [.8, .2], 
         )
-        if stage == TrainerFn.VALIDATING:
-            self.val_oracle_dataset = oracleDataset()
+        self.val_oracle_dataset = oracleDataset()
     
     def train_dataloader(self):
         hParams = self.hP
