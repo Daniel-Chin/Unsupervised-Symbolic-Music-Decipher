@@ -97,10 +97,8 @@ def test():
         inspect(path.join(LA_MIDI_DIR, dir_, filename))
 
 def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
-    all_dir_ = os.listdir(LA_MIDI_DIR)
-    for dir_i, dir_ in enumerate(all_dir_):
-        if select_dirs is not None and dir_ not in select_dirs:
-            continue
+    dirs = select_dirs or LA_DATASET_DIRS
+    for dir_i, dir_ in enumerate(dirs):
         OK = 'OK'
         midi_exceptions = { OK: 0 }
         def accException(e: Exception):
@@ -113,7 +111,7 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             srcs = random.choices(srcs, k=limit)
         dests = []
         for src_basename in tqdm.tqdm(
-            srcs, desc=f'midi {dir_i}/{len(all_dir_)}',
+            srcs, desc=f'midi {dir_i}/{len(dirs)}',
         ):
             src_abs_name = path.join(LA_MIDI_DIR, dir_, src_basename)
             try:
@@ -124,6 +122,9 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             smart_piano = everythingPiano(filterInstruments(original))
             if not smart_piano.instruments[0].notes:
                 accException(ValueError('No notes in piano track'))
+                continue
+            if smart_piano.instruments[0].notes[0].start > SEC_PER_DATAPOINT:
+                accException(ValueError(f'No piano in the first {SEC_PER_DATAPOINT} sec'))
                 continue
             dest_basename = src_basename
             smart_piano.write(path.join(
@@ -137,10 +138,6 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             json.dump(dests, f)
         print()
         pprint(midi_exceptions)
-    with open(path.join(
-        PIANO_LA_DATASET_DIR, 'index.json', 
-    ), 'w', encoding='utf-8') as f:
-        json.dump(all_dir_, f)
 
 def noteStats(limit: Optional[int] = None):
     with open(path.join(

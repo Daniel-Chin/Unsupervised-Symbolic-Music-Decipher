@@ -158,17 +158,13 @@ def main(
     oneSet(TRANSFORMER_PIANO_MONKEY_DATASET_DIR, [None] * monkey_dataset_size, 'monkey')
 
     midi_sources = []
-    with open(path.join(
-        PIANO_LA_DATASET_DIR, 'index.json', 
-    ), 'r', encoding='utf-8') as f:
-        all_dir_ = json.load(f)
-    for i, dir_ in enumerate(all_dir_):
+    for i, dir_ in enumerate(LA_DATASET_DIRS):
         with open(path.join(
             PIANO_LA_DATASET_DIR, dir_, 'index.json', 
         ), 'r', encoding='utf-8') as f:
             filenames = json.load(f)
         still_need = oracle_dataset_size - len(midi_sources)
-        lets_take = still_need // (len(all_dir_) - i)
+        lets_take = still_need // (len(LA_DATASET_DIRS) - i)
         midi_sources.extend([
             path.join(PIANO_LA_DATASET_DIR, dir_, x) 
             for x in random.choices(filenames, k=lets_take)
