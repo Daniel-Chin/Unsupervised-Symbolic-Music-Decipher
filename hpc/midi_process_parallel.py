@@ -8,8 +8,8 @@ def main():
     
     all_dirs = set('0123456789abcdef')
     for i in count():
+        a = all_dirs.pop()
         try:
-            a = all_dirs.pop()
             b = all_dirs.pop()
         except KeyError:
             break
