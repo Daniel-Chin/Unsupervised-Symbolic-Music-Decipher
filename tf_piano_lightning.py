@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, random_split
 import lightning as L
 from lightning.pytorch.callbacks import DeviceStatsMonitor
 from lightning.pytorch.trainer.states import TrainerFn
+from lightning.pytorch.profilers import SimpleProfiler
 
 from shared import *
 from hparams import HParams
@@ -60,6 +61,7 @@ class LitPiano(L.LightningModule):
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
         )
+        self.log('train_loss', loss)
 
         for book_i, accuracy in enumerate(
             (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
@@ -131,12 +133,12 @@ class LitPianoDataModule(L.LightningDataModule):
         return [
             DataLoader(
                 self.val_monkey_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, shuffle=True, 
+                collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
             DataLoader(
                 self.val_oracle_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, shuffle=True, 
+                collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
         ]
@@ -146,10 +148,11 @@ def train(hParams: HParams, root_dir: str):
     if GPU_NAME == 'NVIDIA GeForce RTX 3050 Ti Laptop GPU':
         torch.set_float32_matmul_precision('high')
     litPiano = LitPiano(hParams)
+    profiler = SimpleProfiler(filename='profile.txt')
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
         default_root_dir=root_dir,
-        profiler='simple', callbacks=[DeviceStatsMonitor()], 
+        profiler=profiler, callbacks=[DeviceStatsMonitor()], 
     )
     trainer.fit(litPiano, LitPianoDataModule(hParams))
     return litPiano
