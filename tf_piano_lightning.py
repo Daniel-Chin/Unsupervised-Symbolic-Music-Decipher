@@ -28,6 +28,10 @@ class LitPiano(L.LightningModule):
             [200] * hParams.batch_size, 
         )
     
+    def log(self, *a, **kw):
+        hParams = self.hP
+        return super().log(*a, batch_size=hParams.batch_size, **kw)
+    
     def setup(self, stage: str):
         print('lit module setup', stage)
         hParams = self.hP
@@ -119,7 +123,7 @@ class LitPianoDataModule(L.LightningDataModule):
         return DataLoader(
             self.train_dataset, batch_size=hParams.batch_size, 
             collate_fn=collate, shuffle=True, 
-            num_workers=2, 
+            num_workers=2, persistent_workers=True, 
         )
     
     def val_dataloader(self):
@@ -127,11 +131,13 @@ class LitPianoDataModule(L.LightningDataModule):
         return [
             DataLoader(
                 self.val_monkey_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=2, persistent_workers=True, 
+                collate_fn=collate, shuffle=True, 
+                num_workers=2, persistent_workers=True, 
             ),
             DataLoader(
                 self.val_oracle_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=2, persistent_workers=True, 
+                collate_fn=collate, shuffle=True, 
+                num_workers=2, persistent_workers=True, 
             ),
         ]
 
