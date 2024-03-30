@@ -25,6 +25,7 @@ if HAS_CUDA:
 else:
     DEVICE = CPU
     # print("We DON'T have CUDA.", flush=True)
+    GPU_NAME = None
 
 def getParams(optim: torch.optim.Optimizer):
     s: List[torch.Tensor] = []
