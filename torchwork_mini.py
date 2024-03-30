@@ -10,7 +10,7 @@ from domestic_typing import *
 
 __all__ = [
     'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'GPU_NAME', 
-    'getParams', 'getGradNorm', 'getCommitHashAndAssertWorkingTreeClean', 
+    'getParams', 'getGradNorm', 'getCommitHash', 
     'writeLightningHparams', 'currentTimeDirName', 
 ]
 
