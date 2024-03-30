@@ -76,7 +76,7 @@ class LitPiano(L.LightningModule):
 
         a = y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK)
         b = y    .view(-1)
-        breakpoint()
+        import IPython; IPython.embed()
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
