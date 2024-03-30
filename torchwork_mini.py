@@ -51,9 +51,10 @@ def getCommitHashAndAssertWorkingTreeClean():
     return next(repo.iter_commits()).hexsha
 
 def writeLightningHparams(dataclassObject, litModule: L.LightningModule):
-    for k, v in dataclasses.asdict(dataclassObject).items():
-        litModule.save_hyperparameters(k, v)
-    litModule.save_hyperparameters('commit_hash', getCommitHashAndAssertWorkingTreeClean())
+    litModule.save_hyperparameters(dataclasses.asdict(dataclassObject))
+    litModule.save_hyperparameters(dict(
+        commit_hash = getCommitHashAndAssertWorkingTreeClean(), 
+    ))
 
 def currentTimeDirName():
     # file system friendly
