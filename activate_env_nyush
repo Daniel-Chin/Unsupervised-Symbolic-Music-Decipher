@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-conda activate ./envs/neural_avh
+source activate ./envs/neural_avh
