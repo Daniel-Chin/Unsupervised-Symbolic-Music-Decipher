@@ -157,7 +157,6 @@ def train(hParams: HParams, root_dir: str):
         default_root_dir=root_dir,
         logger=logger, profiler=profiler, 
         callbacks=[DeviceStatsMonitor()], 
-        log_every_n_steps=4, 
     )
     trainer.fit(litPiano, LitPianoDataModule(hParams))
     return litPiano
