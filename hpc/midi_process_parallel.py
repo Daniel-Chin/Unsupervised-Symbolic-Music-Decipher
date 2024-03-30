@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-import os
 from subprocess import Popen
 from itertools import count
 
 def main():
-    os.chdir('./hpc')
-
     with open('./midi_process_template.sbatch', 'r', encoding='utf-8') as f:
         template = f.read()
     
