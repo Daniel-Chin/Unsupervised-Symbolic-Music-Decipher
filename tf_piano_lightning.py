@@ -23,9 +23,10 @@ class LitPiano(L.LightningModule):
         super().__init__()
         self.hP = hParams
         writeLightningHparams(hParams, self)
-        self.example_input_array = torch.zeros((
-            hParams.batch_size, 233, 1 + 1 + 88, 
-        ))
+        self.example_input_array = (
+            torch.zeros((hParams.batch_size, 233, 1 + 1 + 88)), 
+            [200] * hParams.batch_size, 
+        )
     
     def setup(self, stage: str):
         print('lit module setup', stage)
