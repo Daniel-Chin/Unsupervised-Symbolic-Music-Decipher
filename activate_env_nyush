@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-source activate ./envs/neural_avh
+source activate /scratch/$USER/usmd/envs/neural_avh
