@@ -51,6 +51,8 @@ class TransformerPianoDataset(Dataset):
         return len(self.stems)
 
     def __getitem__(self, index: int):
+        # x: (n_notes, 1 + 1 + 88)
+        # y: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
         return self.X[index], self.Y[index, :, :]
 
 class CollateCandidates:
