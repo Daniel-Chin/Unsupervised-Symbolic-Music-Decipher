@@ -1,4 +1,3 @@
-from typing import *
 import json
 from subprocess import Popen, DEVNULL
 import random
