@@ -31,7 +31,7 @@ class TransformerPianoModel(Transformer):
     ):
         super().__init__(
             d_model, nhead, num_encoder_layers, num_decoder_layers, 
-            dim_feedforward, 
+            dim_feedforward, batch_first=True, 
         )
 
     def forward(self, src: Tensor, tgt: Tensor, src_lens: List[int]) -> Tensor:

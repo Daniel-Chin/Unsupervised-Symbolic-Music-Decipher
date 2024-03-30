@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import lightning as L
 from lightning.pytorch.callbacks import DeviceStatsMonitor
+from lightning.pytorch.trainer.states import TrainerFn
 
 from shared import *
 from hparams import HParams
@@ -41,6 +42,9 @@ class LitPiano(L.LightningModule):
             hParams.tf_piano_d_feedforward, 
         )
         self.tfPiano = TFPiano(keyEventEncoder, transformerPianoModel)
+    
+    def forward(self, x: Tensor, x_lens: List[int]) -> Tensor:
+        return self.tfPiano.forward(x, x_lens)
     
     def training_step(
         self, batch: Tuple[Tensor, Tensor, List[int]], batch_idx: int, 
@@ -106,7 +110,7 @@ class LitPianoDataModule(L.LightningDataModule):
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkeyDataset(), [.8, .2], 
         )
-        if stage == 'validate':
+        if stage == TrainerFn.VALIDATING:
             self.val_oracle_dataset = oracleDataset()
     
     def train_dataloader(self):
