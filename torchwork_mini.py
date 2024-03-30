@@ -9,9 +9,9 @@ import lightning as L
 from domestic_typing import *
 
 __all__ = [
-    'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'getParams', 'getGradNorm', 
-    'getCommitHashAndAssertWorkingTreeClean', 'writeLightningHparams', 
-    'currentTimeDirName', 
+    'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'GPU_NAME', 
+    'getParams', 'getGradNorm', 'getCommitHashAndAssertWorkingTreeClean', 
+    'writeLightningHparams', 'currentTimeDirName', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -21,8 +21,8 @@ CPU  = torch.device("cpu")
 if HAS_CUDA:
     DEVICE = CUDA
     print('We have CUDA.', flush=True)
-    gpu_name = torch.cuda.get_device_name(DEVICE)
-    print(f'{gpu_name = }', flush=True)
+    GPU_NAME = torch.cuda.get_device_name(DEVICE)
+    print(f'{GPU_NAME = }', flush=True)
 else:
     DEVICE = CPU
     print("We DON'T have CUDA.", flush=True)

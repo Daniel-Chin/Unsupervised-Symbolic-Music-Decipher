@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 import torch
 from torch import Tensor
@@ -25,7 +26,8 @@ class LitPiano(L.LightningModule):
             hParams.batch_size, 233, 1 + 1 + 88, 
         ))
     
-    def setup(self):
+    def setup(self, stage: str):
+        print('lit module setup', stage)
         hParams = self.hP
         keyEventEncoder = KeyEventEncoder(
             hParams.d_model, 
@@ -87,16 +89,25 @@ class LitPianoDataModule(L.LightningDataModule):
         self.hP = hParams
     
     def setup(self, stage: Optional[str] = None):
-        monkey_dataset = TransformerPianoDataset(
-            'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        )
-        oracle_dataset = TransformerPianoDataset(
-            'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
-        )
+        print('data module setup', stage)
+
+        @lru_cache(maxsize=1)
+        def monkeyDataset():
+            return TransformerPianoDataset(
+                'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
+            )
+
+        @lru_cache(maxsize=1)
+        def oracleDataset():
+            return TransformerPianoDataset(
+                'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
+            )
+        
         self.train_dataset, self.val_monkey_dataset = random_split(
-            monkey_dataset, [.8, .2], 
+            monkeyDataset(), [.8, .2], 
         )
-        self.val_oracle_dataset = oracle_dataset
+        if stage == 'validate':
+            self.val_oracle_dataset = oracleDataset()
     
     def train_dataloader(self):
         hParams = self.hP
@@ -121,6 +132,8 @@ class LitPianoDataModule(L.LightningDataModule):
 
 def train(hParams: HParams, root_dir: str):
     os.makedirs(path.join(root_dir, 'lightning_logs'))
+    if GPU_NAME == 'NVIDIA GeForce RTX 3050 Ti Laptop GPU':
+        torch.set_float32_matmul_precision('high')
     litPiano = LitPiano(hParams)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
