@@ -6,6 +6,7 @@ from os import path
 import random
 from pprint import pprint
 import json
+import argparse
 
 import pretty_midi
 import tqdm
@@ -95,9 +96,11 @@ def test():
         filename = random.choice(os.listdir(path.join(LA_MIDI_DIR, dir_)))
         inspect(path.join(LA_MIDI_DIR, dir_, filename))
 
-def main(limit: Optional[int] = None):
+def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
     all_dir_ = os.listdir(LA_MIDI_DIR)
     for dir_i, dir_ in enumerate(all_dir_):
+        if select_dirs is not None and dir_ not in select_dirs:
+            continue
         OK = 'OK'
         midi_exceptions = { OK: 0 }
         def accException(e: Exception):
@@ -215,5 +218,10 @@ def noteStats(limit: Optional[int] = None):
 
 if __name__ == '__main__':
     # test()
-    main()
     # noteStats(30)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--select_dirs', nargs='+')
+    parser.add_argument('--limit', type=int)
+    args = parser.parse_args()
+    main(args.select_dirs, args.limit)
