@@ -73,6 +73,10 @@ class LitPiano(L.LightningModule):
 
         x, y, x_lens = batch
         y_hat = self.tfPiano.forward(x, x_lens)
+
+        a = y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK)
+        b = y    .view(-1)
+        breakpoint()
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
@@ -126,11 +130,11 @@ class LitPianoDataModule(L.LightningDataModule):
         return [
             DataLoader(
                 self.val_monkey_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=1, persistent_workers=True, 
+                collate_fn=collate, num_workers=2, persistent_workers=True, 
             ),
             DataLoader(
                 self.val_oracle_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=1, persistent_workers=True, 
+                collate_fn=collate, num_workers=2, persistent_workers=True, 
             ),
         ]
 
