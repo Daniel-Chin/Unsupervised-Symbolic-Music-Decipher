@@ -15,7 +15,7 @@ def main():
         tf_piano_d_feedforward = 1024,
         lr = 1e-3,
         batch_size = 16,
-        max_epochs = 3,
+        max_epochs = 10,
     )
     train(hParams, path.join(
         EXPERIMENTS_DIR, currentTimeDirName() + '_piano_first', 
