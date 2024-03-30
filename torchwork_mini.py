@@ -1,6 +1,7 @@
 from typing import *
 import dataclasses
 from functools import lru_cache
+from datetime import datetime
 
 import torch
 import git
@@ -9,6 +10,7 @@ import lightning as L
 __all__ = [
     'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'getParams', 'getGradNorm', 
     'getCommitHashAndAssertWorkingTreeClean', 'writeLightningHparams', 
+    'currentTimeDirName', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -51,3 +53,7 @@ def writeLightningHparams(dataclassObject, litModule: L.LightningModule):
     for k, v in dataclasses.asdict(dataclassObject).items():
         litModule.save_hyperparameters(k, v)
     litModule.save_hyperparameters('commit_hash', getCommitHashAndAssertWorkingTreeClean())
+
+def currentTimeDirName():
+    # file system friendly
+    return datetime.now().strftime('%Y_m%m_d%d@%H_%M_%S')

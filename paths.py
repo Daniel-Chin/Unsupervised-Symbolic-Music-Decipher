@@ -5,6 +5,9 @@ import init as _
 
 PROJ_DIR = path.dirname(path.abspath(__file__))
 
+EXPERIMENTS_DIR = path.join(PROJ_DIR, 'experiments')
+os.makedirs(EXPERIMENTS_DIR, exist_ok=True)
+
 DATA_DIR = path.join(PROJ_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 INSPECT_DIR = path.join(DATA_DIR, 'inspect')
