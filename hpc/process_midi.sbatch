@@ -9,6 +9,7 @@
 #SBATCH --job-name=midi_proc
 #SBATCH --output=midi_proc.out
 #SBATCH --error=midi_proc.err
+#SBATCH --partition=parallel
 
 cd ..
 module purge
