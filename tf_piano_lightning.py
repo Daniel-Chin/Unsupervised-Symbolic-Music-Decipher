@@ -1,5 +1,4 @@
-from typing import *
-
+import torch
 from torch import Tensor
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
@@ -27,8 +26,9 @@ class LitPiano(L.LightningModule):
     def setup(self):
         hParams = self.hP
         keyEventEncoder = KeyEventEncoder(
-            hParams.d_model, hParams.key_event_encoder_d_hidden, 
+            hParams.d_model, 
             hParams.key_event_encoder_n_layers,
+            hParams.key_event_encoder_d_hidden, 
         )
         transformerPianoModel = TransformerPianoModel(
             hParams.d_model, hParams.tf_piano_n_head,

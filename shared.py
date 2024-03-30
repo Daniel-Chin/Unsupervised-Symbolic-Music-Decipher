@@ -1,9 +1,9 @@
-import torch
 import numpy as np
 
 import init as _
 from paths import *
 from torchwork_mini import *
+from domestic_typing import *
 
 SEC_PER_DATAPOINT = 30
 ENCODEC_SR = 32000

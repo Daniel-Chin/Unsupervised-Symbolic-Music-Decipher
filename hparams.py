@@ -1,6 +1,6 @@
-from typing import *
-
 from dataclasses import dataclass
+
+from shared import *
 
 @dataclass(frozen=True)
 class HParams:

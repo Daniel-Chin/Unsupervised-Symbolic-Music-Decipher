@@ -1,4 +1,3 @@
-from typing import *
 import json
 from os import path
 from time import perf_counter, sleep
@@ -8,8 +7,8 @@ from torch import Tensor
 from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 
-from music import PIANO_RANGE
 from shared import *
+from music import PIANO_RANGE
 
 class TransformerPianoDataset(Dataset):
     def __init__(
@@ -31,7 +30,7 @@ class TransformerPianoDataset(Dataset):
         self.Y = torch.zeros((
             len(self.stems), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
         ), dtype=torch.int16, device=device)
-        n_notes_array = torch.zeros(len(self.stems))
+        n_notes_array = torch.zeros((len(self.stems), ))
         for i, datapoint_id in enumerate(tqdm(self.stems, 'Load dataset')):
             x: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_x.pt'))
             y: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_y.pt'))

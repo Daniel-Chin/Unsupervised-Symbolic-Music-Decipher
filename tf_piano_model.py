@@ -1,4 +1,3 @@
-from typing import *
 from functools import lru_cache
 from itertools import count
 
@@ -9,11 +8,12 @@ from torch.nn.modules.transformer import Transformer
 from shared import *
 
 class KeyEventEncoder(torch.nn.Module):
-    def __init__(self, d_model: int, d_hidden: int, n_layers: int):
+    def __init__(self, d_model: int, n_layers: int, d_hidden: Optional[int]):
         super().__init__()
         self.layers = []
         current_dim = 1 + 1 + 88
         for _ in range(n_layers - 1):
+            assert d_hidden is not None
             self.layers.append(torch.nn.Linear(current_dim, d_hidden))
             current_dim = d_hidden
             self.layers.append(torch.nn.ReLU())

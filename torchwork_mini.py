@@ -1,4 +1,3 @@
-from typing import *
 import dataclasses
 from functools import lru_cache
 from datetime import datetime
@@ -6,6 +5,8 @@ from datetime import datetime
 import torch
 import git
 import lightning as L
+
+from domestic_typing import *
 
 __all__ = [
     'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'getParams', 'getGradNorm', 
