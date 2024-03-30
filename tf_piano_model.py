@@ -82,9 +82,11 @@ class TFPiano(torch.nn.Module):
         batch_size, _, _ = x.shape
         key_event_embeddings = self.keyEventEncoder.forward(x)
         transformer_out = self.transformerPianoModel.forward(
-            key_event_embeddings, positionalEncoding(
+            key_event_embeddings, 
+            positionalEncoding(
                 N_TOKENS_PER_DATAPOINT, self.transformerPianoModel.d_model, device, 
-            ), x_lens,
+            ).expand(batch_size, -1, -1), 
+            x_lens,
         )
         return self.outputProjector.forward(transformer_out).view(
             batch_size, ENCODEC_N_BOOKS, 
