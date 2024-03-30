@@ -2,6 +2,7 @@ from typing import *
 import json
 from subprocess import Popen, DEVNULL
 import random
+import argparse
 
 import librosa
 import torch
@@ -176,4 +177,12 @@ def main(
     oneSet(TRANSFORMER_PIANO_ORACLE_DATASET_DIR, midi_sources, 'oracle')
 
 if __name__ == '__main__':
-    main(64, 64)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--monkey_dataset_size', type=int, required=True, 
+    )
+    parser.add_argument(
+        '--oracle_dataset_size', type=int, required=True, 
+    )
+    args = parser.parse_args()
+    main(args.monkey_dataset_size, args.oracle_dataset_size)
