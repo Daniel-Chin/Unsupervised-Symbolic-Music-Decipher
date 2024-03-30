@@ -13,8 +13,7 @@ from shared import *
 
 class TransformerPianoDataset(Dataset):
     def __init__(
-        self, 
-        dir_path: str = TRANSFORMER_PIANO_DATASET_DIR, 
+        self, dir_path: str, 
         offset: int = 0, 
         truncate_to_size: Optional[int] = None, 
         device: torch.device = CPU, 
@@ -105,7 +104,7 @@ class CollateCandidates:
             ('inplace', CollateCandidates.usingInplace), 
             ('stack',   CollateCandidates.usingStack), 
         ]
-        dataset = TransformerPianoDataset()
+        dataset = TransformerPianoDataset(TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
         data = [dataset[i] for i in range(64)]
         while True:
             for name, f in candidates:
@@ -122,7 +121,7 @@ class CollateCandidates:
 collate = CollateCandidates.usingZip
 
 if __name__ == '__main__':
-    dataset = TransformerPianoDataset()
+    dataset = TransformerPianoDataset(TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
     import IPython; IPython.embed()
 
     # CollateCandidates.profile()
