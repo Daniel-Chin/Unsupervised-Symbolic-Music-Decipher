@@ -12,11 +12,12 @@ from music import PIANO_RANGE
 
 class TransformerPianoDataset(Dataset):
     def __init__(
-        self, dir_path: str, 
+        self, name: str, dir_path: str, 
         offset: int = 0, 
         truncate_to_size: Optional[int] = None, 
         device: torch.device = CPU, 
     ):
+        self.name = name
         def getStems():
             with open(path.join(dir_path, 'index.json'), encoding='utf-8') as f:
                 stems = json.load(f)
@@ -31,7 +32,7 @@ class TransformerPianoDataset(Dataset):
             len(self.stems), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
         ), dtype=torch.int16, device=device)
         n_notes_array = torch.zeros((len(self.stems), ))
-        for i, datapoint_id in enumerate(tqdm(self.stems, 'Load dataset')):
+        for i, datapoint_id in enumerate(tqdm(self.stems, f'Load dataset "{self.name}"')):
             x: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_x.pt'))
             y: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_y.pt'))
             n_notes, _ = x.shape
@@ -105,7 +106,7 @@ class CollateCandidates:
             ('inplace', CollateCandidates.usingInplace), 
             ('stack',   CollateCandidates.usingStack), 
         ]
-        dataset = TransformerPianoDataset(TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
+        dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
         data = [dataset[i] for i in range(64)]
         while True:
             for name, f in candidates:
@@ -122,7 +123,7 @@ class CollateCandidates:
 collate = CollateCandidates.usingZip
 
 if __name__ == '__main__':
-    dataset = TransformerPianoDataset(TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
+    dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
     import IPython; IPython.embed()
 
     # CollateCandidates.profile()

@@ -1,3 +1,5 @@
+import os
+
 import torch
 from torch import Tensor
 import torch.nn.functional as F
@@ -85,11 +87,15 @@ class LitPianoDataModule(L.LightningDataModule):
         self.hP = hParams
     
     def setup(self, stage: Optional[str] = None):
-        monkey_dataset = TransformerPianoDataset(TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
-        oracle_dataset = TransformerPianoDataset(TRANSFORMER_PIANO_ORACLE_DATASET_DIR)
+        monkey_dataset = TransformerPianoDataset(
+            'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
+        )
+        oracle_dataset = TransformerPianoDataset(
+            'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
+        )
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkey_dataset, [.8, .2], 
-        )[0]
+        )
         self.val_oracle_dataset = oracle_dataset
     
     def train_dataloader(self):
@@ -114,6 +120,7 @@ class LitPianoDataModule(L.LightningDataModule):
         ]
 
 def train(hParams: HParams, root_dir: str):
+    os.makedirs(path.join(root_dir, 'lightning_logs'))
     litPiano = LitPiano(hParams)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
