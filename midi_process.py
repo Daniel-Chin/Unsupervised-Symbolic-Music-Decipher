@@ -123,9 +123,6 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             if not smart_piano.instruments[0].notes:
                 accException(ValueError('No notes in piano track'))
                 continue
-            if smart_piano.instruments[0].notes[0].start > SEC_PER_DATAPOINT:
-                accException(ValueError(f'No piano in the first {SEC_PER_DATAPOINT} sec'))
-                continue
             dest_basename = src_basename
             smart_piano.write(path.join(
                 PIANO_LA_DATASET_DIR, dir_, dest_basename, 
