@@ -1,16 +1,15 @@
+#!/usr/bin/env python3
 import os
 from subprocess import Popen
 from itertools import count
 
-from shared import LA_DATASET_DIRS
-
 def main():
     os.chdir('./hpc')
-    
+
     with open('./midi_process_template.sbatch', 'r', encoding='utf-8') as f:
         template = f.read()
     
-    all_dirs = set(LA_DATASET_DIRS)
+    all_dirs = set('0123456789abcdef')
     for i in count():
         try:
             a = all_dirs.pop()
