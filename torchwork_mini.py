@@ -17,15 +17,15 @@ __all__ = [
 HAS_CUDA = torch.cuda.is_available()
 CUDA = torch.device("cuda:0")
 CPU  = torch.device("cpu")
-# print(f'{__name__ = }')
+print(f'{__name__ = }')
 if HAS_CUDA:
     DEVICE = CUDA
-    print('We have CUDA.', flush=True)
+    # print('We have CUDA.', flush=True)
     GPU_NAME = torch.cuda.get_device_name(DEVICE)
-    print(f'{GPU_NAME = }', flush=True)
+    # print(f'{GPU_NAME = }', flush=True)
 else:
     DEVICE = CPU
-    print("We DON'T have CUDA.", flush=True)
+    # print("We DON'T have CUDA.", flush=True)
 
 def getParams(optim: torch.optim.Optimizer):
     s: List[torch.Tensor] = []

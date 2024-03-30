@@ -126,11 +126,11 @@ class LitPianoDataModule(L.LightningDataModule):
         return [
             DataLoader(
                 self.val_monkey_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=2, 
+                collate_fn=collate, num_workers=1, persistent_workers=True, 
             ),
             DataLoader(
                 self.val_oracle_dataset, batch_size=hParams.batch_size, 
-                collate_fn=collate, num_workers=2, 
+                collate_fn=collate, num_workers=1, persistent_workers=True, 
             ),
         ]
 

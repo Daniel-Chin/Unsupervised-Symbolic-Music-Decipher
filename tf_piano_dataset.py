@@ -120,7 +120,9 @@ class CollateCandidates:
                 print(np.mean(dts) * 1e3, 'ms')
             sleep(0.1)
 
-collate = CollateCandidates.usingZip
+def collate(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+    x, y, x_lens = CollateCandidates.usingZip(data)
+    return x, y.to(torch.int), x_lens
 
 if __name__ == '__main__':
     dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
