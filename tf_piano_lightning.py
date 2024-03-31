@@ -217,10 +217,10 @@ def evaluateAudio(
     max_n = max(n_evals)
     n_digits = len(str(max_n))
     index_format = f'0{n_digits}'
-    def filename(subset: str, i: int, task: str):
+    def filename(subset: str, i: int, task: str, ext: str):
         return path.join(
             audio_dir, 
-            f'{subset}_{i:{index_format}}_{task}.wav',
+            f'{subset}_{i:{index_format}}_{task}.{ext}',
         )
 
     for subset, loader, n_eval, dataset_dir in zip(
@@ -240,11 +240,11 @@ def evaluateAudio(
                 wave_cpu = wave[:, 0, :].cpu().numpy()
                 for i in range(batch_size):
                     wavfile.write(
-                        filename(subset, datapoint_i, 'predict'), ENCODEC_SR, wave_cpu[i, :],
+                        filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
                     )
                     src = path.join(dataset_dir, stems[i])
-                    shutil.copyfile(src + '.mid', filename(subset, datapoint_i, 'reference'))
-                    shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon'))
+                    shutil.copyfile(src + '.mid', filename(subset, datapoint_i, 'reference', 'mid'))
+                    shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
                     datapoint_i += 1
                     if datapoint_i == n_eval:
                         break
