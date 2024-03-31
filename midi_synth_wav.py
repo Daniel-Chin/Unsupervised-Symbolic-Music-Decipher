@@ -7,7 +7,7 @@ from shared import *
 def midiSynthWav(
     midi_path: str, wav_path: str, 
     logStream: TextIOWrapper, do_fluidsynth_write_pcm: bool = False,
-    debug: bool = True, 
+    debug: bool = False, 
 ):
     if debug:
         os.system('which fluidsynth')
@@ -27,7 +27,7 @@ def midiSynthWav(
         print(file=logStream, flush=debug)
         cmd = [
             'ffmpeg', '-f', 's16le', '-ar', str(ENCODEC_SR), 
-            '-ac', '1', '-i', pcm_path, wav_path, 
+            '-ac', '1', '-i', pcm_path, '-y', wav_path, 
         ]
         print(cmd, file=logStream, flush=debug)
         with Popen(cmd, stdout=logStream, stderr=logStream) as p:

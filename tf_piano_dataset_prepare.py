@@ -70,26 +70,29 @@ def prepareOneDatapoint(
     idx: int, dest_dir: str, midi_source: Optional[str], 
     synth_out: str, do_fluidsynth_write_pcm: bool, 
 ):
+    def printProfiling(*a, **kw):
+        print(*a, **kw, flush=True)
+    
     if midi_source is None:
-        print('Generating MIDI')
+        printProfiling('Generating MIDI')
         midi = generateMidi()
     else:
-        print('Legalizing MIDI')
+        printProfiling('Legalizing MIDI')
         midi = legalizeMidi(midi_source)
     piano, = midi.instruments
     piano: pretty_midi.Instrument
     n_notes = len(piano.notes)
 
-    print('Writing MIDI')
+    printProfiling('Writing MIDI')
     midi_path = path.join(dest_dir, f'{idx}.mid')
     midi.write(midi_path)
 
-    print('Synthesizing audio')
+    printProfiling('Synthesizing audio')
     wav_path = path.join(dest_dir, 'temp.wav')
     with open(synth_out, 'w') as pOut:
         midiSynthWav(midi_path, wav_path, pOut, do_fluidsynth_write_pcm)
     
-    print('Loading audio')
+    printProfiling('Loading audio')
     buf = BytesIO()
     with audioread.audio_open(wav_path) as f:
         f: RawAudioFile
@@ -109,17 +112,17 @@ def prepareOneDatapoint(
     wave_gpu = wave_pad.to(DEVICE)
 
     with torch.no_grad():
-        print('Encodec.encode')
+        printProfiling('Encodec.encode')
         codes, _ = encodec.encode(wave_gpu.unsqueeze(0).unsqueeze(0))
-        print('Encodec.decode')
+        printProfiling('Encodec.decode')
         recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
     
-    print('Writing recon')
+    printProfiling('Writing recon')
     # write `recon` wave to file
     recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
     wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
     
-    print('Formatting datapoint')
+    printProfiling('Formatting datapoint')
     x = torch.zeros((
         n_notes, 
         # 1 + 1 + 88, 
@@ -134,7 +137,7 @@ def prepareOneDatapoint(
     y = codes[0, :, :].to(torch.int16).cpu()
     assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
 
-    print('Writing datapoint')
+    printProfiling('Writing datapoint')
     torch.save(x, path.join(
         dest_dir, f'{idx}_x.pt',
     ))
