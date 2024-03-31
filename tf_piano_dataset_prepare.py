@@ -1,5 +1,5 @@
 import json
-from subprocess import Popen, DEVNULL
+from subprocess import Popen
 import random
 import argparse
 from io import BytesIO
@@ -68,6 +68,7 @@ def legalizeMidi(src_path: str):
 def prepareOneDatapoint(
     encodec: audiocraft.models.encodec.CompressionModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
+    fluid_synth_out: str,
 ):
     if midi_source is None:
         print('Generating MIDI')
@@ -85,11 +86,12 @@ def prepareOneDatapoint(
 
     print('Synthesizing audio')
     wav_path = path.join(dest_dir, 'temp.wav')
-    with Popen([
-        'fluidsynth', '-ni', SOUNDFONT_FILE, midi_path,
-        '-F', wav_path, '-r', str(ENCODEC_SR), 
-    ], stdout=DEVNULL) as p:
-        p.wait()
+    with open(fluid_synth_out, 'w') as pOut:
+        with Popen([
+            'fluidsynth', '-ni', SOUNDFONT_FILE, midi_path,
+            '-F', wav_path, '-r', str(ENCODEC_SR), 
+        ], stdout=pOut) as p:
+            p.wait()
     
     print('Loading audio')
     buf = BytesIO()
@@ -147,6 +149,7 @@ def prepareOneDatapoint(
 def main(
     monkey_dataset_size: int, 
     oracle_dataset_size: int,
+    fluid_synth_out: str,
 ):
     encodec = audiocraft.models.encodec.CompressionModel.get_pretrained(
         'facebook/encodec_32khz', DEVICE, 
@@ -159,7 +162,9 @@ def main(
         try:
             for datapoint_i, midi_source in enumerate(tqdm.tqdm(midi_sources, desc)):
                 print()
-                prepareOneDatapoint(encodec, datapoint_i, dest_dir, midi_source)
+                prepareOneDatapoint(
+                    encodec, datapoint_i, dest_dir, midi_source, fluid_synth_out, 
+                )
                 data_ids.append(str(datapoint_i))
         finally:
             with open(path.join(
@@ -191,5 +196,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--oracle_dataset_size', type=int, required=True, 
     )
+    parser.add_argument(
+        '--fluidsynth_out', type=str, required=True,
+    )
     args = parser.parse_args()
-    main(args.monkey_dataset_size, args.oracle_dataset_size)
+    main(args.monkey_dataset_size, args.oracle_dataset_size, args.fluidsynth_out)
