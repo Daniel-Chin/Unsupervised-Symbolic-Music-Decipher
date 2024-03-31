@@ -197,6 +197,7 @@ def evaluateAudio(
     
     print('eval audio...', flush=True)
     audio_dir = path.join(root_dir, 'audio')
+    os.makedirs(audio_dir)
     encodec = getEncodec().to(DEVICE)
     subsets = ['train', 'val_monkey', 'val_oracle']
     loaders = [
