@@ -10,12 +10,12 @@
 #SBATCH --job-name=train_piano
 #SBATCH --output=train_piano.out
 #SBATCH --error=train_piano.err
-#SBATCH --partition=sfscai,aquila,gpu
+#SBATCH --partition=aquila,gpu
+#SBATCH --constraint=3090
 
 cd ..
 module purge
 module load miniconda
-module load cuda/11.3.1
 source ./activate_env_nyush
 echo python starting...
 python main_train_piano.py
