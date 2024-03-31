@@ -16,4 +16,5 @@ cd ..
 module purge
 module load miniconda
 source ./activate_env_nyush
+echo python starting...
 python main_train_piano.py

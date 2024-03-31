@@ -18,4 +18,5 @@ module load miniconda
 source ./activate_env_nyush
 module load ffmpeg
 module load fluidsynth
+echo python starting...
 python tf_piano_dataset_prepare.py --monkey_dataset_size 1024 --oracle_dataset_size 64 --synth_out ./hpc/synth.out --do_fluidsynth_write_pcm
