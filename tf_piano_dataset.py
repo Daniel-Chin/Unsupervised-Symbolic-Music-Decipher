@@ -51,7 +51,7 @@ class TransformerPianoDataset(Dataset):
             return t.nelement() * t.element_size()
         ram += len(self.X) * ramOf(self.X[0])
         ram += ramOf(self.Y)
-        print('dataset RAM:', ram / 2**30, 'GB')
+        print('dataset RAM:', ram / 2**30, 'GB', flush=True)
 
     def __len__(self):
         return len(self.stems)
