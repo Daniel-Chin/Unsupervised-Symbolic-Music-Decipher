@@ -24,5 +24,5 @@ def midiSynthWav(
             '-ac', '1', '-i', pcm_path, wav_path, 
         ]
         print(cmd, file=logStream)
-        with Popen(cmd, stdout=logStream) as p:
+        with Popen(cmd, stdout=logStream, stderr=logStream) as p:
             p.wait()
