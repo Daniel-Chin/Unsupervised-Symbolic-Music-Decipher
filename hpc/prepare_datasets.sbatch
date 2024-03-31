@@ -15,5 +15,6 @@ cd ..
 module purge
 module load miniconda
 source ./activate_env_nyush
+module load ffmpeg
 module load fluidsynth
 python tf_piano_dataset_prepare.py --monkey_dataset_size 1024 --oracle_dataset_size 64 --fluidsynth_out ./hpc/fluidsynth.out
