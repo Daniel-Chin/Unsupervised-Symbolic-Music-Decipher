@@ -1,0 +1,31 @@
+name: env_neural_avh
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11.4
+  - pip
+  - pytorch
+  - torchaudio
+  - torchvision
+  - pytorch-cuda=11.8
+  - colorama
+  - ipython
+  - lightning
+  - numpy
+  - tqdm
+  - pip:
+    - audiocraft
+    - gitpython
+    - huggingface-hub
+    - librosa
+    - matplotlib
+    - numba
+    - pretty-midi
+    - python-dotenv
+    - scipy
+    - soundfile
+    - tensorboard
+    - tokenizers
