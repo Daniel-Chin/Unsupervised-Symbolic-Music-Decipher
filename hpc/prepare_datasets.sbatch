@@ -9,7 +9,7 @@
 #SBATCH --job-name=prep_data
 #SBATCH --output=prep_data.out
 #SBATCH --error=prep_data.err
-#SBATCH --partition=parallel
+#SBATCH --partition=sfscai,aquila,gpu
 
 cd ..
 module purge
