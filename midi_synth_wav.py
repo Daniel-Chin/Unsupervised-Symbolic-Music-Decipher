@@ -25,7 +25,7 @@ def midiSynthWav(
         if path.isfile(synth_out):
             break
         print('fluidsynth did not write file, retry...')
-        print('>which fluidsynth')
+        print('>which fluidsynth', flush=True)
         os.system('which fluidsynth')
     else:
         raise Exception('max retries exceeded, fluidsynth did not write file')
