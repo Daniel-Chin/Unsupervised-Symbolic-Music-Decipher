@@ -184,7 +184,7 @@ def train(hParams: HParams, root_dir: str):
 
     litPiano.eval()
     with torch.no_grad():
-        evaluateAudio(litPiano, dataModule, root_dir)
+        evaluateAudio(litPiano.to(DEVICE), dataModule, root_dir)
 
     return litPiano
 
@@ -233,7 +233,7 @@ def evaluateAudio(
             x: Tensor
             x_lens: List[int]
             batch_size = x.shape[0]
-            y_hat = litPiano.forward(x, x_lens)
+            y_hat = litPiano.forward(x.to(DEVICE), x_lens)
             wave = encodec.decode(y_hat.argmax(dim=-1))
             assert wave.shape[1] == 1
             wave_cpu = wave[:, 0, :].cpu().numpy()
