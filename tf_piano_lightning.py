@@ -186,6 +186,7 @@ def evaluateAudio(
     litPiano: LitPiano, dataModule: LitPianoDataModule, 
     root_dir: str, 
 ):
+    print('eval audio...', flush=True)
     audio_dir = path.join(root_dir, 'audio')
     encodec = getEncodec()
     subsets = ['train', 'val_monkey', 'val_oracle']
@@ -215,8 +216,10 @@ def evaluateAudio(
     for subset, loader, n_eval, dataset_dir in zip(
         subsets, loaders, n_evals, dataset_dirs, 
     ):
+        print(f'{subset = }')
         datapoint_i = 0
         for batch in loader:
+            print(datapoint_i, '/', n_eval, flush=True)
             x, _, x_lens, stems = batch
             x: Tensor
             x_lens: List[int]
