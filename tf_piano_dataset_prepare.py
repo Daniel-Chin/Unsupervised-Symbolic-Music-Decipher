@@ -70,7 +70,8 @@ def prepareOneDatapoint(
     do_fluidsynth_write_pcm: bool, 
 ):
     def printProfiling(*a, **kw):
-        print(*a, **kw, flush=True)
+        # print(*a, **kw, flush=True)
+        pass
     
     if midi_source is None:
         printProfiling('Generating MIDI')
