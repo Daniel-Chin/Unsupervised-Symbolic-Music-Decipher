@@ -12,6 +12,10 @@ class HParams:
     tf_piano_n_decoder_layers: int
     tf_piano_d_feedforward: int
 
+    tf_piano_train_set_size: int
+    tf_piano_val_monkey_set_size: int
+    tf_piano_val_oracle_set_size: int
+
     lr: float
     batch_size: int
     max_epochs: int

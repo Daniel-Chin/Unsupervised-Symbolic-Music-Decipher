@@ -17,7 +17,6 @@ from shared import *
 from hparams import HParams
 from tf_piano_model import TFPiano, KeyEventEncoder, TransformerPianoModel
 from tf_piano_dataset import TransformerPianoDataset, collate
-from my_encodec import getEncodec
 
 MONKEY_VAL = 'MONKEY_VAL'
 ORACLE_VAL = 'ORACLE_VAL'
@@ -119,20 +118,27 @@ class LitPianoDataModule(L.LightningDataModule):
         assert not self.did_setup
         self.did_setup = True
 
+        hParams = self.hP
+
         @lru_cache(maxsize=1)
         def monkeyDataset():
             return TransformerPianoDataset(
                 'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
+                hParams.tf_piano_train_set_size + hParams.tf_piano_val_monkey_set_size, 
             )
 
         @lru_cache(maxsize=1)
         def oracleDataset():
             return TransformerPianoDataset(
                 'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
+                hParams.tf_piano_val_oracle_set_size,
             )
         
         self.train_dataset, self.val_monkey_dataset = random_split(
-            monkeyDataset(), [.8, .2], 
+            monkeyDataset(), [
+                hParams.tf_piano_train_set_size, 
+                hParams.tf_piano_val_monkey_set_size, 
+            ], 
         )
         self.val_oracle_dataset = oracleDataset()
     
@@ -186,6 +192,9 @@ def evaluateAudio(
     litPiano: LitPiano, dataModule: LitPianoDataModule, 
     root_dir: str, 
 ):
+    # to speed up dataloader worker spawning
+    from my_encodec import getEncodec
+    
     print('eval audio...', flush=True)
     audio_dir = path.join(root_dir, 'audio')
     encodec = getEncodec()

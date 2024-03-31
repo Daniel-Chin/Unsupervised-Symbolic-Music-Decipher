@@ -13,8 +13,7 @@ from music import PIANO_RANGE
 class TransformerPianoDataset(Dataset):
     def __init__(
         self, name: str, dir_path: str, 
-        offset: int = 0, 
-        truncate_to_size: Optional[int] = None, 
+        size: int, offset: int = 0, 
         device: torch.device = CPU, 
     ):
         self.name = name
@@ -22,9 +21,8 @@ class TransformerPianoDataset(Dataset):
             with open(path.join(dir_path, 'index.json'), encoding='utf-8') as f:
                 stems: List[str] = json.load(f)
             stems = stems[offset:]
-            if truncate_to_size is not None:
-                assert truncate_to_size <= len(stems)
-                stems = stems[:truncate_to_size]
+            assert size <= len(stems)
+            stems = stems[:size]
             return stems
         self.stems = getStems()
         self.X: List[Tensor] = []
@@ -109,7 +107,7 @@ class CollateCandidates:
         )
 
     @staticmethod
-    def profile():
+    def profile(n=64):
         candidates: List[Tuple[str, Callable[
             [List[Tuple[Tensor, Tensor, str]]], Tuple[Tensor, Tensor, List[int], List[str]]
         ]]] = [
@@ -117,8 +115,8 @@ class CollateCandidates:
             ('inplace', CollateCandidates.usingInplace), 
             ('stack',   CollateCandidates.usingStack), 
         ]
-        dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
-        data = [dataset[i] for i in range(64)]
+        dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, n)
+        data = [dataset[i] for i in range(n)]
         while True:
             for name, f in candidates:
                 print(name)
@@ -136,7 +134,7 @@ def collate(data: List[Tuple[Tensor, Tensor, str]]) -> Tuple[Tensor, Tensor, Lis
     return x, y.to(torch.int64), x_lens, stems
 
 if __name__ == '__main__':
-    dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
+    dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 64)
     import IPython; IPython.embed()
 
     # CollateCandidates.profile()

@@ -13,8 +13,13 @@ def main():
         tf_piano_n_encoder_layers = 3,
         tf_piano_n_decoder_layers = 3,
         tf_piano_d_feedforward = 1024,
+
+        tf_piano_train_set_size = 256, 
+        tf_piano_val_monkey_set_size = 64, 
+        tf_piano_val_oracle_set_size = 64, 
+
         lr = 1e-3,
-        batch_size = 16,
+        batch_size = 64,
         max_epochs = 10,
         require_repo_working_tree_clean = True, 
     )
