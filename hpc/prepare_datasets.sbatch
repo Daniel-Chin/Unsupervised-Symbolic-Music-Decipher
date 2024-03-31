@@ -4,8 +4,9 @@
 #SBATCH --mail-type=ALL
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=1:00:00
+#SBATCH --time=4:00:00
 #SBATCH --mem=4GB
+#SBATCH --gres=gpu:1
 #SBATCH --job-name=prep_data
 #SBATCH --output=prep_data.out
 #SBATCH --error=prep_data.err
