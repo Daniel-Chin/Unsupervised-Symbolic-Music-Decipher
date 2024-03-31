@@ -2,13 +2,15 @@ import json
 from subprocess import Popen, DEVNULL
 import random
 import argparse
+from io import BytesIO
 
-import librosa
 import torch
 from torch import Tensor
 import pretty_midi
 import audiocraft
 from audiocraft.models.encodec import HFEncodecCompressionModel
+import audioread
+from audioread.rawread import RawAudioFile
 import tqdm
 import scipy.io.wavfile as wavfile
 
@@ -90,7 +92,17 @@ def prepareOneDatapoint(
         p.wait()
     
     print('Loading audio')
-    wave, _ = librosa.load(wav_path, sr=ENCODEC_SR, mono=True)
+    buf = BytesIO()
+    with audioread.audio_open(wav_path) as f:
+        f: RawAudioFile
+        assert f.samplerate == ENCODEC_SR
+        assert f.channels == 1
+        for chunk in f.read_data():
+            buf.write(chunk)
+    buf.seek(0)
+    dtype = np.dtype(np.int16).newbyteorder('<')
+    wave_int = np.frombuffer(buf.read(), dtype=dtype)
+    wave = wave_int.astype(np.float32, copy=False) / 2 ** (dtype.itemsize * 8 - 1)
     n_samples = int(np.ceil(SONG_LEN * ENCODEC_SR))
     wave_trunc = torch.Tensor(wave)[:n_samples]
     wave_pad = torch.nn.functional.pad(
