@@ -27,7 +27,7 @@ class TransformerPianoDataset(Dataset):
                 stems = stems[:truncate_to_size]
             return stems
         self.stems = getStems()
-        self.X = []
+        self.X: List[Tensor] = []
         self.Y = torch.zeros((
             len(self.stems), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
         ), dtype=torch.int16, device=device)
@@ -46,6 +46,12 @@ class TransformerPianoDataset(Dataset):
         max_notes = round(n_notes_array.max().item())
         print('The densest piece has', max_notes, 'notes.')
         print('mean + 2std:', n_notes_array.mean().item() + 2 * n_notes_array.std().item())
+        ram = 0
+        def ramOf(t: Tensor):
+            return t.nelement() * t.element_size()
+        ram += len(self.X) * ramOf(self.X[0])
+        ram += ramOf(self.Y)
+        print('dataset RAM:', ram / 2**30, 'GB')
 
     def __len__(self):
         return len(self.stems)
