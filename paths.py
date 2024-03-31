@@ -20,7 +20,8 @@ TRANSFORMER_PIANO_ORACLE_DATASET_DIR = path.join(DATA_DIR, 'transformer_piano_or
 os.makedirs(TRANSFORMER_PIANO_ORACLE_DATASET_DIR, exist_ok=True)
 
 ASSET_DIR = path.join(PROJ_DIR, 'assets')
-SOUNDFONT_FILE = path.join(ASSET_DIR, 'MuseScore_Basic.sf3')
+
+SOUNDFONT_FILE = path.join(ASSET_DIR, 'MuseScore_Basic.sf2')
 
 def getEnv(name: str):
     v = os.getenv(name)

@@ -1,6 +1,6 @@
-- "MuseScore_Basic.sf3" is the free default soundfont that comes with MuseScore 4.  
+- "MuseScore_Basic.sf2" is the free default soundfont that comes with MuseScore 4.  
   - [MuseScore](https://github.com/musescore/MuseScore) is a free software under GNU license.
-  - Related sources of this sf3 file:
+  - Related sources of this sf2 file:
     - https://musescore.org/en/handbook/3/soundfonts-and-sfz-files
     - https://github.com/musescore/MuseScore/blob/master/share/sound/MS%20Basic.sf3
     - https://musical-artifacts.com/artifacts/3001
