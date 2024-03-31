@@ -1,5 +1,4 @@
 import json
-from subprocess import Popen
 import random
 import argparse
 from io import BytesIO
@@ -16,6 +15,7 @@ import scipy.io.wavfile as wavfile
 
 from shared import *
 from music import PIANO_RANGE
+from midi_synth_wav import midiSynthWav
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
 (DURATION_MU, DURATION_SIGMA) = (-1.754, 1.077)
@@ -68,7 +68,7 @@ def legalizeMidi(src_path: str):
 def prepareOneDatapoint(
     encodec: audiocraft.models.encodec.CompressionModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
-    fluid_synth_out: str,
+    synth_out: str, do_fluidsynth_write_pcm: bool, 
 ):
     if midi_source is None:
         print('Generating MIDI')
@@ -86,12 +86,8 @@ def prepareOneDatapoint(
 
     print('Synthesizing audio')
     wav_path = path.join(dest_dir, 'temp.wav')
-    with open(fluid_synth_out, 'w') as pOut:
-        with Popen([
-            'fluidsynth', '-ni', SOUNDFONT_FILE, midi_path,
-            '-F', wav_path, '-r', str(ENCODEC_SR), 
-        ], stdout=pOut) as p:
-            p.wait()
+    with open(synth_out, 'w') as pOut:
+        midiSynthWav(midi_path, wav_path, pOut, do_fluidsynth_write_pcm)
     
     print('Loading audio')
     buf = BytesIO()
@@ -149,7 +145,7 @@ def prepareOneDatapoint(
 def main(
     monkey_dataset_size: int, 
     oracle_dataset_size: int,
-    fluid_synth_out: str,
+    synth_out: str, do_fluidsynth_write_pcm: bool, 
 ):
     encodec = audiocraft.models.encodec.CompressionModel.get_pretrained(
         'facebook/encodec_32khz', DEVICE, 
@@ -163,7 +159,8 @@ def main(
             for datapoint_i, midi_source in enumerate(tqdm.tqdm(midi_sources, desc)):
                 print()
                 prepareOneDatapoint(
-                    encodec, datapoint_i, dest_dir, midi_source, fluid_synth_out, 
+                    encodec, datapoint_i, dest_dir, midi_source, synth_out, 
+                    do_fluidsynth_write_pcm, 
                 )
                 data_ids.append(str(datapoint_i))
         finally:
@@ -197,7 +194,14 @@ if __name__ == '__main__':
         '--oracle_dataset_size', type=int, required=True, 
     )
     parser.add_argument(
-        '--fluidsynth_out', type=str, required=True,
+        '--synth_out', type=str, required=True,
+    )
+    parser.add_argument(
+        '--do_fluidsynth_write_pcm', action='store_true',
     )
     args = parser.parse_args()
-    main(args.monkey_dataset_size, args.oracle_dataset_size, args.fluidsynth_out)
+    main(
+        args.monkey_dataset_size, 
+        args.oracle_dataset_size, 
+        args.synth_out, args.do_fluidsynth_write_pcm, 
+    )
