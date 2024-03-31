@@ -67,7 +67,7 @@ def legalizeMidi(src_path: str):
 def prepareOneDatapoint(
     encodec: HFEncodecCompressionModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
-    synth_out: str, do_fluidsynth_write_pcm: bool, 
+    do_fluidsynth_write_pcm: bool, 
 ):
     def printProfiling(*a, **kw):
         print(*a, **kw, flush=True)
@@ -88,8 +88,7 @@ def prepareOneDatapoint(
 
     printProfiling('Synthesizing audio')
     wav_path = path.join(dest_dir, 'temp.wav')
-    with open(synth_out, 'w') as pOut:
-        midiSynthWav(midi_path, wav_path, pOut, do_fluidsynth_write_pcm)
+    midiSynthWav(midi_path, wav_path, do_fluidsynth_write_pcm)
     
     printProfiling('Loading audio')
     buf = BytesIO()
@@ -147,7 +146,7 @@ def prepareOneDatapoint(
 def main(
     monkey_dataset_size: int, 
     oracle_dataset_size: int,
-    synth_out: str, do_fluidsynth_write_pcm: bool, 
+    do_fluidsynth_write_pcm: bool, 
 ):
     encodec = getEncodec().to(DEVICE)
 
@@ -157,7 +156,7 @@ def main(
             for datapoint_i, midi_source in enumerate(tqdm.tqdm(midi_sources, desc)):
                 print()
                 prepareOneDatapoint(
-                    encodec, datapoint_i, dest_dir, midi_source, synth_out, 
+                    encodec, datapoint_i, dest_dir, midi_source, 
                     do_fluidsynth_write_pcm, 
                 )
                 data_ids.append(str(datapoint_i))
@@ -192,14 +191,11 @@ if __name__ == '__main__':
         '--oracle_dataset_size', type=int, required=True, 
     )
     parser.add_argument(
-        '--synth_out', type=str, required=True,
-    )
-    parser.add_argument(
         '--do_fluidsynth_write_pcm', action='store_true',
     )
     args = parser.parse_args()
     main(
         args.monkey_dataset_size, 
         args.oracle_dataset_size, 
-        args.synth_out, args.do_fluidsynth_write_pcm, 
+        args.do_fluidsynth_write_pcm, 
     )
