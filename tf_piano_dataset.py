@@ -20,7 +20,7 @@ class TransformerPianoDataset(Dataset):
         self.name = name
         def getStems():
             with open(path.join(dir_path, 'index.json'), encoding='utf-8') as f:
-                stems = json.load(f)
+                stems: List[str] = json.load(f)
             stems = stems[offset:]
             if truncate_to_size is not None:
                 assert truncate_to_size <= len(stems)
@@ -59,12 +59,13 @@ class TransformerPianoDataset(Dataset):
     def __getitem__(self, index: int):
         # x: (n_notes, 1 + 1 + 88)
         # y: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
-        return self.X[index], self.Y[index, :, :]
+        # stem: str
+        return self.X[index], self.Y[index, :, :], self.stems[index]
 
 class CollateCandidates:
     @staticmethod
-    def usingZip(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
-        X, Y = zip(*data)
+    def usingZip(data: List[Tuple[Tensor, Tensor, str]]) -> Tuple[Tensor, Tensor, List[int], List[str]]:
+        X, Y, stems = zip(*data)
         X: Tuple[Tensor]
         Y: Tuple[Tensor]
         X_lens = [x.shape[0] for x in X]
@@ -72,41 +73,45 @@ class CollateCandidates:
             torch.nn.utils.rnn.pad_sequence([*X], batch_first=True), 
             torch.stack(Y, dim=0),
             X_lens,
+            stems, 
         )
 
     @staticmethod
-    def usingInplace(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+    def usingInplace(data: List[Tuple[Tensor, Tensor, str]]) -> Tuple[Tensor, Tensor, List[int], List[str]]:
         device = data[0][0].device
         batch_size = len(data)
-        X_lens = [x.shape[0] for x, _ in data]
+        X_lens = [x.shape[0] for x, _, _ in data]
         X_width = max(X_lens)
         X = torch.zeros((batch_size, X_width, data[0][0].shape[1]), device=device)
         Y = torch.zeros((
             batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
         ), dtype=torch.int16, device=device)
-        for i, (x, y) in enumerate(data):
+        for i, (x, y, stem) in enumerate(data):
             X[i, :x.shape[0], :] = x
             Y[i, :, :] = y
-        return X, Y, X_lens
+        return X, Y, X_lens, [stem for _, _, stem in data]
 
     @staticmethod
-    def usingStack(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
+    def usingStack(data: List[Tuple[Tensor, Tensor, str]]) -> Tuple[Tensor, Tensor, List[int], List[str]]:
         X: List[Tensor] = []
         Y: List[Tensor] = []
-        for x, y in data:
+        stems: List[str] = []
+        for x, y, stem in data:
             X.append(x)
             Y.append(y)
+            stems.append(stem)
         X_lens = [x.shape[0] for x in X]
         return (
             torch.nn.utils.rnn.pad_sequence(X, batch_first=True), 
             torch.stack(Y, dim=0), 
             X_lens,
+            stems,
         )
 
     @staticmethod
     def profile():
         candidates: List[Tuple[str, Callable[
-            [List[Tuple[Tensor, Tensor]]], Tuple[Tensor, Tensor, List[int]]
+            [List[Tuple[Tensor, Tensor, str]]], Tuple[Tensor, Tensor, List[int], List[str]]
         ]]] = [
             ('zip',     CollateCandidates.usingZip), 
             ('inplace', CollateCandidates.usingInplace), 
@@ -126,9 +131,9 @@ class CollateCandidates:
                 print(np.mean(dts) * 1e3, 'ms')
             sleep(0.1)
 
-def collate(data: List[Tuple[Tensor, Tensor]]) -> Tuple[Tensor, Tensor, List[int]]:
-    x, y, x_lens = CollateCandidates.usingZip(data)
-    return x, y.to(torch.int64), x_lens
+def collate(data: List[Tuple[Tensor, Tensor, str]]) -> Tuple[Tensor, Tensor, List[int], List[str]]:
+    x, y, x_lens, stems = CollateCandidates.usingZip(data)
+    return x, y.to(torch.int64), x_lens, stems
 
 if __name__ == '__main__':
     dataset = TransformerPianoDataset('0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR)
