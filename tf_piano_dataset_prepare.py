@@ -184,6 +184,7 @@ def main(
     oneSet(TRANSFORMER_PIANO_ORACLE_DATASET_DIR, midi_sources, 'oracle')
 
 if __name__ == '__main__':
+    print(f'{GPU_NAME = }')
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--monkey_dataset_size', type=int, required=True, 
