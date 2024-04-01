@@ -20,7 +20,7 @@ def main():
         tf_piano_val_oracle_set_size = 128, 
 
         lr = 1e-3,
-        batch_size = 16,
+        batch_size = 8,
         max_epochs = 10,
         require_repo_working_tree_clean = True, 
     )
