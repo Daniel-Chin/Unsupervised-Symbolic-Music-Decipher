@@ -88,7 +88,7 @@ def prepareOneDatapoint(
     midi.write(midi_path)
 
     printProfiling('Synthesizing audio')
-    wav_path = path.join(dest_dir, 'temp.wav')
+    wav_path = path.join(dest_dir, f'{idx}_synthed.wav')
     midiSynthWav(midi_path, wav_path, do_fluidsynth_write_pcm)
     
     printProfiling('Loading audio')
@@ -96,28 +96,29 @@ def prepareOneDatapoint(
     with audioread.audio_open(wav_path) as f:
         f: RawAudioFile
         assert f.samplerate == ENCODEC_SR
-        assert f.channels == 1
+        n_channels = f.channels
         for chunk in f.read_data():
             buf.write(chunk)
     buf.seek(0)
     dtype = np.dtype(np.int16).newbyteorder('<')
-    wave_int = np.frombuffer(buf.read(), dtype=dtype)
-    wave = wave_int.astype(np.float32, copy=False) / 2 ** (dtype.itemsize * 8 - 1)
+    wave_int = torch.tensor(np.frombuffer(buf.read(), dtype=dtype)).to(DEVICE)
+    format_factor: int = 2 ** (dtype.itemsize * 8 - 1)  # needs type hint because type checker doesn't know dtype.itemsize > 0
+    wave_float = wave_int.float() / format_factor
+    wave_mono = wave_float.view((-1, n_channels)).mean(dim=1)
     n_samples = int(np.ceil(SONG_LEN * ENCODEC_SR))
-    wave_trunc = torch.Tensor(wave)[:n_samples]
+    wave_trunc = wave_mono[:n_samples]
     wave_pad = torch.nn.functional.pad(
         wave_trunc, (0, n_samples - len(wave_trunc)),
     )
-    wave_gpu = wave_pad.to(DEVICE)
+    wave = wave_pad
 
     with torch.no_grad():
         printProfiling('Encodec.encode')
-        codes, _ = encodec.encode(wave_gpu.unsqueeze(0).unsqueeze(0))
+        codes, _ = encodec.encode(wave.unsqueeze(0).unsqueeze(0))
         printProfiling('Encodec.decode')
         recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
     
     printProfiling('Writing recon')
-    # write `recon` wave to file
     recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
     wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
     
