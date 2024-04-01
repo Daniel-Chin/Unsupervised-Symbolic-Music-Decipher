@@ -150,6 +150,7 @@ def main(
     oracle_dataset_size: int,
     do_fluidsynth_write_pcm: bool, 
 ):
+    initMainProcess()
     encodec = getEncodec().to(DEVICE)
 
     def oneSet(dest_dir: str, midi_sources: List, desc: str):

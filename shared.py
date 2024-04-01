@@ -1,6 +1,7 @@
 import numpy as np
+import socket
 
-from init import init
+import init as _
 from paths import *
 from torchwork_mini import *
 from domestic_typing import *
@@ -15,3 +16,7 @@ N_TOKENS_PER_DATAPOINT = SEC_PER_DATAPOINT * ENCODEC_FPS
 LA_DATASET_DIRS = [*'0123456789abcdef']
 
 TWO_PI = np.pi * 2
+
+def initMainProcess():
+    print('hostname:', socket.gethostname())
+    print(f'{GPU_NAME = }')

@@ -5,7 +5,7 @@ from hparams import HParams
 from tf_piano_lightning import train
 
 def main():
-    init()
+    initMainProcess()
     hParams = HParams(
         d_model = 256,
         key_event_encoder_n_layers = 1,
@@ -20,7 +20,7 @@ def main():
         tf_piano_val_oracle_set_size = 64, 
 
         lr = 1e-3,
-        batch_size = 16,
+        batch_size = 32,
         max_epochs = 10,
         require_repo_working_tree_clean = True, 
     )
