@@ -8,8 +8,8 @@ def main():
     initMainProcess()
     hParams = HParams(
         d_model = 512,
-        key_event_encoder_n_layers = 2,
-        key_event_encoder_d_hidden = 1024,
+        key_event_encoder_n_layers = 1,
+        key_event_encoder_d_hidden = None,
         tf_piano_n_head = 8,
         tf_piano_n_encoder_layers = 3,
         tf_piano_n_decoder_layers = 3,
