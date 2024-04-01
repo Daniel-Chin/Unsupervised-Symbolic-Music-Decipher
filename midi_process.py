@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.stats import norm
 
 from shared import *
+from music import PIANO_RANGE
 
 PIANOABLE_INSTRUMENTS = [
     *range(0, 8),     # piano
@@ -35,11 +36,15 @@ PIANOABLE_INSTRUMENTS = [
 ]
 
 def isPianoable(instrument: pretty_midi.Instrument):
-    return (
-        instrument.program in PIANOABLE_INSTRUMENTS 
-    and 
-        not instrument.is_drum
-    )
+    if instrument.program not in PIANOABLE_INSTRUMENTS:
+        return False
+    if instrument.is_drum:
+        return False
+    for note in instrument.notes:
+        note: pretty_midi.Note
+        if note.pitch < PIANO_RANGE[0] or note.pitch > PIANO_RANGE[1]:
+            return False
+    return True
 
 def everythingPiano(midi: pretty_midi.PrettyMIDI):
     # turn every instrument into piano. 
