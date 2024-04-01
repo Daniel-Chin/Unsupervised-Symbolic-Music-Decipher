@@ -7,7 +7,8 @@ from torch import Tensor
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import lightning as L
-from lightning.pytorch.callbacks import DeviceStatsMonitor
+from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
+from lightning.pytorch.utilities import grad_norm
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
@@ -105,6 +106,10 @@ class LitPiano(L.LightningModule):
         hParams = self.hP
         return torch.optim.Adam(self.tfPiano.parameters(), lr=hParams.lr)
 
+    def on_before_optimizer_step(self, _: torch.optim.Optimizer):
+        norms = grad_norm(self, norm_type=2)
+        self.log_dict(norms)
+
 class LitPianoDataModule(L.LightningDataModule):
     def __init__(self, hParams: HParams) -> None:
         super().__init__()
@@ -181,7 +186,9 @@ def train(hParams: HParams, root_dir: str):
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
         default_root_dir=root_dir,
         logger=logger, profiler=profiler, 
-        callbacks=[DeviceStatsMonitor()], 
+        callbacks=[
+            DeviceStatsMonitor(), ModelSummary(max_depth=3), 
+        ], 
         log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.batch_size), 
     )
     dataModule = LitPianoDataModule(hParams)
