@@ -19,10 +19,12 @@ def tar(exp_dir_name: str):
 
 def doAll():
     list_dir = os.listdir()
+    print(f'{list_dir = }')
     all_gz = set()
     all_dir = set()
     IGNORE = ['.gitignore', '.', '..']
     for node in list_dir:
+        print(node)
         if node in IGNORE:
             continue
         base, ext = path.splitext(node)
@@ -35,11 +37,12 @@ def doAll():
             all_gz.add(path.normpath(base_))
         else:
             print('Warning: unknown file:', node)
-    # print(all_dir)
-    # print(all_gz)
+    print(all_dir)
+    print(all_gz)
     todo = [x for x in all_dir if x not in all_gz]
     print(f'{todo = }')
     for dir in todo:
         tar(dir)
 
-main()
+if __name__ == '__main__':
+    main()
