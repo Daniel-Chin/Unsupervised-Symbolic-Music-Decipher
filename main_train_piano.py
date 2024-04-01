@@ -15,13 +15,13 @@ def main():
         tf_piano_n_decoder_layers = 3,
         tf_piano_d_feedforward = 1024,
 
-        tf_piano_train_set_size = 256, 
-        tf_piano_val_monkey_set_size = 64, 
-        tf_piano_val_oracle_set_size = 64, 
+        tf_piano_train_set_size = 1024, 
+        tf_piano_val_monkey_set_size = 128, 
+        tf_piano_val_oracle_set_size = 128, 
 
         lr = 1e-3,
         batch_size = 16,
-        max_epochs = 100,
+        max_epochs = 30,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_piano_first'
