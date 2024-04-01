@@ -24,7 +24,7 @@ def main():
         max_epochs = 30,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_piano_first'
+    exp_name = currentTimeDirName() + '_piano_larger_set'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     train(hParams, path.join(EXPERIMENTS_DIR, exp_name))
