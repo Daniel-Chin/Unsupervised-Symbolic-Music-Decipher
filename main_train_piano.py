@@ -20,8 +20,8 @@ def main():
         tf_piano_val_oracle_set_size = 64, 
 
         lr = 1e-3,
-        batch_size = 32,
-        max_epochs = 10,
+        batch_size = 16,
+        max_epochs = 100,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_piano_first'
