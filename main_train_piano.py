@@ -19,12 +19,12 @@ def main():
         tf_piano_val_monkey_set_size = 128, 
         tf_piano_val_oracle_set_size = 128, 
 
-        lr = 1e-3,
+        lr = 1e-4,
         batch_size = 8,
         max_epochs = 10,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_piano_wide'
+    exp_name = currentTimeDirName() + '_piano_lr-4'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     train(hParams, path.join(EXPERIMENTS_DIR, exp_name))
