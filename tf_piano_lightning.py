@@ -247,7 +247,7 @@ def evaluateAudio(
                         filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
                     )
                     src = path.join(dataset_dir, stems[i])
-                    shutil.copyfile(src + '.mid', filename(subset, datapoint_i, 'reference', 'mid'))
+                    shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
                     shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
                     datapoint_i += 1
                     if datapoint_i == n_eval:
