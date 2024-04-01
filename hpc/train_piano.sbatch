@@ -9,7 +9,7 @@
 #SBATCH --output=train_piano.out
 #SBATCH --error=train_piano.err
 #SBATCH --partition=aquila,gpu
-#SBATCH --constraint=3080Ti
+#SBATCH --constraint=3080
 
 cd ..
 module purge
