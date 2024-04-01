@@ -130,6 +130,7 @@ class LitPianoDataModule(L.LightningDataModule):
         def monkeyDataset():
             return TransformerPianoDataset(
                 'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
+                hParams, 
                 hParams.tf_piano_train_set_size + hParams.tf_piano_val_monkey_set_size, 
             )
 
@@ -137,6 +138,7 @@ class LitPianoDataModule(L.LightningDataModule):
         def oracleDataset():
             return TransformerPianoDataset(
                 'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
+                hParams, 
                 hParams.tf_piano_val_oracle_set_size,
             )
         

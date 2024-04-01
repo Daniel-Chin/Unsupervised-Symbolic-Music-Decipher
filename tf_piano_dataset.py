@@ -8,12 +8,13 @@ from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 
 from shared import *
+from hparams import HParams
 from music import PIANO_RANGE
 
 class TransformerPianoDataset(Dataset):
     def __init__(
         self, name: str, dir_path: str, 
-        size: int, offset: int = 0, 
+        hParams: HParams, size: int, offset: int = 0, 
         device: torch.device = CPU, 
     ):
         self.name = name
