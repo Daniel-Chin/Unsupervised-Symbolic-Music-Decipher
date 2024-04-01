@@ -187,7 +187,7 @@ def train(hParams: HParams, root_dir: str):
         default_root_dir=root_dir,
         logger=logger, profiler=profiler, 
         callbacks=[
-            DeviceStatsMonitor(), ModelSummary(max_depth=3), 
+            DeviceStatsMonitor(), ModelSummary(max_depth=1), 
         ], 
         log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.batch_size), 
     )
