@@ -176,6 +176,7 @@ def train(hParams: HParams, root_dir: str):
     litPiano = LitPiano(hParams)
     profiler = SimpleProfiler(filename='profile.txt')
     logger = TensorBoardLogger(root_dir, log_name)
+    torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
         default_root_dir=root_dir,
@@ -185,6 +186,8 @@ def train(hParams: HParams, root_dir: str):
     )
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(litPiano, dataModule)
+    torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
+    torch.cuda.memory._record_memory_history(enabled=None) # type: ignore
 
     litPiano.eval()
     with torch.no_grad():
