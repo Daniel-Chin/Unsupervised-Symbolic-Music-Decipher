@@ -4,6 +4,7 @@ from itertools import count
 import torch
 from torch import Tensor
 from torch.nn.modules.transformer import Transformer
+from matplotlib import pyplot as plt
 
 from shared import *
 
@@ -80,7 +81,9 @@ class TFPiano(torch.nn.Module):
     ):
         device = x.device
         batch_size, _, _ = x.shape
+        # print('x', x.shape)
         key_event_embeddings = self.keyEventEncoder.forward(x)
+        # print('key_event_embeddings', key_event_embeddings.shape)
         transformer_out = self.transformerPianoModel.forward(
             key_event_embeddings, 
             positionalEncoding(
@@ -92,3 +95,18 @@ class TFPiano(torch.nn.Module):
             batch_size, ENCODEC_N_BOOKS, 
             N_TOKENS_PER_DATAPOINT, ENCODEC_N_WORDS_PER_BOOK,
         )
+
+def inspectPositionalEncoding():
+    pe = positionalEncoding(100, 32, CPU).numpy()
+    plt.imshow(pe, aspect='auto', interpolation='nearest')
+    plt.colorbar()
+    plt.xlabel('embedding dim')
+    plt.ylabel('time step')
+    plt.show()
+    for i in (0, 1, 16, 17, 30, 31):
+        plt.plot(pe[:, i])
+        plt.title(f'embedding dim {i}')
+        plt.show()
+
+if __name__ == '__main__':
+    inspectPositionalEncoding()
