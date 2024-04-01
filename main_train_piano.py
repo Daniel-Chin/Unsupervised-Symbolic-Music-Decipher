@@ -5,6 +5,7 @@ from hparams import HParams
 from tf_piano_lightning import train
 
 def main():
+    init()
     hParams = HParams(
         d_model = 256,
         key_event_encoder_n_layers = 1,

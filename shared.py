@@ -1,6 +1,6 @@
 import numpy as np
 
-import init as _
+from init import init
 from paths import *
 from torchwork_mini import *
 from domestic_typing import *
