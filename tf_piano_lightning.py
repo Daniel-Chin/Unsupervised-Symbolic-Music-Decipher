@@ -35,7 +35,7 @@ class LitPiano(L.LightningModule):
 
         self.did_setup: bool = False
     
-    def log(self, *a, **kw):
+    def log_(self, *a, **kw):
         hParams = self.hP
         return super().log(*a, batch_size=hParams.batch_size, **kw)
     
@@ -72,12 +72,12 @@ class LitPiano(L.LightningModule):
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
         )
-        self.log('train_loss', loss)
+        self.log_('train_loss', loss)
 
         for book_i, accuracy in enumerate(
             (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
         ):
-            self.log(f'train_accuracy_book_{book_i}', accuracy, on_step=False, on_epoch=True)
+            self.log_(f'train_accuracy_book_{book_i}', accuracy, on_step=False, on_epoch=True)
 
         return loss
     
@@ -86,7 +86,7 @@ class LitPiano(L.LightningModule):
         batch_idx: int, dataloader_idx: int, 
     ):
         def log(name: str, value: float | int | Tensor):
-            self.log(f'{VAL_CASES[dataloader_idx]}_{name}', value)
+            self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
 
         x, y, x_lens, _ = batch
         y_hat = self.tfPiano.forward(x, x_lens)
@@ -187,7 +187,7 @@ def train(hParams: HParams, root_dir: str):
         default_root_dir=root_dir,
         logger=logger, profiler=profiler, 
         callbacks=[
-            DeviceStatsMonitor(), ModelSummary(max_depth=1), 
+            DeviceStatsMonitor(), ModelSummary(max_depth=2), 
         ], 
         log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.batch_size), 
     )
