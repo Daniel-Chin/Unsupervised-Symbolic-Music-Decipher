@@ -108,7 +108,8 @@ class LitPiano(L.LightningModule):
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
         norms = grad_norm(self, norm_type=2)
-        self.log_dict(norms)
+        key = 'grad_2.0_norm_total'
+        self.log_(key, norms[key])
 
 class LitPianoDataModule(L.LightningDataModule):
     def __init__(self, hParams: HParams) -> None:
