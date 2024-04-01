@@ -210,7 +210,7 @@ def evaluateAudio(
     ]
     dataset_dirs = [
         TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
+        TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
         TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
     ]
     n_evals = []
