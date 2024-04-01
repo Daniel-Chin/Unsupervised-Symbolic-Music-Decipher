@@ -20,3 +20,4 @@ TWO_PI = np.pi * 2
 def initMainProcess():
     print('hostname:', socket.gethostname())
     print(f'{GPU_NAME = }')
+    print(f'{DEVICE.index = }')
