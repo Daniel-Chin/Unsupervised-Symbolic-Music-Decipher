@@ -28,6 +28,7 @@ def main():
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     train(hParams, path.join(EXPERIMENTS_DIR, exp_name))
+    print('OK')
 
 if __name__ == '__main__':
     main()
