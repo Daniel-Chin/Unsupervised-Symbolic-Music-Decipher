@@ -7,18 +7,22 @@ def main():
         template = f.read()
     
     all_dirs = set('0123456789abcdef')
+    n_dirs_per_process = 1
     for i in count():
-        a = all_dirs.pop()
-        try:
-            b = all_dirs.pop()
-        except KeyError:
+        dirs = []
+        for _ in range(n_dirs_per_process):
+            try:
+                dirs.append(all_dirs.pop())
+            except KeyError:
+                break
+        if not dirs:
             break
         auto_sb_filename = f'./auto_midi_process_{i}.sbatch'
         with open(auto_sb_filename, 'w', encoding='utf-8') as f:
             f.write(template.replace(
                 '{JOB_NAME}', str(i), 
             ).replace(
-                '{SELECT_DIRS}', a + ' ' + b, 
+                '{SELECT_DIRS}', ' '.join(dirs),
             ))
     
         with Popen(['sbatch', auto_sb_filename]) as p:
