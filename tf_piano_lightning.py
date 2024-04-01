@@ -257,3 +257,6 @@ def evaluateAudio(
                 break
             finally:
                 print(datapoint_i, '/', n_eval, flush=True)
+
+if __name__ == '__main__':
+    import IPython; IPython.embed()
