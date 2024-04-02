@@ -45,7 +45,7 @@ class TransformerPianoDataset(Dataset):
             else:
                 onset = x[:, 0]
             real_x[:, kEF.onset   .start : kEF.onset   .end] = onset
-            real_x[:, kEF.velocity.start : kEF.velocity.end] = x[:, 1]
+            real_x[:, kEF.velocity.start : kEF.velocity.end] = x[:, 1:2]
             ladder = torch.arange(n_notes)
             real_x[ladder, kEF.key.start + x[ladder, 2].to(torch.int) - PIANO_RANGE[0]] = 1.0
             self.X.append(real_x.to(device))
