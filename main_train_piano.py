@@ -29,6 +29,7 @@ def main():
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_piano_pe_key_event'
+    print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
