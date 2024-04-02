@@ -56,7 +56,7 @@ def evaluateAudio(
                 x: Tensor
                 mask: Tensor
                 batch_size = x.shape[0]
-                y_hat = litPiano.forward(x.to(DEVICE), mask)
+                y_hat = litPiano.forward(x.to(DEVICE), mask.to(DEVICE))
                 wave = encodec.decode(y_hat.argmax(dim=-1))
                 assert wave.shape[1] == 1
                 wave_cpu = wave[:, 0, :].cpu().numpy()
