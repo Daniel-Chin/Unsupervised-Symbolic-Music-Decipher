@@ -18,4 +18,4 @@ source ./activate_env_nyush
 module load ffmpeg
 module load fluidsynth
 echo python starting...
-python tf_piano_dataset_prepare.py --monkey_dataset_size 2048 --oracle_dataset_size 128 --do_fluidsynth_write_pcm
+python tf_piano_dataset_prepare.py --monkey_dataset_size 10000 --oracle_dataset_size 128 --do_fluidsynth_write_pcm
