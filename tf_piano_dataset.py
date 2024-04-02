@@ -8,7 +8,6 @@ from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 
 from shared import *
-from hparams import HParams
 from key_event_format import KeyEventFormat
 from music import PIANO_RANGE
 
