@@ -40,7 +40,8 @@ def doAll():
     # print(all_dir)
     # print(all_gz)
     todo = [x for x in all_dir if x not in all_gz]
-    print(f'{todo = }')
+    print('todo:', *todo, sep='\n')
+    print()
     for dir in todo:
         tar(dir)
 
