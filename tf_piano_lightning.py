@@ -1,6 +1,5 @@
 import os
 from functools import lru_cache
-import shutil
 
 import torch
 from torch import Tensor
@@ -12,12 +11,11 @@ from lightning.pytorch.utilities import grad_norm
 from lightning.pytorch.trainer.states import TrainerFn
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
-import scipy.io.wavfile as wavfile
 
 from shared import *
 from hparams import HParams
 from tf_piano_model import TFPiano, KeyEventEncoder, TransformerPianoModel
-from tf_piano_dataset import TransformerPianoDataset, collate
+from tf_piano_dataset import TransformerPianoDataset, collate, CollateFnOut
 
 MONKEY_VAL = 'MONKEY_VAL'
 ORACLE_VAL = 'ORACLE_VAL'
@@ -29,8 +27,8 @@ class LitPiano(L.LightningModule):
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         self.example_input_array = (
-            torch.zeros((hParams.batch_size, 233, 1 + 1 + 88)), 
-            [200] * hParams.batch_size, 
+            torch.zeros((hParams.batch_size, 233, hParams.keyEventFormat().length)), 
+            torch.full((hParams.batch_size, 233), False), 
         )
 
         self.did_setup: bool = False
@@ -48,6 +46,7 @@ class LitPiano(L.LightningModule):
 
         hParams = self.hP
         keyEventEncoder = KeyEventEncoder(
+            hParams.keyEventFormat().length,
             hParams.d_model, 
             hParams.key_event_encoder_n_layers,
             hParams.key_event_encoder_d_hidden, 
@@ -60,14 +59,14 @@ class LitPiano(L.LightningModule):
         )
         self.tfPiano = TFPiano(keyEventEncoder, transformerPianoModel)
     
-    def forward(self, x: Tensor, x_lens: List[int]) -> Tensor:
-        return self.tfPiano.forward(x, x_lens)
+    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
+        return self.tfPiano.forward(x, mask)
     
     def training_step(
-        self, batch: Tuple[Tensor, Tensor, List[int], List[str]], batch_idx: int, 
+        self, batch: CollateFnOut, batch_idx: int, 
     ):
-        x, y, x_lens, _ = batch
-        y_hat = self.tfPiano.forward(x, x_lens)
+        x, y, mask, _ = batch
+        y_hat = self.tfPiano.forward(x, mask)
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
@@ -82,14 +81,14 @@ class LitPiano(L.LightningModule):
         return loss
     
     def validation_step(
-        self, batch: Tuple[Tensor, Tensor, List[int], List[str]], 
+        self, batch: CollateFnOut, 
         batch_idx: int, dataloader_idx: int, 
     ):
         def log(name: str, value: float | int | Tensor):
             self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
 
-        x, y, x_lens, _ = batch
-        y_hat = self.tfPiano.forward(x, x_lens)
+        x, y, mask, _ = batch
+        y_hat = self.tfPiano.forward(x, mask)
 
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
@@ -130,7 +129,7 @@ class LitPianoDataModule(L.LightningDataModule):
         def monkeyDataset():
             return TransformerPianoDataset(
                 'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-                hParams, 
+                hParams.keyEventFormat(), 
                 hParams.tf_piano_train_set_size + hParams.tf_piano_val_monkey_set_size, 
             )
 
@@ -138,7 +137,7 @@ class LitPianoDataModule(L.LightningDataModule):
         def oracleDataset():
             return TransformerPianoDataset(
                 'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
-                hParams, 
+                hParams.keyEventFormat(), 
                 hParams.tf_piano_val_oracle_set_size,
             )
         
@@ -201,77 +200,7 @@ def train(hParams: HParams, root_dir: str):
     # torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
     # torch.cuda.memory._record_memory_history(enabled=None) # type: ignore
 
-    litPiano.eval()
-    with torch.no_grad():
-        evaluateAudio(litPiano.to(DEVICE), dataModule, root_dir)
-
-    return litPiano
-
-def evaluateAudio(
-    litPiano: LitPiano, dataModule: LitPianoDataModule, 
-    root_dir: str, 
-):
-    # to speed up dataloader worker spawning
-    from my_encodec import getEncodec
-    
-    print('eval audio...', flush=True)
-    audio_dir = path.join(root_dir, 'audio')
-    os.makedirs(audio_dir)
-    encodec = getEncodec().to(DEVICE)
-    subsets = ['train', 'val_monkey', 'val_oracle']
-    loaders = [
-        dataModule.train_dataloader(shuffle=False), 
-        *dataModule.val_dataloader(),
-    ]
-    dataset_dirs = [
-        TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
-    ]
-    n_evals = []
-    for subset in subsets:
-        env_var = os.environ.get('N_AUDIO_EVAL_' + subset.upper())
-        assert env_var is not None, subset
-        n_evals.append(int(env_var))
-    max_n = max(n_evals)
-    n_digits = len(str(max_n))
-    index_format = f'0{n_digits}'
-    def filename(subset: str, i: int, task: str, ext: str):
-        return path.join(
-            audio_dir, 
-            f'{subset}_{i:{index_format}}_{task}.{ext}',
-        )
-
-    for subset, loader, n_eval, dataset_dir in zip(
-        subsets, loaders, n_evals, dataset_dirs, 
-    ):
-        print(f'{subset = }', flush=True)
-        datapoint_i = 0
-        for batch in loader:
-            try:
-                x, _, x_lens, stems = batch
-                x: Tensor
-                x_lens: List[int]
-                batch_size = x.shape[0]
-                y_hat = litPiano.forward(x.to(DEVICE), x_lens)
-                wave = encodec.decode(y_hat.argmax(dim=-1))
-                assert wave.shape[1] == 1
-                wave_cpu = wave[:, 0, :].cpu().numpy()
-                for i in range(batch_size):
-                    wavfile.write(
-                        filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
-                    )
-                    src = path.join(dataset_dir, stems[i])
-                    shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
-                    shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
-                    datapoint_i += 1
-                    if datapoint_i == n_eval:
-                        break
-                else:
-                    continue
-                break
-            finally:
-                print(datapoint_i, '/', n_eval, flush=True)
+    return litPiano, dataModule
 
 if __name__ == '__main__':
     import IPython; IPython.embed()

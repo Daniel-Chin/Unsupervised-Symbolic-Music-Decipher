@@ -1,12 +1,15 @@
 from dataclasses import dataclass
+from functools import lru_cache
 
 from shared import *
+from key_event_format import KeyEventFormat
 
 @dataclass(frozen=True)
 class HParams:
     d_model: int
     key_event_encoder_n_layers: int
     key_event_encoder_d_hidden: Optional[int]
+    key_event_onset_as_positional_encoding: bool
     tf_piano_n_head: int
     tf_piano_n_encoder_layers: int
     tf_piano_n_decoder_layers: int
@@ -27,4 +30,11 @@ class HParams:
             self.key_event_encoder_n_layers == 1
         ) == (
             self.key_event_encoder_d_hidden is None
+        )
+    
+    @lru_cache()
+    def keyEventFormat(self):
+        return KeyEventFormat(
+            self.key_event_onset_as_positional_encoding, 
+            self.d_model,
         )
