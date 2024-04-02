@@ -43,7 +43,7 @@ class TransformerPianoDataset(Dataset):
                     x[:, 0], N_TOKENS_PER_DATAPOINT, kEF.onset.length, CPU, 
                 )
             else:
-                onset = x[:, 0]
+                onset = x[:, 0:1]
             real_x[:, kEF.onset   .start : kEF.onset   .end] = onset
             real_x[:, kEF.velocity.start : kEF.velocity.end] = x[:, 1:2]
             ladder = torch.arange(n_notes)
