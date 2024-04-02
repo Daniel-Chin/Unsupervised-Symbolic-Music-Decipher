@@ -26,10 +26,9 @@ class LitPiano(L.LightningModule):
         super().__init__()
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
-        self.example_input_array = (
-            torch.zeros((hParams.batch_size, 233, hParams.keyEventFormat().length)), 
-            torch.full((hParams.batch_size, 233), False), 
-        )
+        self.example_input_array = torch.zeros((
+            hParams.batch_size, 233, 1 + hParams.keyEventFormat().length, 
+        ))
 
         self.did_setup: bool = False
     
@@ -59,14 +58,14 @@ class LitPiano(L.LightningModule):
         )
         self.tfPiano = TFPiano(keyEventEncoder, transformerPianoModel)
     
-    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
-        return self.tfPiano.forward(x, mask)
+    def forward(self, merged_x: Tensor) -> Tensor:
+        return self.tfPiano.forward(merged_x)
     
     def training_step(
         self, batch: CollateFnOut, batch_idx: int, 
     ):
-        x, y, mask, _ = batch
-        y_hat = self.tfPiano.forward(x, mask)
+        x_and_mask, y, _ = batch
+        y_hat = self.tfPiano.forward(x_and_mask)
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
@@ -87,8 +86,8 @@ class LitPiano(L.LightningModule):
         def log(name: str, value: float | int | Tensor):
             self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
 
-        x, y, mask, _ = batch
-        y_hat = self.tfPiano.forward(x, mask)
+        x_and_mask, y, _ = batch
+        y_hat = self.tfPiano.forward(x_and_mask)
 
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 

@@ -70,7 +70,7 @@ class TransformerPianoDataset(Dataset):
         return self.X[index], self.Y[index, :, :], self.stems[index]
 
 CollateFnIn = List[Tuple[Tensor, Tensor, str]]
-CollateFnOut = Tuple[Tensor, Tensor, Tensor, List[str]]
+CollateFnOut = Tuple[Tensor, Tensor, List[str]]
 
 class CollateCandidates:
     @staticmethod
@@ -82,10 +82,10 @@ class CollateCandidates:
         mask = torch.nn.utils.rnn.pad_sequence(
             ones, batch_first=True, padding_value=True, 
         )
+        X_tensor = torch.nn.utils.rnn.pad_sequence([*X], batch_first=True)
         return (
-            torch.nn.utils.rnn.pad_sequence([*X], batch_first=True), 
+            torch.cat((X_tensor, mask.unsqueeze(2)), dim=2), 
             torch.stack(Y, dim=0),
-            mask,
             stems, 
         )
 
@@ -149,8 +149,8 @@ class CollateCandidates:
             sleep(0.1)
 
 def collate(data: CollateFnIn) -> CollateFnOut:
-    x, y, mask, stems = CollateCandidates.usingZip(data)
-    return x, y.to(torch.int64), mask, stems
+    x_and_mask, y, stems = CollateCandidates.usingZip(data)
+    return x_and_mask, y.to(torch.int64), stems
 
 if __name__ == '__main__':
     dataset = TransformerPianoDataset(

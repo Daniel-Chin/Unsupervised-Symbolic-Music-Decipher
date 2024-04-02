@@ -6,6 +6,7 @@ from torch import Tensor
 import scipy.io.wavfile as wavfile
 
 from shared import *
+from tf_piano_dataset import CollateFnOut
 from tf_piano_lightning import LitPiano, LitPianoDataModule
 
 def evaluateAudio(
@@ -51,12 +52,11 @@ def evaluateAudio(
         print(f'{subset = }', flush=True)
         datapoint_i = 0
         for batch in loader:
+            batch: CollateFnOut
             try:
-                x, _, mask, stems = batch
-                x: Tensor
-                mask: Tensor
-                batch_size = x.shape[0]
-                y_hat = litPiano.forward(x.to(DEVICE), mask)
+                x_and_mask, _, stems = batch
+                batch_size = x_and_mask.shape[0]
+                y_hat = litPiano.forward(x_and_mask.to(DEVICE))
                 wave = encodec.decode(y_hat.argmax(dim=-1))
                 assert wave.shape[1] == 1
                 wave_cpu = wave[:, 0, :].cpu().numpy()

@@ -55,10 +55,12 @@ class TFPiano(torch.nn.Module):
         )
     
     def forward(
-        self, x: Tensor, mask: Tensor, 
+        self, x_and_mask: Tensor, 
     ):
-        device = x.device
-        batch_size, _, _ = x.shape
+        device = x_and_mask.device
+        batch_size, _, _ = x_and_mask.shape
+        x = x_and_mask[:, :, :-1]
+        mask = x_and_mask[:, :, -1]
         # print('x', x.shape)
         key_event_embeddings = self.keyEventEncoder.forward(x)
         # print('key_event_embeddings', key_event_embeddings.shape)
