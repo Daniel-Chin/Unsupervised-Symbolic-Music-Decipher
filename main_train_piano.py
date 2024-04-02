@@ -11,9 +11,9 @@ def main():
         key_event_encoder_n_layers = 1,
         key_event_encoder_d_hidden = None,
         tf_piano_n_head = 8,
-        tf_piano_n_encoder_layers = 3,
-        tf_piano_n_decoder_layers = 3,
-        tf_piano_d_feedforward = 1024,
+        tf_piano_n_encoder_layers = 6,
+        tf_piano_n_decoder_layers = 6,
+        tf_piano_d_feedforward = 2048,
 
         tf_piano_train_set_size = 1024, 
         tf_piano_val_monkey_set_size = 128, 
@@ -24,7 +24,7 @@ def main():
         max_epochs = 10,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_piano_lr-4'
+    exp_name = currentTimeDirName() + '_piano_full_tf'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     train(hParams, path.join(EXPERIMENTS_DIR, exp_name))
