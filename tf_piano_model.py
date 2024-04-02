@@ -60,6 +60,7 @@ class TFPiano(torch.nn.Module):
         device = x.device
         batch_size, _, _ = x.shape
         # print('x', x.shape)
+        # print('mask', mask.shape)
         key_event_embeddings = self.keyEventEncoder.forward(x)
         # print('key_event_embeddings', key_event_embeddings.shape)
         transformer_out = self.transformerPianoModel.forward(
