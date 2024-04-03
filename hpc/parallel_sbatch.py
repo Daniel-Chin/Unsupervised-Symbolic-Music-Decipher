@@ -1,18 +1,17 @@
 from typing import List
 from contextlib import contextmanager
-from io import StringIO
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 @contextmanager
 def SbatchContext(rm_script_filename: str):
     job_ids: List[str] = []
 
     def callback(auto_sbatch_filename: str):
-        io = StringIO()
-        with Popen(['sbatch', auto_sbatch_filename], stdout=io) as p:
+        with Popen(['sbatch', auto_sbatch_filename], stdout=PIPE) as p:
             p.wait()
-        io.seek(0)
-        job_id = io.read().split('Submitted batch job ', 1)[1].strip()
+            assert p.stdout is not None
+            output = p.stdout.read().decode('utf-8')
+        job_id = output.split('Submitted batch job ', 1)[1].strip()
         job_ids.append(job_id)
     
     try:
