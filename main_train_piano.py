@@ -16,7 +16,7 @@ def main():
         key_event_onset_as_positional_encoding = True, 
         key_event_key_as_modular_encoding = True, 
         key_event_velocity_as_modular_encoding = True, 
-        is_modular_encoding_soft = True,
+        is_modular_encoding_soft = False,
         tf_piano_n_head = 8,
         tf_piano_n_encoder_layers = 3,
         tf_piano_n_decoder_layers = 3,

@@ -71,7 +71,7 @@ def currentTimeDirName():
 
 @lru_cache()
 def positionalEncoding(length: int, d_model: int, device: torch.device) -> Tensor:
-    MAX_LEN = 2000
+    MAX_LEN = 10000
     assert length < MAX_LEN
 
     pe = torch.zeros(length, d_model, device=device)
