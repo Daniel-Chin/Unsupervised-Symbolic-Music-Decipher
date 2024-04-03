@@ -15,7 +15,7 @@ def main():
         key_event_encoder_d_hidden = None,
         key_event_onset_as_positional_encoding = True, 
         key_event_key_as_modular_encoding = True, 
-        key_event_velocity_as_modular_encoding = False, 
+        key_event_velocity_as_modular_encoding = True, 
         is_modular_encoding_soft = False,
         tf_piano_n_head = 8,
         tf_piano_n_encoder_layers = 3,
@@ -31,7 +31,7 @@ def main():
         max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_key_as_mod'
+    exp_name = currentTimeDirName() + '_p_both_as_mod'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
