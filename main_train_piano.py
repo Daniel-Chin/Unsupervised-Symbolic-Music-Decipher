@@ -28,10 +28,10 @@ def main():
 
         lr = 1e-4,
         batch_size = 8,
-        max_epochs = 4,
+        max_epochs = 40,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_soft_mod'
+    exp_name = currentTimeDirName() + '_p_fit_batch'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'

@@ -154,7 +154,7 @@ class LitPianoDataModule(L.LightningDataModule):
         )
         self.val_oracle_dataset = oracleDataset()
     
-    def train_dataloader(self, shuffle=True):
+    def train_dataloader(self, shuffle=False):
         hParams = self.hP
         return DataLoader(
             self.train_dataset, batch_size=hParams.batch_size, 
@@ -200,6 +200,7 @@ def train(hParams: HParams, root_dir: str):
             # ModelSummary(max_depth=2), # Internal error: NestedTensorImpl doesn't support sizes.
         ], 
         log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.batch_size), 
+        overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(litPiano, dataModule)
