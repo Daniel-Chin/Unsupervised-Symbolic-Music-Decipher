@@ -28,7 +28,7 @@ def main():
 
         lr = 1e-4,
         batch_size = 8,
-        max_epochs = 40,
+        max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_fit_batch'
