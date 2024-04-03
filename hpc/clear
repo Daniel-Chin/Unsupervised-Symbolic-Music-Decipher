@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-rm -f ./*.err ./*.out ./auto_*.sbatch
+rm -f ./*.err ./*.out ./auto_*.sbatch scancel_all.sh
