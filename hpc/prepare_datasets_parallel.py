@@ -34,7 +34,7 @@ def main(stage: str):
                     ).replace(
                         '{SELECT_DIR}', select_dir, 
                     ).replace(
-                        '{N_DATAPOINTS}', n_datapoints, 
+                        '{N_DATAPOINTS}', str(n_datapoints), 
                     ))
 
                 sbatch(auto_sb_filename)
