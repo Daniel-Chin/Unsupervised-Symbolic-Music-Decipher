@@ -7,7 +7,9 @@ from torch import Tensor
 from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 
+from hparams import HParams
 from shared import *
+from modular_encoding import modularEncode
 from key_event_format import KeyEventFormat
 from music import PIANO_RANGE
 
@@ -40,6 +42,7 @@ class TransformerPianoDataset(Dataset):
             n_notes, _ = x.shape
             n_notes_array[i] = n_notes
             real_x = torch.zeros((n_notes, kEF.length))
+
             if kEF.onset_as_positional_encoding:
                 onset = positionalEncodingAt(
                     x[:, 0], N_TOKENS_PER_DATAPOINT, kEF.onset.length, CPU, 
@@ -47,9 +50,22 @@ class TransformerPianoDataset(Dataset):
             else:
                 onset = x[:, 0:1]
             real_x[:, kEF.onset   .start : kEF.onset   .end] = onset
-            real_x[:, kEF.velocity.start : kEF.velocity.end] = x[:, 1:2]
-            ladder = torch.arange(n_notes)
-            real_x[ladder, kEF.key.start + x[ladder, 2].to(torch.int) - PIANO_RANGE[0]] = 1.0
+
+            if kEF.velocity_as_modular_encoding:
+                assert HParams.is_modular_encoding_soft is not None
+                velocity = modularEncode(x[:, 1:2] * 127, HParams.is_modular_encoding_soft)
+            else:
+                velocity = x[:, 1:2]
+            real_x[:, kEF.velocity.start : kEF.velocity.end] = velocity
+
+            if kEF.key_as_modular_encoding:
+                assert HParams.is_modular_encoding_soft is not None
+                real_x[:, kEF.key.start : kEF.key.end] = modularEncode(
+                    x[:, 2:3], HParams.is_modular_encoding_soft,
+                )
+            else:
+                ladder = torch.arange(n_notes)
+                real_x[ladder, kEF.key.start + x[ladder, 2].to(torch.int) - PIANO_RANGE[0]] = 1.0
             self.X.append(real_x.to(device))
             self.Y[i, :, :] = y
         max_notes = round(n_notes_array.max().item())
@@ -134,7 +150,7 @@ class CollateCandidates:
         ]
         dataset = TransformerPianoDataset(
             '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-            KeyEventFormat(True, 512), 
+            KeyEventFormat(True, 512, True, False), 
             n, 
         )
         data = [dataset[i] for i in range(n)]
@@ -157,7 +173,7 @@ def collate(data: CollateFnIn) -> CollateFnOut:
 if __name__ == '__main__':
     dataset = TransformerPianoDataset(
         '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        KeyEventFormat(True, 128), 32, 
+        KeyEventFormat(True, 128, True, False), 32, 
     )
     import IPython; IPython.embed()
 

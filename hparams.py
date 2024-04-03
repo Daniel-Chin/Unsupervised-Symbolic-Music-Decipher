@@ -10,6 +10,9 @@ class HParams:
     key_event_encoder_n_layers: int
     key_event_encoder_d_hidden: Optional[int]
     key_event_onset_as_positional_encoding: bool
+    key_event_key_as_modular_encoding: bool
+    key_event_velocity_as_modular_encoding: bool
+    is_modular_encoding_soft: Optional[bool]
     tf_piano_n_head: int
     tf_piano_n_encoder_layers: int
     tf_piano_n_decoder_layers: int
@@ -31,10 +34,19 @@ class HParams:
         ) == (
             self.key_event_encoder_d_hidden is None
         )
+        assert (
+            self.key_event_key_as_modular_encoding
+            or
+            self.key_event_velocity_as_modular_encoding
+        ) == (
+            self.is_modular_encoding_soft is not None
+        )
     
     @lru_cache()
     def keyEventFormat(self):
         return KeyEventFormat(
             self.key_event_onset_as_positional_encoding, 
             self.d_model,
+            self.key_event_key_as_modular_encoding,
+            self.key_event_velocity_as_modular_encoding,
         )
