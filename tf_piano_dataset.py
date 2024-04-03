@@ -53,7 +53,7 @@ class TransformerPianoDataset(Dataset):
 
             if kEF.velocity_as_modular_encoding:
                 assert kEF.is_modular_encoding_soft is not None
-                velocity = modularEncode(x[:, 1:2] * 127, kEF.is_modular_encoding_soft)
+                velocity = modularEncode(x[:, 1] * 127, kEF.is_modular_encoding_soft)
             else:
                 velocity = x[:, 1:2]
             real_x[:, kEF.velocity.start : kEF.velocity.end] = velocity
@@ -61,7 +61,7 @@ class TransformerPianoDataset(Dataset):
             if kEF.key_as_modular_encoding:
                 assert kEF.is_modular_encoding_soft is not None
                 real_x[:, kEF.key.start : kEF.key.end] = modularEncode(
-                    x[:, 2:3], kEF.is_modular_encoding_soft,
+                    x[:, 2], kEF.is_modular_encoding_soft,
                 )
             else:
                 ladder = torch.arange(n_notes)

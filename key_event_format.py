@@ -36,4 +36,5 @@ class KeyEventFormat:
             self.key = Chunk(cursor, MODULAR_ENCODING_LEN)
         else:
             self.key = Chunk(cursor, 88)
-        self.length = self.key.end
+        cursor += self.key.length
+        self.length = cursor
