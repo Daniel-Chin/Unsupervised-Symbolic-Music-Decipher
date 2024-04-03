@@ -52,16 +52,16 @@ class TransformerPianoDataset(Dataset):
             real_x[:, kEF.onset   .start : kEF.onset   .end] = onset
 
             if kEF.velocity_as_modular_encoding:
-                assert HParams.is_modular_encoding_soft is not None
-                velocity = modularEncode(x[:, 1:2] * 127, HParams.is_modular_encoding_soft)
+                assert kEF.is_modular_encoding_soft is not None
+                velocity = modularEncode(x[:, 1:2] * 127, kEF.is_modular_encoding_soft)
             else:
                 velocity = x[:, 1:2]
             real_x[:, kEF.velocity.start : kEF.velocity.end] = velocity
 
             if kEF.key_as_modular_encoding:
-                assert HParams.is_modular_encoding_soft is not None
+                assert kEF.is_modular_encoding_soft is not None
                 real_x[:, kEF.key.start : kEF.key.end] = modularEncode(
-                    x[:, 2:3], HParams.is_modular_encoding_soft,
+                    x[:, 2:3], kEF.is_modular_encoding_soft,
                 )
             else:
                 ladder = torch.arange(n_notes)
@@ -150,7 +150,7 @@ class CollateCandidates:
         ]
         dataset = TransformerPianoDataset(
             '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-            KeyEventFormat(True, 512, True, False), 
+            KeyEventFormat(True, 512, True, False, True), 
             n, 
         )
         data = [dataset[i] for i in range(n)]
@@ -173,7 +173,7 @@ def collate(data: CollateFnIn) -> CollateFnOut:
 if __name__ == '__main__':
     dataset = TransformerPianoDataset(
         '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        KeyEventFormat(True, 128, True, False), 32, 
+        KeyEventFormat(True, 128, True, False, True), 32, 
     )
     import IPython; IPython.embed()
 

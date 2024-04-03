@@ -49,4 +49,5 @@ class HParams:
             self.d_model,
             self.key_event_key_as_modular_encoding,
             self.key_event_velocity_as_modular_encoding,
+            self.is_modular_encoding_soft, 
         )

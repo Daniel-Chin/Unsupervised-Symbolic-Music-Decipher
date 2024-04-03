@@ -15,10 +15,12 @@ class KeyEventFormat:
         self, onset_as_positional_encoding: bool, d_model: int, 
         key_as_modular_encoding: bool, 
         velocity_as_modular_encoding: bool, 
+        is_modular_encoding_soft: bool, 
     ):
         self.onset_as_positional_encoding = onset_as_positional_encoding
         self.key_as_modular_encoding = key_as_modular_encoding
         self.velocity_as_modular_encoding = velocity_as_modular_encoding
+        self.is_modular_encoding_soft = is_modular_encoding_soft
         cursor = 0
         if onset_as_positional_encoding:
             self.onset = Chunk(0, d_model)
