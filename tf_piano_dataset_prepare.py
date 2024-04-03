@@ -2,13 +2,14 @@ import json
 import random
 import argparse
 from io import BytesIO
+from enum import Enum
 
 import torch
 from torch import Tensor
 import pretty_midi
 import audioread
 from audioread.rawread import RawAudioFile
-import tqdm
+from tqdm import tqdm
 import scipy.io.wavfile as wavfile
 
 from shared import *
@@ -22,6 +23,14 @@ from my_encodec import getEncodec, HFEncodecCompressionModel
 (PITCH_MU, PITCH_SIGMA) = (60.229, 13.938)
 
 SONG_LEN = float(SEC_PER_DATAPOINT)
+
+class WhichSet(Enum):
+    MONKEY = 'monkey'
+    ORACLE = 'oracle'
+
+class Stage(Enum):
+    CPU = 'cpu'
+    GPU = 'gpu'
 
 def generateMidi():
     midi = pretty_midi.PrettyMIDI()
@@ -65,141 +74,188 @@ def legalizeMidi(src_path: str):
     return midi
 
 def prepareOneDatapoint(
-    encodec: HFEncodecCompressionModel, 
+    stage: Stage, encodec: Optional[HFEncodecCompressionModel], 
     idx: int, dest_dir: str, midi_source: Optional[str], 
-    do_fluidsynth_write_pcm: bool, 
+    verbose: bool, do_fluidsynth_write_pcm: bool, 
 ):
     def printProfiling(*a, **kw):
-        # print(*a, **kw, flush=True)
-        pass
+        if verbose:
+            print(*a, **kw, flush=True)
     
-    if midi_source is None:
-        printProfiling('Generating MIDI')
-        midi = generateMidi()
-    else:
-        printProfiling('Legalizing MIDI')
-        midi = legalizeMidi(midi_source)
-    piano, = midi.instruments
-    piano: pretty_midi.Instrument
-    n_notes = len(piano.notes)
-
-    printProfiling('Writing MIDI')
-    midi_path = path.join(dest_dir, f'{idx}.mid')
-    midi.write(midi_path)
-
-    printProfiling('Synthesizing audio')
     wav_path = path.join(dest_dir, f'{idx}_synthed.wav')
-    midiSynthWav(midi_path, wav_path, do_fluidsynth_write_pcm)
-    
-    printProfiling('Loading audio')
-    buf = BytesIO()
-    with audioread.audio_open(wav_path) as f:
-        f: RawAudioFile
-        assert f.samplerate == ENCODEC_SR
-        n_channels = f.channels
-        for chunk in f.read_data():
-            buf.write(chunk)
-    buf.seek(0)
-    dtype = np.dtype(np.int16).newbyteorder('<')
-    wave_int = torch.tensor(np.frombuffer(buf.read(), dtype=dtype)).to(DEVICE)
-    format_factor: int = 2 ** (dtype.itemsize * 8 - 1)  # needs type hint because type checker doesn't know dtype.itemsize > 0
-    wave_float = wave_int.float() / format_factor
-    wave_mono = wave_float.view((-1, n_channels)).mean(dim=1)
-    n_samples = int(np.ceil(SONG_LEN * ENCODEC_SR))
-    wave_trunc = wave_mono[:n_samples]
-    wave_pad = torch.nn.functional.pad(
-        wave_trunc, (0, n_samples - len(wave_trunc)),
-    )
-    wave = wave_pad
+    midi_path = path.join(dest_dir, f'{idx}.mid')
 
-    with torch.no_grad():
-        printProfiling('Encodec.encode')
-        codes, _ = encodec.encode(wave.unsqueeze(0).unsqueeze(0))
-        printProfiling('Encodec.decode')
-        recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
-    
-    printProfiling('Writing recon')
-    recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
-    wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
-    
-    printProfiling('Formatting datapoint')
-    x = torch.zeros((
-        n_notes, 
-        # 1 + 1 + 88, 
-        1 + 1 + 1, 
-    ))
-    for i, note in enumerate(piano.notes):
-        note: pretty_midi.Note
-        x[i, 0] = note.start / float(SEC_PER_DATAPOINT)
-        x[i, 1] = note.velocity / 127.0
-        # x[note_i, 2 + note.pitch - PIANO_RANGE[0]] = 1.0
-        x[i, 2] = float(note.pitch)
-    y = codes[0, :, :].to(torch.int16).cpu()
-    assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
+    if stage == Stage.CPU:
+        if midi_source is None:
+            printProfiling('Generating MIDI')
+            midi = generateMidi()
+        else:
+            printProfiling('Legalizing MIDI')
+            midi = legalizeMidi(midi_source)
+        piano, = midi.instruments
+        piano: pretty_midi.Instrument
+        n_notes = len(piano.notes)
 
-    printProfiling('Writing datapoint')
-    torch.save(x, path.join(
-        dest_dir, f'{idx}_x.pt',
-    ))
-    torch.save(y, path.join(
-        dest_dir, f'{idx}_y.pt',
-    ))
+        printProfiling('Writing MIDI')
+        midi.write(midi_path)
+
+        printProfiling('Synthesizing audio')
+        midiSynthWav(midi_path, wav_path, verbose, do_fluidsynth_write_pcm)
+    
+    elif stage == Stage.GPU:
+        assert encodec is not None
+
+        printProfiling('Loading midi')
+        midi = pretty_midi.PrettyMIDI(midi_path)
+        piano, = midi.instruments
+        piano: pretty_midi.Instrument
+        n_notes = len(piano.notes)
+        
+        printProfiling('Loading audio')
+        buf = BytesIO()
+        with audioread.audio_open(wav_path) as f:
+            f: RawAudioFile
+            assert f.samplerate == ENCODEC_SR
+            n_channels = f.channels
+            for chunk in f.read_data():
+                buf.write(chunk)
+        buf.seek(0)
+        dtype = np.dtype(np.int16).newbyteorder('<')
+        wave_int = torch.tensor(np.frombuffer(buf.read(), dtype=dtype)).to(DEVICE)
+        format_factor: int = 2 ** (dtype.itemsize * 8 - 1)  # needs type hint because type checker doesn't know dtype.itemsize > 0
+        wave_float = wave_int.float() / format_factor
+        wave_mono = wave_float.view((-1, n_channels)).mean(dim=1)
+        n_samples = int(np.ceil(SONG_LEN * ENCODEC_SR))
+        wave_trunc = wave_mono[:n_samples]
+        wave_pad = torch.nn.functional.pad(
+            wave_trunc, (0, n_samples - len(wave_trunc)),
+        )
+        wave = wave_pad
+
+        with torch.no_grad():
+            printProfiling('Encodec.encode')
+            codes, _ = encodec.encode(wave.unsqueeze(0).unsqueeze(0))
+            printProfiling('Encodec.decode')
+            recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
+        
+        printProfiling('Writing recon')
+        recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
+        wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
+        
+        printProfiling('Formatting datapoint')
+        x = torch.zeros((
+            n_notes, 
+            1 + 1 + 1, 
+        ))
+        for i, note in enumerate(piano.notes):
+            note: pretty_midi.Note
+            x[i, 0] = note.start / float(SEC_PER_DATAPOINT)
+            x[i, 1] = note.velocity / 127.0
+            x[i, 2] = float(note.pitch)
+        y = codes[0, :, :].to(torch.int16).cpu()
+        assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
+
+        printProfiling('Writing datapoint')
+        torch.save(x, path.join(
+            dest_dir, f'{idx}_x.pt',
+        ))
+        torch.save(y, path.join(
+            dest_dir, f'{idx}_y.pt',
+        ))
 
 def main(
-    monkey_dataset_size: int, 
-    oracle_dataset_size: int,
+    which_set: WhichSet,
+    stage: Stage,
+    select_dir: str, 
+    n_datapoints: int, 
+    verbose: bool, 
     do_fluidsynth_write_pcm: bool, 
 ):
     initMainProcess()
-    encodec = getEncodec().to(DEVICE)
 
-    def oneSet(dest_dir: str, midi_sources: List, desc: str):
-        data_ids = []
-        try:
-            for datapoint_i, midi_source in enumerate(tqdm.tqdm(midi_sources, desc)):
+    if stage == Stage.GPU:
+        encodec = getEncodec().to(DEVICE)
+    else:
+        encodec = None
+
+    if which_set == WhichSet.MONKEY:
+        dest_set_dir = TRANSFORMER_PIANO_MONKEY_DATASET_DIR
+        midi_basenames = [None] * n_datapoints
+    elif which_set == WhichSet.ORACLE:
+        dest_set_dir = TRANSFORMER_PIANO_ORACLE_DATASET_DIR
+        with open(path.join(
+            PIANO_LA_DATASET_DIR, select_dir, 'index.json', 
+        ), 'r', encoding='utf-8') as f:
+            filenames = json.load(f)
+        midi_basenames = random.choices(filenames, k=n_datapoints)
+    dest_dir = path.join(dest_set_dir, select_dir)
+    os.makedirs(dest_dir, exist_ok=True)
+
+    data_ids = []
+    try:
+        for datapoint_i, midi_basename in enumerate(tqdm(midi_basenames)):
+            if verbose:
                 print()
-                prepareOneDatapoint(
-                    encodec, datapoint_i, dest_dir, midi_source, 
-                    do_fluidsynth_write_pcm, 
-                )
-                data_ids.append(str(datapoint_i))
-        finally:
+            prepareOneDatapoint(
+                stage, encodec, datapoint_i, dest_dir, 
+                midi_basename and path.join(PIANO_LA_DATASET_DIR, select_dir, midi_basename), 
+                verbose, do_fluidsynth_write_pcm, 
+            )
+            data_ids.append(str(datapoint_i))
+    finally:
+        if stage == Stage.GPU:
             with open(path.join(
                 dest_dir, 'index.json',
             ), 'w', encoding='utf-8') as f:
                 json.dump(data_ids, f)
-    
-    oneSet(TRANSFORMER_PIANO_MONKEY_DATASET_DIR, [None] * monkey_dataset_size, 'monkey')
 
-    midi_sources = []
-    for i, dir_ in enumerate(LA_DATASET_DIRS):
-        with open(path.join(
-            PIANO_LA_DATASET_DIR, dir_, 'index.json', 
-        ), 'r', encoding='utf-8') as f:
-            filenames = json.load(f)
-        still_need = oracle_dataset_size - len(midi_sources)
-        lets_take = still_need // (len(LA_DATASET_DIRS) - i)
-        midi_sources.extend([
-            path.join(PIANO_LA_DATASET_DIR, dir_, x) 
-            for x in random.choices(filenames, k=lets_take)
-        ])
-    oneSet(TRANSFORMER_PIANO_ORACLE_DATASET_DIR, midi_sources, 'oracle')
+def laptop():
+    TO_PREPARE: List[Tuple[WhichSet, int]] = [
+        (WhichSet.MONKEY, 32 // 16), 
+        (WhichSet.ORACLE, 32 // 16),
+    ]
+
+    for which_set, n_datapoints in TO_PREPARE:
+        for select_dir in tqdm(LA_DATASET_DIRS, desc=which_set.value):
+            for stage in (Stage.CPU, Stage.GPU):
+                main(
+                    which_set, 
+                    stage, 
+                    select_dir, 
+                    n_datapoints, 
+                    verbose=False, 
+                    do_fluidsynth_write_pcm=False, 
+                )
 
 if __name__ == '__main__':
-    print(f'{GPU_NAME = }')
+    # laptop()
+    # import sys; sys.exit(0)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--monkey_dataset_size', type=int, required=True, 
+        '--which_set', type=WhichSet, required=True, choices=[*WhichSet],
     )
     parser.add_argument(
-        '--oracle_dataset_size', type=int, required=True, 
+        '--stage', type=Stage, required=True, choices=[*Stage],
+    )
+    parser.add_argument(
+        '--select_dir', type=str, required=True, 
+    )
+    parser.add_argument(
+        '--n_datapoints', type=int, required=True, 
+    )
+    parser.add_argument(
+        '--verbose', action='store_true',
     )
     parser.add_argument(
         '--do_fluidsynth_write_pcm', action='store_true',
     )
     args = parser.parse_args()
     main(
-        args.monkey_dataset_size, 
-        args.oracle_dataset_size, 
+        args.which_set, 
+        args.stage, 
+        args.select_dir, 
+        args.n_datapoints, 
+        args.verbose, 
         args.do_fluidsynth_write_pcm, 
     )

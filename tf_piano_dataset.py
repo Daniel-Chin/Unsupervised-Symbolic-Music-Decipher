@@ -18,20 +18,23 @@ class TransformerPianoDataset(Dataset):
         device: torch.device = CPU, 
     ):
         self.name = name
-        def getStems():
-            with open(path.join(dir_path, 'index.json'), encoding='utf-8') as f:
-                stems: List[str] = json.load(f)
-            stems = stems[offset:]
-            assert size <= len(stems)
-            stems = stems[:size]
-            return stems
-        self.stems = getStems()
+        def getDataIds():
+            s: List[str] = []
+            for dir_ in LA_DATASET_DIRS:
+                with open(path.join(dir_path, dir_, 'index.json'), encoding='utf-8') as f:
+                    for x in json.load(f):
+                        s.append(path.join(dir_, x))
+            s = s[offset:]
+            assert size <= len(s)
+            s = s[:size]
+            return s
+        self.data_ids = getDataIds()
         self.X: List[Tensor] = []
         self.Y = torch.zeros((
-            len(self.stems), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
+            len(self.data_ids), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
         ), dtype=torch.int16, device=device)
-        n_notes_array = torch.zeros((len(self.stems), ))
-        for i, datapoint_id in enumerate(tqdm(self.stems, f'Load dataset "{self.name}"')):
+        n_notes_array = torch.zeros((len(self.data_ids), ))
+        for i, datapoint_id in enumerate(tqdm(self.data_ids, f'Load dataset "{self.name}"')):
             x: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_x.pt'))
             y: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_y.pt'))
             n_notes, _ = x.shape
@@ -60,13 +63,13 @@ class TransformerPianoDataset(Dataset):
         print(f'dataset RAM: {ram / 2**30 : .2f} GB', flush=True)
 
     def __len__(self):
-        return len(self.stems)
+        return len(self.data_ids)
 
     def __getitem__(self, index: int):
         # x: (n_notes, hParams.keyEventFormat().length)
         # y: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
-        # stem: str
-        return self.X[index], self.Y[index, :, :], self.stems[index]
+        # data_id: str
+        return self.X[index], self.Y[index, :, :], self.data_ids[index]
 
 CollateFnIn = List[Tuple[Tensor, Tensor, str]]
 CollateFnOut = Tuple[Tensor, Tensor, Tensor, List[str]]
@@ -74,7 +77,7 @@ CollateFnOut = Tuple[Tensor, Tensor, Tensor, List[str]]
 class CollateCandidates:
     @staticmethod
     def usingZip(data: CollateFnIn) -> CollateFnOut:
-        X, Y, stems = zip(*data)
+        X, Y, data_ids = zip(*data)
         X: Tuple[Tensor]
         Y: Tuple[Tensor]
         ones = [torch.full(x.shape[:1], False) for x in X]
@@ -85,7 +88,7 @@ class CollateCandidates:
             torch.nn.utils.rnn.pad_sequence([*X], batch_first=True), 
             torch.stack(Y, dim=0),
             mask,
-            stems, 
+            data_ids, 
         )
 
     # @staticmethod
@@ -148,13 +151,13 @@ class CollateCandidates:
             sleep(0.1)
 
 def collate(data: CollateFnIn) -> CollateFnOut:
-    x, y, mask, stems = CollateCandidates.usingZip(data)
-    return x, y.to(torch.int64), mask, stems
+    x, y, mask, data_ids = CollateCandidates.usingZip(data)
+    return x, y.to(torch.int64), mask, data_ids
 
 if __name__ == '__main__':
     dataset = TransformerPianoDataset(
         '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-        KeyEventFormat(True, 128), 64, 
+        KeyEventFormat(True, 128), 32, 
     )
     import IPython; IPython.embed()
 

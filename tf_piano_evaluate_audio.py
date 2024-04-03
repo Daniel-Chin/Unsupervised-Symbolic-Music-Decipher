@@ -52,7 +52,7 @@ def evaluateAudio(
         datapoint_i = 0
         for batch in loader:
             try:
-                x, _, mask, stems = batch
+                x, _, mask, data_ids = batch
                 x: Tensor
                 mask: Tensor
                 batch_size = x.shape[0]
@@ -64,7 +64,7 @@ def evaluateAudio(
                     wavfile.write(
                         filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
                     )
-                    src = path.join(dataset_dir, stems[i])
+                    src = path.join(dataset_dir, data_ids[i])
                     shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
                     shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
                     datapoint_i += 1

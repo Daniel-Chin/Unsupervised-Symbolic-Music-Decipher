@@ -1,3 +1,4 @@
 *.out
 *.err
 auto_*.sbatch
+scancel_all.sh
