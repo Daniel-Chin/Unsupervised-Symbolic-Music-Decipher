@@ -173,7 +173,7 @@ class LitPianoDataModule(L.LightningDataModule):
         ]
 
 def train(hParams: HParams, root_dir: str):
-    log_name = 'lightning_logs'
+    log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
     if GPU_NAME in (
         'NVIDIA GeForce RTX 3050 Ti Laptop GPU', 
