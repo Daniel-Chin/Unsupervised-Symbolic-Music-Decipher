@@ -186,6 +186,7 @@ def train(hParams: HParams, root_dir: str):
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
+        gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
         profiler=profiler, 
