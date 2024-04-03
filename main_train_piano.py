@@ -15,8 +15,8 @@ def main():
         key_event_encoder_d_hidden = None,
         key_event_onset_as_positional_encoding = True, 
         tf_piano_n_head = 8,
-        tf_piano_n_encoder_layers = 3,
-        tf_piano_n_decoder_layers = 3,
+        tf_piano_n_encoder_layers = 6,
+        tf_piano_n_decoder_layers = 6,
         tf_piano_d_feedforward = 1024,
 
         tf_piano_train_set_size = 8000, 
@@ -25,10 +25,10 @@ def main():
 
         lr = 1e-4,
         batch_size = 8,
-        max_epochs = 10,
+        max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_piano_big_set'
+    exp_name = currentTimeDirName() + '_piano_6_layers'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
