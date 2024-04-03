@@ -31,7 +31,7 @@ def main():
         max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_piano_6_layers'
+    exp_name = currentTimeDirName() + '_p_key_as_mod'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
