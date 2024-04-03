@@ -18,8 +18,8 @@ def main():
         key_event_velocity_as_modular_encoding = False, 
         is_modular_encoding_soft = False,
         tf_piano_n_head = 8,
-        tf_piano_n_encoder_layers = 6,
-        tf_piano_n_decoder_layers = 6,
+        tf_piano_n_encoder_layers = 3,
+        tf_piano_n_decoder_layers = 3,
         tf_piano_d_feedforward = 1024,
 
         tf_piano_train_set_size = 8000, 
@@ -27,7 +27,7 @@ def main():
         tf_piano_val_oracle_set_size = 128, 
 
         lr = 1e-4,
-        batch_size = 4,
+        batch_size = 10,
         max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
