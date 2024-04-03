@@ -58,6 +58,11 @@ class LitPiano(L.LightningModule):
             hParams.tf_piano_d_feedforward, 
         )
         self.tfPiano = TFPiano(keyEventEncoder, transformerPianoModel)
+
+        # just for ModelSummary
+        self.keyEventEncoder = keyEventEncoder
+        self.transformerPianoModel = transformerPianoModel
+        self.outputProjector = self.tfPiano.outputProjector
     
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         return self.tfPiano.forward(x, mask)
