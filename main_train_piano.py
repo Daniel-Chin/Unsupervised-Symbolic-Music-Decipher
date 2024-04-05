@@ -29,7 +29,7 @@ def main():
 
         tf_piano_lr = 1e-4,
         tf_piano_batch_size = 8,
-        tf_piano_max_epochs = 4,
+        tf_piano_max_epochs = 30,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_ar'
