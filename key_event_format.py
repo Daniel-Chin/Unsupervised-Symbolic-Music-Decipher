@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from shared import *
 from modular_encoding import MODULAR_ENCODING_LEN
 
 @dataclass(frozen=True)
@@ -15,7 +16,7 @@ class KeyEventFormat:
         self, onset_as_positional_encoding: bool, d_model: int, 
         key_as_modular_encoding: bool, 
         velocity_as_modular_encoding: bool, 
-        is_modular_encoding_soft: bool, 
+        is_modular_encoding_soft: Optional[bool], 
     ):
         self.onset_as_positional_encoding = onset_as_positional_encoding
         self.key_as_modular_encoding = key_as_modular_encoding
