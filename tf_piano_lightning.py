@@ -104,15 +104,15 @@ class LitPiano(L.LightningModule):
         def log(name: str, value: float | int | Tensor):
             self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
 
-        def evaluate(y_hat: Tensor, name: str):
+        def evaluate(y_logits: Tensor, name: str):
             loss = F.cross_entropy(
-                y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-                y    .view(-1), 
+                y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
+                y       .view(-1), 
             )
             log(f'loss_{name}', loss)
 
             for book_i, accuracy in enumerate(
-                (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
+                (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
             ):
                 log(f'accuracy_{name}_book_{book_i}', accuracy)
         

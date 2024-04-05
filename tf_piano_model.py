@@ -126,9 +126,15 @@ class TFPiano(torch.nn.Module):
         device = x.device
         y_hat = torch.zeros((
             batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
+        ), dtype=torch.int, device=device)
+        y_logits = torch.zeros((
+            batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
+            ENCODEC_N_WORDS_PER_BOOK,
         ), device=device)
         for t in range(N_TOKENS_PER_DATAPOINT):
-            y_hat[:, :, t] = self.forward(
+            # potential: use key padding mask to optimize.
+            y_logits[:, :, t, :] = self.forward(
                 x, mask, y_hat, 
-            )[:, :, t, :].argmax(dim=-1)
-        return y_hat
+            )[:, :, t, :]
+            y_hat[:, :, t] = y_logits[:, :, t, :].argmax(dim=-1)
+        return y_logits
