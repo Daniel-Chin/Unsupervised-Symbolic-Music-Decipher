@@ -72,9 +72,9 @@ class TFPiano(torch.nn.Module):
             self.sos_emb = torch.nn.Parameter(torch.randn((
                 1, 1, transformerPianoModel.d_model, 
             )))
-            self.embedding = [torch.nn.Embedding(
+            self.embedding = torch.nn.ModuleList([torch.nn.Embedding(
                 ENCODEC_N_WORDS_PER_BOOK, transformerPianoModel.d_model, 
-            ) for _ in range(ENCODEC_N_BOOKS)]
+            ) for _ in range(ENCODEC_N_BOOKS)])
         else:
             self.sos_emb = None
             self.embedding = None

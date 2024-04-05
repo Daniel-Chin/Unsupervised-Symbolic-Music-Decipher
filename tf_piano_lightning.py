@@ -27,8 +27,9 @@ class LitPiano(L.LightningModule):
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         self.example_input_array = (
-            torch.zeros((hParams.tf_piano_batch_size, 233, hParams.keyEventFormat().length)), 
-            torch.full((hParams.tf_piano_batch_size, 233), False), 
+            torch.randn((hParams.tf_piano_batch_size, N_TOKENS_PER_DATAPOINT, hParams.keyEventFormat().length)), 
+            torch.zeros((hParams.tf_piano_batch_size, N_TOKENS_PER_DATAPOINT)), 
+            torch.ones ((hParams.tf_piano_batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT), dtype=torch.int),
         )
 
         self.did_setup: bool = False
