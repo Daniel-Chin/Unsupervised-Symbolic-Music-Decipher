@@ -32,7 +32,7 @@ def main():
         tf_piano_max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_fit_batch'
+    exp_name = currentTimeDirName() + '_p_ar'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
