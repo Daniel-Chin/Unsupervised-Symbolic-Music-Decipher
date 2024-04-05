@@ -80,15 +80,15 @@ class LitPiano(L.LightningModule):
         hParams = self.hP
         x, y, mask, _ = batch
 
-        y_hat = self.tfPiano.forward(x, mask, y if hParams.tf_piano_decoder_auto_regressive else None)
+        y_logits = self.tfPiano.forward(x, mask, y if hParams.tf_piano_decoder_auto_regressive else None)
         loss = F.cross_entropy(
-            y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y    .view(-1), 
+            y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
+            y       .view(-1), 
         )
         self.log_('train_loss', loss)
 
         for book_i, accuracy in enumerate(
-            (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
+            (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
         ):
             self.log_(f'train_accuracy_book_{book_i}', accuracy, on_step=False, on_epoch=True)
 
