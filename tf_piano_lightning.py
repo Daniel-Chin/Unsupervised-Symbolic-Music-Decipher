@@ -26,10 +26,11 @@ class LitPiano(L.LightningModule):
         super().__init__()
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
+        self.example_batch_size = 3
         self.example_input_array = (
-            torch.randn((hParams.tf_piano_batch_size, N_TOKENS_PER_DATAPOINT, hParams.keyEventFormat().length)), 
-            torch.zeros((hParams.tf_piano_batch_size, N_TOKENS_PER_DATAPOINT)), 
-            torch.ones ((hParams.tf_piano_batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT), dtype=torch.int),
+            torch.randn((self.example_batch_size, N_TOKENS_PER_DATAPOINT, hParams.keyEventFormat().length)), 
+            torch.zeros((self.example_batch_size, N_TOKENS_PER_DATAPOINT)), 
+            torch.ones ((self.example_batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT), dtype=torch.int),
         )
 
         self.did_setup: bool = False
@@ -39,9 +40,6 @@ class LitPiano(L.LightningModule):
         return super().log(*a, batch_size=hParams.tf_piano_batch_size, **kw)
     
     def setup(self, stage: str):
-        # Because I've no idea lightning's setup stage logic
-        assert stage == TrainerFn.FITTING
-        # print('lit module setup', stage)
         assert not self.did_setup
         self.did_setup = True
 
@@ -142,9 +140,6 @@ class LitPianoDataModule(L.LightningDataModule):
         self.did_setup: bool = False
 
     def setup(self, stage: Optional[str] = None):
-        # Because I've no idea lightning's setup stage logic
-        assert stage == TrainerFn.FITTING
-        # print('data module setup', stage)
         assert not self.did_setup
         self.did_setup = True
 
