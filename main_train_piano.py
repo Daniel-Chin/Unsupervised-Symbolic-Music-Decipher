@@ -10,7 +10,7 @@ from tf_piano_evaluate_audio import evaluateAudio
 def main():
     initMainProcess()
     hParams = HParams(
-        d_model = 512,
+        tf_piano_d_model = 512,
         key_event_encoder_n_layers = 1,
         key_event_encoder_d_hidden = None,
         key_event_onset_as_positional_encoding = True, 
@@ -26,9 +26,9 @@ def main():
         tf_piano_val_monkey_set_size = 2000, 
         tf_piano_val_oracle_set_size = 128, 
 
-        lr = 1e-4,
-        batch_size = 8,
-        max_epochs = 4,
+        tf_piano_lr = 1e-4,
+        tf_piano_batch_size = 8,
+        tf_piano_max_epochs = 4,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_fit_batch'

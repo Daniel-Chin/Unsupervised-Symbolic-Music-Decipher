@@ -27,15 +27,15 @@ class LitPiano(L.LightningModule):
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         self.example_input_array = (
-            torch.zeros((hParams.batch_size, 233, hParams.keyEventFormat().length)), 
-            torch.full((hParams.batch_size, 233), False), 
+            torch.zeros((hParams.tf_piano_batch_size, 233, hParams.keyEventFormat().length)), 
+            torch.full((hParams.tf_piano_batch_size, 233), False), 
         )
 
         self.did_setup: bool = False
     
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.batch_size, **kw)
+        return super().log(*a, batch_size=hParams.tf_piano_batch_size, **kw)
     
     def setup(self, stage: str):
         # Because I've no idea lightning's setup stage logic
@@ -47,12 +47,12 @@ class LitPiano(L.LightningModule):
         hParams = self.hP
         keyEventEncoder = KeyEventEncoder(
             hParams.keyEventFormat().length,
-            hParams.d_model, 
+            hParams.tf_piano_d_model, 
             hParams.key_event_encoder_n_layers,
             hParams.key_event_encoder_d_hidden, 
         )
         transformerPianoModel = TransformerPianoModel(
-            hParams.d_model, hParams.tf_piano_n_head,
+            hParams.tf_piano_d_model, hParams.tf_piano_n_head,
             hParams.tf_piano_n_encoder_layers, 
             hParams.tf_piano_n_decoder_layers,
             hParams.tf_piano_d_feedforward, 
@@ -108,7 +108,7 @@ class LitPiano(L.LightningModule):
     
     def configure_optimizers(self):
         hParams = self.hP
-        return torch.optim.Adam(self.tfPiano.parameters(), lr=hParams.lr)
+        return torch.optim.Adam(self.tfPiano.parameters(), lr=hParams.tf_piano_lr)
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
         norms = grad_norm(self, norm_type=2)
@@ -157,7 +157,7 @@ class LitPianoDataModule(L.LightningDataModule):
     def train_dataloader(self, shuffle=True):
         hParams = self.hP
         return DataLoader(
-            self.train_dataset, batch_size=hParams.batch_size, 
+            self.train_dataset, batch_size=hParams.tf_piano_batch_size, 
             collate_fn=collate, shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
         )
@@ -166,12 +166,12 @@ class LitPianoDataModule(L.LightningDataModule):
         hParams = self.hP
         return [
             DataLoader(
-                self.val_monkey_dataset, batch_size=hParams.batch_size, 
+                self.val_monkey_dataset, batch_size=hParams.tf_piano_batch_size, 
                 collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
             DataLoader(
-                self.val_oracle_dataset, batch_size=hParams.batch_size, 
+                self.val_oracle_dataset, batch_size=hParams.tf_piano_batch_size, 
                 collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
@@ -190,7 +190,7 @@ def train(hParams: HParams, root_dir: str):
     logger = TensorBoardLogger(root_dir, log_name)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
-        devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
+        devices=[DEVICE.index], max_epochs=hParams.tf_piano_max_epochs, 
         gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
@@ -199,7 +199,7 @@ def train(hParams: HParams, root_dir: str):
             # DeviceStatsMonitor(), 
             # ModelSummary(max_depth=2), # Internal error: NestedTensorImpl doesn't support sizes.
         ], 
-        log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.batch_size), 
+        log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.tf_piano_batch_size), 
         # overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)

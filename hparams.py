@@ -6,7 +6,7 @@ from key_event_format import KeyEventFormat
 
 @dataclass(frozen=True)
 class HParams:
-    d_model: int
+    tf_piano_d_model: int
     key_event_encoder_n_layers: int
     key_event_encoder_d_hidden: Optional[int]
     key_event_onset_as_positional_encoding: bool
@@ -22,9 +22,9 @@ class HParams:
     tf_piano_val_monkey_set_size: int
     tf_piano_val_oracle_set_size: int
 
-    lr: float
-    batch_size: int
-    max_epochs: int
+    tf_piano_lr: float
+    tf_piano_batch_size: int
+    tf_piano_max_epochs: int
 
     require_repo_working_tree_clean: bool
 
@@ -46,7 +46,7 @@ class HParams:
     def keyEventFormat(self):
         return KeyEventFormat(
             self.key_event_onset_as_positional_encoding, 
-            self.d_model,
+            self.tf_piano_d_model,
             self.key_event_key_as_modular_encoding,
             self.key_event_velocity_as_modular_encoding,
             self.is_modular_encoding_soft, 
