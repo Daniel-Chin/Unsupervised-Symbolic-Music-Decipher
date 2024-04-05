@@ -74,20 +74,23 @@ def evaluateAudio(
                     '', 
                     litPiano.tfPiano.forward(x, mask, None), 
                 ))
-            for task_name, y_hat in tasks:
-                wave = encodec.decode(y_hat.argmax(dim=-1))
+            waves = []
+            for task_name, y_logits in tasks:
+                wave = encodec.decode(y_logits.argmax(dim=-1))
                 assert wave.shape[1] == 1
-                wave_cpu = wave[:, 0, :].cpu().numpy()
-                for i in range(batch_size):
-                    datapoint_i = batch_i * batch_size + i
-                    if datapoint_i == n_eval:
-                        break
+                waves.append(wave[:, 0, :].cpu().numpy())
+
+            for i in range(batch_size):
+                datapoint_i = batch_i * batch_size + i
+                if datapoint_i == n_eval:
+                    break
+                src = path.join(dataset_dir, data_ids[i])
+                shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
+                shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
+                for (task_name, _), wave_cpu in zip(tasks, waves):
                     wavfile.write(
-                        filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
+                        filename(subset, datapoint_i, 'predict_' + task_name, 'wav'), ENCODEC_SR, wave_cpu[i, :],
                     )
-                    src = path.join(dataset_dir, data_ids[i])
-                    shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
-                    shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
             print(datapoint_i, '/', n_eval, flush=True)
 
     [doSet(*x) for x in zip(
