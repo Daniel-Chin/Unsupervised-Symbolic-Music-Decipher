@@ -57,21 +57,29 @@ class LitPiano(L.LightningModule):
             hParams.tf_piano_n_decoder_layers,
             hParams.tf_piano_d_feedforward, 
         )
-        self.tfPiano = TFPiano(keyEventEncoder, transformerPianoModel)
+        self.tfPiano = TFPiano(
+            keyEventEncoder, transformerPianoModel, 
+            hParams.tf_piano_decoder_auto_regressive, 
+        )
 
         # just for ModelSummary
         self.keyEventEncoder = keyEventEncoder
         self.transformerPianoModel = transformerPianoModel
         self.outputProjector = self.tfPiano.outputProjector
+        self.tokenEmbedding = self.tfPiano.embedding
     
-    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
-        return self.tfPiano.forward(x, mask)
+    def forward(
+        self, x: Tensor, mask: Tensor, y_hat_unshifted: Optional[Tensor],
+    ):
+        return self.tfPiano.forward(x, mask, y_hat_unshifted)
     
     def training_step(
         self, batch: CollateFnOut, batch_idx: int, 
     ):
+        hParams = self.hP
         x, y, mask, _ = batch
-        y_hat = self.tfPiano.forward(x, mask)
+
+        y_hat = self.tfPiano.forward(x, mask, y if hParams.tf_piano_decoder_auto_regressive else None)
         loss = F.cross_entropy(
             y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y    .view(-1), 
@@ -89,23 +97,34 @@ class LitPiano(L.LightningModule):
         self, batch: CollateFnOut, 
         batch_idx: int, dataloader_idx: int, 
     ):
+        hParams = self.hP
+        x, y, mask, _ = batch
+
         def log(name: str, value: float | int | Tensor):
             self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
 
-        x, y, mask, _ = batch
-        y_hat = self.tfPiano.forward(x, mask)
+        def evaluate(y_hat: Tensor, name: str):
+            loss = F.cross_entropy(
+                y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
+                y    .view(-1), 
+            )
+            log(f'loss_{name}', loss)
 
-        loss = F.cross_entropy(
-            y_hat.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y    .view(-1), 
-        )
-        log('loss', loss)
+            for book_i, accuracy in enumerate(
+                (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
+            ):
+                log(f'accuracy_{name}_book_{book_i}', accuracy)
+        
+        if hParams.tf_piano_decoder_auto_regressive:
+            # teacher forcing
+            evaluate(self.tfPiano.forward(x, mask, y), 'teacher_forcing')
 
-        for book_i, accuracy in enumerate(
-            (y_hat.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
-        ):
-            log(f'accuracy_book_{book_i}', accuracy)
-    
+            # auto-regressive
+            evaluate(self.tfPiano.autoRegress(x, mask), 'auto_regressive')
+        else:
+            # tgt only positional encoding
+            evaluate(self.tfPiano.forward(x, mask, None), '')
+
     def configure_optimizers(self):
         hParams = self.hP
         return torch.optim.Adam(self.tfPiano.parameters(), lr=hParams.tf_piano_lr)

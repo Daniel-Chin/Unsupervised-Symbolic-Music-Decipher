@@ -21,6 +21,7 @@ def main():
         tf_piano_n_encoder_layers = 3,
         tf_piano_n_decoder_layers = 3,
         tf_piano_d_feedforward = 1024,
+        tf_piano_decoder_auto_regressive = True,
 
         tf_piano_train_set_size = 8000, 
         tf_piano_val_monkey_set_size = 2000, 

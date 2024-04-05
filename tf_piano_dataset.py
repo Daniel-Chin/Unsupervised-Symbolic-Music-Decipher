@@ -96,9 +96,9 @@ class CollateCandidates:
         X, Y, data_ids = zip(*data)
         X: Tuple[Tensor]
         Y: Tuple[Tensor]
-        ones = [torch.full(x.shape[:1], False) for x in X]
+        zeros = [torch.full(x.shape[:1], 0) for x in X]
         mask = torch.nn.utils.rnn.pad_sequence(
-            ones, batch_first=True, padding_value=True, 
+            zeros, batch_first=True, padding_value=float('-inf'), 
         )
         return (
             torch.nn.utils.rnn.pad_sequence([*X], batch_first=True), 

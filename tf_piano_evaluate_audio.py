@@ -6,6 +6,7 @@ from torch import Tensor
 import scipy.io.wavfile as wavfile
 
 from shared import *
+from tf_piano_dataset import CollateFnOut
 from tf_piano_lightning import LitPiano, LitPianoDataModule
 
 def evaluateAudio(
@@ -45,33 +46,50 @@ def evaluateAudio(
             f'{subset}_{i:{index_format}}_{task}.{ext}',
         )
 
-    for subset, loader, n_eval, dataset_dir in zip(
-        subsets, loaders, n_evals, dataset_dirs, 
-    ):
+    def doSet(subset, loader, n_eval, dataset_dir):
         print(f'{subset = }', flush=True)
-        datapoint_i = 0
-        for batch in loader:
-            try:
-                x, _, mask, data_ids = batch
-                x: Tensor
-                mask: Tensor
-                batch_size = x.shape[0]
-                y_hat = litPiano.forward(x.to(DEVICE), mask.to(DEVICE))
+        for batch_i, batch in enumerate(loader):
+            batch: CollateFnOut
+            x_cpu, y_cpu, mask_cpu, data_ids = batch
+            x = x_cpu.to(DEVICE)
+            y = y_cpu.to(DEVICE)
+            mask = mask_cpu.to(DEVICE)
+            batch_size = x.shape[0]
+
+            if batch_i * batch_size >= n_eval:
+                return
+            
+            tasks: List[Tuple[str, Tensor]] = []
+            if litPiano.hP.tf_piano_decoder_auto_regressive:
+                tasks.append((
+                    'teacher_forcing', 
+                    litPiano.tfPiano.forward(x, mask, y), 
+                ))
+                tasks.append((
+                    'auto_regressive', 
+                    litPiano.tfPiano.autoRegress(x, mask), 
+                ))
+            else:
+                tasks.append((
+                    '', 
+                    litPiano.tfPiano.forward(x, mask, None), 
+                ))
+            for task_name, y_hat in tasks:
                 wave = encodec.decode(y_hat.argmax(dim=-1))
                 assert wave.shape[1] == 1
                 wave_cpu = wave[:, 0, :].cpu().numpy()
                 for i in range(batch_size):
+                    datapoint_i = batch_i * batch_size + i
+                    if datapoint_i == n_eval:
+                        break
                     wavfile.write(
                         filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave_cpu[i, :],
                     )
                     src = path.join(dataset_dir, data_ids[i])
                     shutil.copyfile(src + '_synthed.wav', filename(subset, datapoint_i, 'reference', 'wav'))
                     shutil.copyfile(src + '_encodec_recon.wav', filename(subset, datapoint_i, 'encodec_recon', 'wav'))
-                    datapoint_i += 1
-                    if datapoint_i == n_eval:
-                        break
-                else:
-                    continue
-                break
-            finally:
-                print(datapoint_i, '/', n_eval, flush=True)
+            print(datapoint_i, '/', n_eval, flush=True)
+
+    [doSet(*x) for x in zip(
+        subsets, loaders, n_evals, dataset_dirs, 
+    )]
