@@ -119,7 +119,7 @@ class LitPiano(L.LightningModule):
             evaluate(self.tfPiano.forward(x, mask, y), 'teacher_forcing')
 
             # auto-regressive
-            evaluate(self.tfPiano.autoRegress(x, mask), 'auto_regressive')
+            # evaluate(self.tfPiano.autoRegress(x, mask), 'auto_regressive')
         else:
             # tgt only positional encoding
             evaluate(self.tfPiano.forward(x, mask, None), '')

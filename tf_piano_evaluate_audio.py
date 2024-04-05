@@ -65,10 +65,12 @@ def evaluateAudio(
                     'teacher_forcing', 
                     litPiano.tfPiano.forward(x, mask, y), 
                 ))
+                print('Auto regress...', flush=True)
                 tasks.append((
                     'auto_regressive', 
                     litPiano.tfPiano.autoRegress(x, mask), 
                 ))
+                print('Auto regress ok', flush=True)
             else:
                 tasks.append((
                     '', 
