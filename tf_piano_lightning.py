@@ -126,7 +126,11 @@ class LitPiano(L.LightningModule):
 
     def configure_optimizers(self):
         hParams = self.hP
-        return torch.optim.Adam(self.tfPiano.parameters(), lr=hParams.tf_piano_lr)
+        optim = torch.optim.Adam(
+            self.tfPiano.parameters(), lr=hParams.tf_piano_lr, 
+        )
+        sched = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.97)
+        return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
         norms = grad_norm(self, norm_type=2)
