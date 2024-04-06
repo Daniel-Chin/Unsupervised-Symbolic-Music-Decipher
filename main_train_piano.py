@@ -10,14 +10,14 @@ from tf_piano_evaluate_audio import evaluateAudio
 def main():
     initMainProcess()
     hParams = HParams(
-        tf_piano_d_model = 512,
+        tf_piano_d_model = 256,
         key_event_encoder_n_layers = 1,
         key_event_encoder_d_hidden = None,
         key_event_onset_as_positional_encoding = True, 
         key_event_key_as_modular_encoding = True, 
         key_event_velocity_as_modular_encoding = True, 
         is_modular_encoding_soft = False,
-        tf_piano_n_head = 8,
+        tf_piano_n_head = 4,
         tf_piano_n_encoder_layers = 3,
         tf_piano_n_decoder_layers = 3,
         tf_piano_d_feedforward = 1024,
@@ -28,11 +28,11 @@ def main():
         tf_piano_val_oracle_set_size = 128, 
 
         tf_piano_lr = 2e-4,
-        tf_piano_batch_size = 8,
+        tf_piano_batch_size = 12,
         tf_piano_max_epochs = 100,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_big_tf'
+    exp_name = currentTimeDirName() + '_p_small_tf'
     print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
