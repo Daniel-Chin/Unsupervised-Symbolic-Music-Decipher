@@ -14,8 +14,9 @@ from lightning.pytorch.profilers import SimpleProfiler
 
 from shared import *
 from hparams import HParams
-from tf_piano_model import TFPiano, KeyEventEncoder, TransformerPianoModel
-from tf_piano_dataset import TransformerPianoDataset, collate, CollateFnOut
+from music import PIANO_RANGE
+from cnn_piano_model import CNNPianoModel
+from cnn_piano_dataset import CNNPianoDataset, BatchType
 
 MONKEY_VAL = 'MONKEY_VAL'
 ORACLE_VAL = 'ORACLE_VAL'
@@ -26,11 +27,12 @@ class LitPiano(L.LightningModule):
         super().__init__()
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
-        self.example_batch_size = 3
-        self.example_input_array = (
-            torch.randn((self.example_batch_size, N_TOKENS_PER_DATAPOINT, hParams.keyEventFormat().length)), 
-            torch.zeros((self.example_batch_size, N_TOKENS_PER_DATAPOINT)), 
-            torch.ones ((self.example_batch_size, ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT), dtype=torch.int),
+        example_batch_size = 3
+        self.example_input_array = torch.randn(
+            (
+                example_batch_size, 2, 
+                PIANO_RANGE[1] - PIANO_RANGE[0], N_TOKENS_PER_DATAPOINT, 
+            ), 
         )
 
         self.did_setup: bool = False
@@ -40,45 +42,29 @@ class LitPiano(L.LightningModule):
         return super().log(*a, batch_size=hParams.cnn_piano_batch_size, **kw)
     
     def setup(self, stage: str):
+        _ = stage
         assert not self.did_setup
         self.did_setup = True
 
         hParams = self.hP
-        keyEventEncoder = KeyEventEncoder(
-            hParams.keyEventFormat().length,
-            hParams.tf_piano_d_model, 
-            hParams.key_event_encoder_n_layers,
-            hParams.key_event_encoder_d_hidden, 
-        )
-        transformerPianoModel = TransformerPianoModel(
-            hParams.tf_piano_d_model, hParams.tf_piano_n_head,
-            hParams.tf_piano_n_encoder_layers, 
-            hParams.tf_piano_n_decoder_layers,
-            hParams.tf_piano_d_feedforward, 
-        )
-        self.tfPiano = TFPiano(
-            keyEventEncoder, transformerPianoModel, 
-            hParams.tf_piano_decoder_auto_regressive, 
-        )
+        self.cnnPiano = CNNPianoModel(hParams)
 
         # just for ModelSummary
-        self.keyEventEncoder = keyEventEncoder
-        self.transformerPianoModel = transformerPianoModel
-        self.outputProjector = self.tfPiano.outputProjector
-        self.tokenEmbedding = self.tfPiano.embedding
+        self.convs = self.cnnPiano.convs
+        self.outProjector = self.cnnPiano.outProjector
     
     def forward(
-        self, x: Tensor, mask: Tensor, y_hat_unshifted: Optional[Tensor],
+        self, x: Tensor, 
     ):
-        return self.tfPiano.forward(x, mask, y_hat_unshifted)
+        return self.cnnPiano.forward(x)
     
     def training_step(
-        self, batch: CollateFnOut, batch_idx: int, 
+        self, batch: BatchType, batch_idx: int, 
     ):
-        hParams = self.hP
-        x, y, mask, _ = batch
+        _ = batch_idx
+        x, y, _ = batch
 
-        y_logits = self.tfPiano.forward(x, mask, y if hParams.tf_piano_decoder_auto_regressive else None)
+        y_logits = self.forward(x)
         loss = F.cross_entropy(
             y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y       .view(-1), 
@@ -93,47 +79,38 @@ class LitPiano(L.LightningModule):
         return loss
     
     def validation_step(
-        self, batch: CollateFnOut, 
+        self, batch: BatchType, 
         batch_idx: int, dataloader_idx: int, 
     ):
-        hParams = self.hP
-        x, y, mask, _ = batch
+        _ = batch_idx
+        x, y, _ = batch
 
-        def log(name: str, value: float | int | Tensor):
-            self.log_(f'{VAL_CASES[dataloader_idx]}_{name}', value)
+        y_logits = self.forward(x)
 
-        def evaluate(y_logits: Tensor, name: str):
-            loss = F.cross_entropy(
-                y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-                y       .view(-1), 
-            )
-            log(f'loss_{name}', loss)
+        def logName(x: str, /):
+            return f'{VAL_CASES[dataloader_idx]}_{x}'
 
-            for book_i, accuracy in enumerate(
-                (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
-            ):
-                log(f'accuracy_{name}_book_{book_i}', accuracy)
+        loss = F.cross_entropy(
+            y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
+            y       .view(-1), 
+        )
+        self.log_(logName('loss'), loss)
+
+        for book_i, accuracy in enumerate(
+            (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
+        ):
+            self.log_(logName(f'accuracy_book_{book_i}'), accuracy)
         
-        if hParams.tf_piano_decoder_auto_regressive:
-            # teacher forcing
-            evaluate(self.tfPiano.forward(x, mask, y), 'teacher_forcing')
-
-            # auto-regressive
-            # evaluate(self.tfPiano.autoRegress(x, mask), 'auto_regressive')
-        else:
-            # tgt only positional encoding
-            evaluate(self.tfPiano.forward(x, mask, None), '')
-
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.tfPiano.parameters(), lr=hParams.cnn_piano_lr, 
+            self.cnnPiano.parameters(), lr=hParams.cnn_piano_lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.97)
         return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
-        norms = grad_norm(self, norm_type=2)
+        norms = grad_norm(self.cnnPiano, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
 
@@ -144,6 +121,7 @@ class LitPianoDataModule(L.LightningDataModule):
         self.did_setup: bool = False
 
     def setup(self, stage: Optional[str] = None):
+        _ = stage
         assert not self.did_setup
         self.did_setup = True
 
@@ -151,17 +129,15 @@ class LitPianoDataModule(L.LightningDataModule):
 
         @lru_cache(maxsize=1)
         def monkeyDataset():
-            return TransformerPianoDataset(
-                'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
-                hParams.keyEventFormat(), 
+            return CNNPianoDataset(
+                'monkey', CNN_PIANO_MONKEY_DATASET_DIR, 
                 hParams.cnn_piano_train_set_size + hParams.cnn_piano_val_monkey_set_size, 
             )
 
         @lru_cache(maxsize=1)
         def oracleDataset():
-            return TransformerPianoDataset(
-                'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
-                hParams.keyEventFormat(), 
+            return CNNPianoDataset(
+                'oracle', CNN_PIANO_ORACLE_DATASET_DIR, 
                 hParams.cnn_piano_val_oracle_set_size,
             )
         
@@ -172,12 +148,16 @@ class LitPianoDataModule(L.LightningDataModule):
             ], 
         )
         self.val_oracle_dataset = oracleDataset()
+        self.val_sets = {
+            MONKEY_VAL: self.val_monkey_dataset, 
+            ORACLE_VAL: self.val_oracle_dataset,
+        }
     
     def train_dataloader(self, shuffle=True):
         hParams = self.hP
         return DataLoader(
             self.train_dataset, batch_size=hParams.cnn_piano_batch_size, 
-            collate_fn=collate, shuffle=shuffle, 
+            shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
         )
     
@@ -185,15 +165,10 @@ class LitPianoDataModule(L.LightningDataModule):
         hParams = self.hP
         return [
             DataLoader(
-                self.val_monkey_dataset, batch_size=hParams.cnn_piano_batch_size, 
-                collate_fn=collate, 
+                self.val_sets[x], batch_size=hParams.cnn_piano_batch_size, 
                 num_workers=2, persistent_workers=True, 
-            ),
-            DataLoader(
-                self.val_oracle_dataset, batch_size=hParams.cnn_piano_batch_size, 
-                collate_fn=collate, 
-                num_workers=2, persistent_workers=True, 
-            ),
+            )
+            for x in VAL_CASES
         ]
 
 def train(hParams: HParams, root_dir: str):
@@ -216,7 +191,7 @@ def train(hParams: HParams, root_dir: str):
         profiler=profiler, 
         callbacks=[
             # DeviceStatsMonitor(), 
-            # ModelSummary(max_depth=2), # Internal error: NestedTensorImpl doesn't support sizes.
+            # ModelSummary(max_depth=2), 
         ], 
         log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
         # overfit_batches=1, 

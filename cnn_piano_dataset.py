@@ -60,6 +60,8 @@ class CNNPianoDataset(Dataset):
         '''
         return self.X[index, :, :, :], self.Y[index, :, :], self.data_ids[index]
 
+BatchType = Tuple[Tensor, Tensor, Tuple[str]]
+
 if __name__ == '__main__':
     dataset = CNNPianoDataset(
         '0', CNN_PIANO_MONKEY_DATASET_DIR, 32, 
