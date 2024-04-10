@@ -37,7 +37,7 @@ class LitPiano(L.LightningModule):
     
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.tf_piano_batch_size, **kw)
+        return super().log(*a, batch_size=hParams.cnn_piano_batch_size, **kw)
     
     def setup(self, stage: str):
         assert not self.did_setup
@@ -127,7 +127,7 @@ class LitPiano(L.LightningModule):
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.tfPiano.parameters(), lr=hParams.tf_piano_lr, 
+            self.tfPiano.parameters(), lr=hParams.cnn_piano_lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.97)
         return [optim], [sched]
@@ -154,7 +154,7 @@ class LitPianoDataModule(L.LightningDataModule):
             return TransformerPianoDataset(
                 'monkey', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 
                 hParams.keyEventFormat(), 
-                hParams.tf_piano_train_set_size + hParams.tf_piano_val_monkey_set_size, 
+                hParams.cnn_piano_train_set_size + hParams.cnn_piano_val_monkey_set_size, 
             )
 
         @lru_cache(maxsize=1)
@@ -162,13 +162,13 @@ class LitPianoDataModule(L.LightningDataModule):
             return TransformerPianoDataset(
                 'oracle', TRANSFORMER_PIANO_ORACLE_DATASET_DIR, 
                 hParams.keyEventFormat(), 
-                hParams.tf_piano_val_oracle_set_size,
+                hParams.cnn_piano_val_oracle_set_size,
             )
         
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkeyDataset(), [
-                hParams.tf_piano_train_set_size, 
-                hParams.tf_piano_val_monkey_set_size, 
+                hParams.cnn_piano_train_set_size, 
+                hParams.cnn_piano_val_monkey_set_size, 
             ], 
         )
         self.val_oracle_dataset = oracleDataset()
@@ -176,7 +176,7 @@ class LitPianoDataModule(L.LightningDataModule):
     def train_dataloader(self, shuffle=True):
         hParams = self.hP
         return DataLoader(
-            self.train_dataset, batch_size=hParams.tf_piano_batch_size, 
+            self.train_dataset, batch_size=hParams.cnn_piano_batch_size, 
             collate_fn=collate, shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
         )
@@ -185,12 +185,12 @@ class LitPianoDataModule(L.LightningDataModule):
         hParams = self.hP
         return [
             DataLoader(
-                self.val_monkey_dataset, batch_size=hParams.tf_piano_batch_size, 
+                self.val_monkey_dataset, batch_size=hParams.cnn_piano_batch_size, 
                 collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
             DataLoader(
-                self.val_oracle_dataset, batch_size=hParams.tf_piano_batch_size, 
+                self.val_oracle_dataset, batch_size=hParams.cnn_piano_batch_size, 
                 collate_fn=collate, 
                 num_workers=2, persistent_workers=True, 
             ),
@@ -209,7 +209,7 @@ def train(hParams: HParams, root_dir: str):
     logger = TensorBoardLogger(root_dir, log_name)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
-        devices=[DEVICE.index], max_epochs=hParams.tf_piano_max_epochs, 
+        devices=[DEVICE.index], max_epochs=hParams.cnn_piano_max_epochs, 
         gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
@@ -218,7 +218,7 @@ def train(hParams: HParams, root_dir: str):
             # DeviceStatsMonitor(), 
             # ModelSummary(max_depth=2), # Internal error: NestedTensorImpl doesn't support sizes.
         ], 
-        log_every_n_steps=min(50, hParams.tf_piano_train_set_size // hParams.tf_piano_batch_size), 
+        log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
         # overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)

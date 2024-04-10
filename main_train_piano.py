@@ -23,13 +23,13 @@ def main():
         tf_piano_d_feedforward = 1024,
         tf_piano_decoder_auto_regressive = True,
 
-        tf_piano_train_set_size = 8000, 
-        tf_piano_val_monkey_set_size = 2000, 
-        tf_piano_val_oracle_set_size = 128, 
+        cnn_piano_train_set_size = 8000, 
+        cnn_piano_val_monkey_set_size = 2000, 
+        cnn_piano_val_oracle_set_size = 128, 
 
-        tf_piano_lr = 2e-4,
-        tf_piano_batch_size = 12,
-        tf_piano_max_epochs = 100,
+        cnn_piano_lr = 2e-4,
+        cnn_piano_batch_size = 12,
+        cnn_piano_max_epochs = 100,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_small_tf'
