@@ -66,8 +66,8 @@ class LitPiano(L.LightningModule):
 
         y_logits = self.forward(x)
         loss = F.cross_entropy(
-            y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y       .view(-1), 
+            y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
+            y       .view   (-1).to(torch.long), 
         )
         self.log_('train_loss', loss)
 
@@ -91,8 +91,8 @@ class LitPiano(L.LightningModule):
             return f'{VAL_CASES[dataloader_idx]}_{x}'
 
         loss = F.cross_entropy(
-            y_logits.view(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y       .view(-1), 
+            y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
+            y       .view   (-1).to(torch.long), 
         )
         self.log_(logName('loss'), loss)
 
