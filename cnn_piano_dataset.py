@@ -9,7 +9,7 @@ from tqdm import tqdm
 from shared import *
 from music import PIANO_RANGE
 
-class TransformerPianoDataset(Dataset):
+class CNNPianoDataset(Dataset):
     def __init__(
         self, name: str, dir_path: str, 
         size: int, offset: int = 0, 
@@ -60,12 +60,9 @@ class TransformerPianoDataset(Dataset):
         '''
         return self.X[index, :, :, :], self.Y[index, :, :], self.data_ids[index]
 
-CollateFnIn = List[Tuple[Tensor, Tensor, str]]
-CollateFnOut = Tuple[Tensor, Tensor, Tensor, List[str]]
-
 if __name__ == '__main__':
-    dataset = TransformerPianoDataset(
-        '0', TRANSFORMER_PIANO_MONKEY_DATASET_DIR, 32, 
+    dataset = CNNPianoDataset(
+        '0', CNN_PIANO_MONKEY_DATASET_DIR, 32, 
     )
     import IPython; IPython.embed()
 

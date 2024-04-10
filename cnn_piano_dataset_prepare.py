@@ -190,10 +190,10 @@ def prepareOneSet(
         encodec = None
 
     if which_set == WhichSet.MONKEY:
-        dest_set_dir = TRANSFORMER_PIANO_MONKEY_DATASET_DIR
+        dest_set_dir = CNN_PIANO_MONKEY_DATASET_DIR
         midi_basenames = [None] * n_datapoints
     elif which_set == WhichSet.ORACLE:
-        dest_set_dir = TRANSFORMER_PIANO_ORACLE_DATASET_DIR
+        dest_set_dir = CNN_PIANO_ORACLE_DATASET_DIR
         with open(path.join(
             PIANO_LA_DATASET_DIR, select_dir, 'index.json', 
         ), 'r', encoding='utf-8') as f:
