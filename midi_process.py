@@ -229,6 +229,7 @@ def trimStart(midi: pretty_midi.PrettyMIDI):
 
 if __name__ == '__main__':
     # test()
+    # main([*LA_DATASET_DIRS], 4)
     # noteStats(30)
 
     parser = argparse.ArgumentParser()
