@@ -25,9 +25,10 @@ def evaluateAudio(
     os.makedirs(audio_dir)
     encodec = getEncodec().to(DEVICE)
     subsets = ['train', *VAL_CASES]
+    batch_size = min(8, dataModule.hP.cnn_piano_batch_size)
     loaders = [
-        dataModule.train_dataloader(shuffle=False), 
-        *dataModule.val_dataloader(),
+        dataModule.train_dataloader(batch_size, shuffle=False), 
+        *dataModule.val_dataloader(batch_size, ),
     ]
     dataset_dirs = [    # violates DRY w/ VAL_CASES
         CNN_PIANO_MONKEY_DATASET_DIR, 

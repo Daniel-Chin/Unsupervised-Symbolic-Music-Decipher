@@ -153,19 +153,21 @@ class LitPianoDataModule(L.LightningDataModule):
             ORACLE_VAL: self.val_oracle_dataset,
         }
     
-    def train_dataloader(self, shuffle=True):
+    def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
+        bs = batch_size or hParams.cnn_piano_batch_size
         return DataLoader(
-            self.train_dataset, batch_size=hParams.cnn_piano_batch_size, 
+            self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
         )
     
-    def val_dataloader(self):
+    def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
+        bs = batch_size or hParams.cnn_piano_batch_size
         return [
             DataLoader(
-                self.val_sets[x], batch_size=hParams.cnn_piano_batch_size, 
+                self.val_sets[x], batch_size=bs, 
                 num_workers=2, persistent_workers=True, 
             )
             for x in VAL_CASES
