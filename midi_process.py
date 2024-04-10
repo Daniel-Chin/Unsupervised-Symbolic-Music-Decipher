@@ -128,6 +128,7 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             if not smart_piano.instruments[0].notes:
                 accException(ValueError('No notes in piano track'))
                 continue
+            trimStart(smart_piano)
             dest_basename = src_basename
             smart_piano.write(path.join(
                 PIANO_LA_DATASET_DIR, dir_, dest_basename, 
@@ -214,6 +215,17 @@ def noteStats(limit: Optional[int] = None):
         plt.show()
     show()
     import IPython; IPython.embed()
+
+def trimStart(midi: pretty_midi.PrettyMIDI):
+    PADDING = 0.5
+    piano, = midi.instruments
+    piano: pretty_midi.Instrument
+    notes = piano.notes
+    notes: List[pretty_midi.Note]
+    song_start = min(note.start for note in notes) - PADDING
+    for note in notes:
+        note.start -= song_start
+        note.end -= song_start
 
 if __name__ == '__main__':
     # test()
