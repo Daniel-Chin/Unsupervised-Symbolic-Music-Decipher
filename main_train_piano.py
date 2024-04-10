@@ -8,7 +8,11 @@ from cnn_piano_evaluate_audio import evaluateAudio
 def main():
     initMainProcess()
     hParams = HParams(
-        cnn_piano_architecture = [...], 
+        cnn_piano_architecture = [
+            (2, 256), 
+            (2, 512), 
+            (2, 512), 
+        ], 
 
         cnn_piano_train_set_size = 8000, 
         cnn_piano_val_monkey_set_size = 2000, 
