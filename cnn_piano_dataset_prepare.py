@@ -145,11 +145,11 @@ def prepareOneDatapoint(
         
         printProfiling('Formatting datapoint')
         x = (-torch.randn((
-            SEC_PER_DATAPOINT * ENCODEC_FPS, 
-            PIANO_RANGE[1] - PIANO_RANGE[0],
             2, 
+            PIANO_RANGE[1] - PIANO_RANGE[0],
+            SEC_PER_DATAPOINT * ENCODEC_FPS, 
         )).square()).exp()
-        x[:, :, 0] = 0.0
+        x[0, :, :] = 0.0
         for note in piano.notes:
             note: pretty_midi.Note
             duration = note.end - note.start
@@ -158,8 +158,8 @@ def prepareOneDatapoint(
                 round(note.end   * ENCODEC_FPS), 
             )
             pitch_index = note.pitch - PIANO_RANGE[0]
-            x[t_slice, pitch_index, 0] = note.velocity / 127.0
-            x[t_slice, pitch_index, 1] = torch.linspace(
+            x[0, pitch_index, t_slice] = note.velocity / 127.0
+            x[1, pitch_index, t_slice] = torch.linspace(
                 0, -1.0 * duration, t_slice.stop - t_slice.start,
             ).exp()
         y = codes[0, :, :].to(torch.int16).cpu()
@@ -215,10 +215,10 @@ def prepareOneSet(
             data_ids.append(str(datapoint_i))
             if plot_x and out is not None:
                 x, _ = out
-                plt.imshow(x[:, :, 0].T, aspect='auto')
+                plt.imshow(x[0, :, :].T, aspect='auto')
                 plt.colorbar()
                 plt.show()
-                plt.imshow(x[:, :, 1].T, aspect='auto')
+                plt.imshow(x[1, :, :].T, aspect='auto')
                 plt.colorbar()
                 plt.show()
     finally:

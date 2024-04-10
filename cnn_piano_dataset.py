@@ -1,6 +1,5 @@
 import json
 from os import path
-from time import perf_counter, sleep
 
 import torch
 from torch import Tensor
@@ -31,9 +30,9 @@ class TransformerPianoDataset(Dataset):
         self.data_ids = getDataIds()
         self.X = torch.zeros((
             len(self.data_ids), 
-            SEC_PER_DATAPOINT * ENCODEC_FPS, 
-            PIANO_RANGE[1] - PIANO_RANGE[0], 
             2, 
+            PIANO_RANGE[1] - PIANO_RANGE[0], 
+            SEC_PER_DATAPOINT * ENCODEC_FPS, 
         ), device=device)
         self.Y = torch.zeros((
             len(self.data_ids), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
@@ -55,7 +54,7 @@ class TransformerPianoDataset(Dataset):
 
     def __getitem__(self, index: int):
         '''
-        `x`: (SEC_PER_DATAPOINT * ENCODEC_FPS, PIANO_RANGE[1] - PIANO_RANGE[0], 2)
+        `x`: (2, PIANO_RANGE[1] - PIANO_RANGE[0], SEC_PER_DATAPOINT * ENCODEC_FPS)
         `y`: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
         `data_id`: str
         '''
