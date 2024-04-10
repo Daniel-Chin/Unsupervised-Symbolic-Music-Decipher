@@ -11,6 +11,7 @@ import audioread
 from audioread.rawread import RawAudioFile
 from tqdm import tqdm
 import scipy.io.wavfile as wavfile
+from matplotlib import pyplot as plt
 
 from shared import *
 from music import PIANO_RANGE
@@ -143,15 +144,24 @@ def prepareOneDatapoint(
         wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
         
         printProfiling('Formatting datapoint')
-        x = torch.zeros((
-            n_notes, 
-            1 + 1 + 1, 
-        ))
-        for i, note in enumerate(piano.notes):
+        x = (-torch.randn((
+            SEC_PER_DATAPOINT * ENCODEC_FPS, 
+            PIANO_RANGE[1] - PIANO_RANGE[0],
+            2, 
+        )).square()).exp()
+        x[:, :, 0] = 0.0
+        for note in piano.notes:
             note: pretty_midi.Note
-            x[i, 0] = note.start / float(SEC_PER_DATAPOINT)
-            x[i, 1] = note.velocity / 127.0
-            x[i, 2] = float(note.pitch)
+            duration = note.end - note.start
+            t_slice = slice(
+                round(note.start * ENCODEC_FPS), 
+                round(note.end   * ENCODEC_FPS), 
+            )
+            pitch_index = note.pitch - PIANO_RANGE[0]
+            x[t_slice, pitch_index, 0] = note.velocity / 127.0
+            x[t_slice, pitch_index, 1] = torch.linspace(
+                0, -1.0 * duration, t_slice.stop - t_slice.start,
+            ).exp()
         y = codes[0, :, :].to(torch.int16).cpu()
         assert y.shape == (4, N_TOKENS_PER_DATAPOINT)
 
@@ -163,16 +173,17 @@ def prepareOneDatapoint(
             dest_dir, f'{idx}_y.pt',
         ))
 
-def main(
+        return x, y
+
+def prepareOneSet(
     which_set: WhichSet,
     stage: Stage,
     select_dir: str, 
     n_datapoints: int, 
     verbose: bool, 
     do_fluidsynth_write_pcm: bool, 
+    plot_x: bool = False,
 ):
-    initMainProcess()
-
     if stage == Stage.GPU:
         encodec = getEncodec().to(DEVICE)
     else:
@@ -196,12 +207,20 @@ def main(
         for datapoint_i, midi_basename in enumerate(tqdm(midi_basenames)):
             if verbose:
                 print()
-            prepareOneDatapoint(
+            out = prepareOneDatapoint(
                 stage, encodec, datapoint_i, dest_dir, 
                 midi_basename and path.join(PIANO_LA_DATASET_DIR, select_dir, midi_basename), 
                 verbose, do_fluidsynth_write_pcm, 
             )
             data_ids.append(str(datapoint_i))
+            if plot_x and out is not None:
+                x, _ = out
+                plt.imshow(x[:, :, 0].T, aspect='auto')
+                plt.colorbar()
+                plt.show()
+                plt.imshow(x[:, :, 1].T, aspect='auto')
+                plt.colorbar()
+                plt.show()
     finally:
         if stage == Stage.GPU:
             with open(path.join(
@@ -211,23 +230,26 @@ def main(
 
 def laptop():
     TO_PREPARE: List[Tuple[WhichSet, int]] = [
-        (WhichSet.MONKEY, 32 // 16), 
         (WhichSet.ORACLE, 32 // 16),
+        (WhichSet.MONKEY, 32 // 16), 
     ]
 
     for which_set, n_datapoints in TO_PREPARE:
         for select_dir in tqdm(LA_DATASET_DIRS, desc=which_set.value):
             for stage in (Stage.CPU, Stage.GPU):
-                main(
+                prepareOneSet(
                     which_set, 
                     stage, 
                     select_dir, 
                     n_datapoints, 
                     verbose=False, 
                     do_fluidsynth_write_pcm=False, 
+                    # plot_x=True,
                 )
 
 if __name__ == '__main__':
+    initMainProcess()
+
     # laptop()
     # import sys; sys.exit(0)
 
@@ -251,7 +273,7 @@ if __name__ == '__main__':
         '--do_fluidsynth_write_pcm', action='store_true',
     )
     args = parser.parse_args()
-    main(
+    prepareOneSet(
         args.which_set, 
         args.stage, 
         args.select_dir, 

@@ -6,7 +6,7 @@ from paths import *
 from torchwork_mini import *
 from domestic_typing import *
 
-SEC_PER_DATAPOINT = 30
+SEC_PER_DATAPOINT = 15
 ENCODEC_SR = 32000
 ENCODEC_N_BOOKS = 4
 ENCODEC_N_WORDS_PER_BOOK = 2048

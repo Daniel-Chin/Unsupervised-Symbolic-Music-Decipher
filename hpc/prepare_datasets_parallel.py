@@ -10,7 +10,7 @@ TO_PREPARE = [
 ]
 
 def main(stage: str):
-    with open('./prepare_datasets_templare.sbatch', 'r', encoding='utf-8') as f:
+    with open('./prepare_datasets_template.sbatch', 'r', encoding='utf-8') as f:
         template = f.read()
     
     with SbatchContext('./scancel_all.sh') as sbatch:
