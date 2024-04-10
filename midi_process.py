@@ -42,7 +42,7 @@ def isPianoable(instrument: pretty_midi.Instrument):
         return False
     for note in instrument.notes:
         note: pretty_midi.Note
-        if note.pitch < PIANO_RANGE[0] or note.pitch > PIANO_RANGE[1]:
+        if note.pitch not in range(*PIANO_RANGE):
             return False
     return True
 

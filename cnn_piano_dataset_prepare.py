@@ -45,7 +45,7 @@ def generateMidi():
     pitches = torch.randn((n_notes, )).mul(PITCH_SIGMA).add(PITCH_MU).round().numpy()
     pitches[np.logical_or(
         pitches < PIANO_RANGE[0], 
-        pitches > PIANO_RANGE[1], 
+        pitches >= PIANO_RANGE[1], 
     )] = 60
     for onset, duration, velocity, pitch in zip(
         onsets, durations, velocities, pitches, 

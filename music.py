@@ -1,6 +1,6 @@
 import numpy as np
 
-PIANO_RANGE = (21, 108)
+PIANO_RANGE = (21, 109) # excluding 109
 
 def pitch2freq(pitch: float) -> float:
     return np.exp((pitch + 36.37631656229591) * 0.0577622650466621)
