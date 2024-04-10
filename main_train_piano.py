@@ -20,7 +20,7 @@ def main():
 
         cnn_piano_lr = 1e-3,
         cnn_piano_batch_size = 128,
-        cnn_piano_max_epochs = 100,
+        cnn_piano_max_epochs = 25,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_1024'
