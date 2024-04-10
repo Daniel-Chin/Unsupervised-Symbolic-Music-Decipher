@@ -50,8 +50,8 @@ class LitPiano(L.LightningModule):
         self.cnnPiano = CNNPianoModel(hParams)
 
         # just for ModelSummary
-        self.convs = self.cnnPiano.convs
-        self.outProjector = self.cnnPiano.outProjector
+        # self.convs = self.cnnPiano.convs
+        # self.outProjector = self.cnnPiano.outProjector
     
     def forward(
         self, x: Tensor, 
@@ -191,7 +191,7 @@ def train(hParams: HParams, root_dir: str):
         profiler=profiler, 
         callbacks=[
             # DeviceStatsMonitor(), 
-            # ModelSummary(max_depth=2), 
+            ModelSummary(max_depth=2), 
         ], 
         log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
         # overfit_batches=1, 
