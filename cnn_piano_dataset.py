@@ -32,7 +32,7 @@ class TransformerPianoDataset(Dataset):
             len(self.data_ids), 
             2, 
             PIANO_RANGE[1] - PIANO_RANGE[0], 
-            SEC_PER_DATAPOINT * ENCODEC_FPS, 
+            N_TOKENS_PER_DATAPOINT, 
         ), device=device)
         self.Y = torch.zeros((
             len(self.data_ids), ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT, 
@@ -54,7 +54,7 @@ class TransformerPianoDataset(Dataset):
 
     def __getitem__(self, index: int):
         '''
-        `x`: (2, PIANO_RANGE[1] - PIANO_RANGE[0], SEC_PER_DATAPOINT * ENCODEC_FPS)
+        `x`: (2, PIANO_RANGE[1] - PIANO_RANGE[0], N_TOKENS_PER_DATAPOINT)
         `y`: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
         `data_id`: str
         '''

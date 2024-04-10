@@ -147,7 +147,7 @@ def prepareOneDatapoint(
         x = (-torch.randn((
             2, 
             PIANO_RANGE[1] - PIANO_RANGE[0],
-            SEC_PER_DATAPOINT * ENCODEC_FPS, 
+            N_TOKENS_PER_DATAPOINT, 
         )).square()).exp()
         x[0, :, :] = 0.0
         for note in piano.notes:
