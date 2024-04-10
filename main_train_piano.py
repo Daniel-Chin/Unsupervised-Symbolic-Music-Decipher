@@ -18,8 +18,8 @@ def main():
         cnn_piano_val_monkey_set_size = 2000, 
         cnn_piano_val_oracle_set_size = 128, 
 
-        cnn_piano_lr = 2e-4,
-        cnn_piano_batch_size = 12,
+        cnn_piano_lr = 1e-3,
+        cnn_piano_batch_size = 128,
         cnn_piano_max_epochs = 100,
         require_repo_working_tree_clean = True, 
     )
