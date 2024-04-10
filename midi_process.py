@@ -141,6 +141,7 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
             json.dump(dests, f)
         print()
         pprint(midi_exceptions)
+    print('OK')
 
 def noteStats(limit: Optional[int] = None):
     with open(path.join(

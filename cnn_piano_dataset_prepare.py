@@ -281,3 +281,4 @@ if __name__ == '__main__':
         args.verbose, 
         args.do_fluidsynth_write_pcm, 
     )
+    print('OK')
