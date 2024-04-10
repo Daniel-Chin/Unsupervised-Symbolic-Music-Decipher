@@ -18,8 +18,8 @@ from music import PIANO_RANGE
 from cnn_piano_model import CNNPianoModel
 from cnn_piano_dataset import CNNPianoDataset, BatchType
 
-MONKEY_VAL = 'MONKEY_VAL'
-ORACLE_VAL = 'ORACLE_VAL'
+MONKEY_VAL = 'VAL_MONKEY'
+ORACLE_VAL = 'VAL_ORACLE'
 VAL_CASES = [MONKEY_VAL, ORACLE_VAL]
 
 class LitPiano(L.LightningModule):
