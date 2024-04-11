@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=8:00:00
-#SBATCH --mem=24GB
+#SBATCH --mem=8GB
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=train_piano
 #SBATCH --output=train_piano.out
