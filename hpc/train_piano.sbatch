@@ -6,8 +6,8 @@
 #SBATCH --mem=8GB
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=train_piano
-#SBATCH --output=train_piano.out
-#SBATCH --error=train_piano.err
+#SBATCH --output=train_piano_$SLURM_JOB_ID.out
+#SBATCH --error=train_piano_$SLURM_JOB_ID.err
 #SBATCH --partition=aquila,gpu
 #SBATCH --constraint=3090
 
