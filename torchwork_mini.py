@@ -1,3 +1,4 @@
+import os
 import dataclasses
 from functools import lru_cache
 from datetime import datetime
@@ -63,6 +64,7 @@ def writeLightningHparams(
     litModule.save_hyperparameters(dataclasses.asdict(dataclassObject))
     litModule.save_hyperparameters(dict(
         commit_hash = getCommitHash(do_assert_working_tree_clean), 
+        slurm_job_id = os.environ.get('SLURM_JOB_ID'),
     ))
 
 def currentTimeDirName():
