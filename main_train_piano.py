@@ -13,9 +13,10 @@ def main():
             (3, 1024), 
         ], 
 
-        cnn_piano_train_set_size = 8000, 
+        # cnn_piano_train_set_size = 8000, 
         # cnn_piano_val_monkey_set_size = 2000, 
         # cnn_piano_val_oracle_set_size = 128, 
+        cnn_piano_train_set_size = 256, 
         cnn_piano_val_monkey_set_size = 0, 
         cnn_piano_val_oracle_set_size = 0, 
 
