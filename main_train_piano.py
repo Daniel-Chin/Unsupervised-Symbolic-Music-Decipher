@@ -20,7 +20,7 @@ def main():
         cnn_piano_lr = 1e-3,
         cnn_piano_lr_decay = 0.99, 
         cnn_piano_batch_size = 256,
-        cnn_piano_max_epochs = 80,
+        cnn_piano_max_epochs = 800,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_overfit'
