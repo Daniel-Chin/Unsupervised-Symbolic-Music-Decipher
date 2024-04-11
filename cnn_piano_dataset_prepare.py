@@ -215,10 +215,8 @@ def prepareOneSet(
             data_ids.append(str(datapoint_i))
             if plot_x and out is not None:
                 x, _ = out
-                plt.imshow(x[0, :, :].T, aspect='auto')
-                plt.colorbar()
-                plt.show()
-                plt.imshow(x[1, :, :].T, aspect='auto')
+                img = x.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_TOKENS_PER_DATAPOINT)
+                plt.imshow(img, aspect='auto', interpolation='nearest')
                 plt.colorbar()
                 plt.show()
     finally:
