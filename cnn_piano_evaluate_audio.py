@@ -61,7 +61,9 @@ def evaluateAudio(
                 return
             
             y_logits = litPiano.forward(x)
-            wave = encodec.decode(y_logits.argmax(dim=-1))
+            wave: np.ndarray = encodec.decode(
+                y_logits.argmax(dim=-1), 
+            ).cpu().numpy()
             assert wave.shape[1] == 1
 
             for i in range(batch_size):
