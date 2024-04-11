@@ -24,10 +24,10 @@ def main():
         cnn_piano_lr = 1e-3,
         cnn_piano_lr_decay = 1.00, 
         cnn_piano_batch_size = 256,
-        cnn_piano_max_epochs = 800,
+        cnn_piano_max_epochs = 8000,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_overfit_no_decay'
+    exp_name = currentTimeDirName() + '_p_overfit_long'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
