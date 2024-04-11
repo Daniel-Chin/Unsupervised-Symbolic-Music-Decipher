@@ -17,8 +17,9 @@ def main():
         # cnn_piano_val_monkey_set_size = 2000, 
         # cnn_piano_val_oracle_set_size = 128, 
         cnn_piano_train_set_size = 256, 
-        cnn_piano_val_monkey_set_size = 0, 
-        cnn_piano_val_oracle_set_size = 0, 
+        cnn_piano_val_monkey_set_size = 256, 
+        cnn_piano_val_oracle_set_size = 128, 
+        cnn_piano_do_validate = False,
 
         cnn_piano_lr = 1e-3,
         cnn_piano_lr_decay = 1.00, 

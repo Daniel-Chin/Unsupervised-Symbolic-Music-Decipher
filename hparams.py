@@ -9,6 +9,7 @@ class HParams:
     cnn_piano_train_set_size: int
     cnn_piano_val_monkey_set_size: int
     cnn_piano_val_oracle_set_size: int
+    cnn_piano_do_validate: bool
 
     cnn_piano_lr: float
     cnn_piano_lr_decay: float

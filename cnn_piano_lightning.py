@@ -82,6 +82,9 @@ class LitPiano(L.LightningModule):
         self, batch: BatchType, 
         batch_idx: int, dataloader_idx: int, 
     ):
+        if not self.hP.cnn_piano_do_validate:
+            return
+        
         _ = batch_idx
         x, y, _ = batch
 
