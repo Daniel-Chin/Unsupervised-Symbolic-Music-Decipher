@@ -20,14 +20,16 @@ def main():
         cnn_piano_val_oracle_set_size = 128, 
 
         cnn_piano_lr = 1e-3,
+        cnn_piano_lr_decay = 0.99, 
         cnn_piano_batch_size = 256,
         cnn_piano_max_epochs = 100,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_1122'
-    print(f'{exp_name = }', flush=True)
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
+    print(f'{exp_name = }', flush=True)
+    hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litPiano, dataModule = train(hParams, root_dir)
     evaluateAudio(litPiano.to(DEVICE), dataModule, root_dir)

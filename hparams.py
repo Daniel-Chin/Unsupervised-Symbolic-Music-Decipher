@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from shared import *
 
@@ -11,6 +11,7 @@ class HParams:
     cnn_piano_val_oracle_set_size: int
 
     cnn_piano_lr: float
+    cnn_piano_lr_decay: float
     cnn_piano_batch_size: int
     cnn_piano_max_epochs: int
 
@@ -18,3 +19,10 @@ class HParams:
 
     def __post_init__(self):
         pass    # put validation here
+
+    def summary(self):
+        print('HParams:')
+        for k, v in asdict(self).items():
+            print(' ', k, '=', v)
+        print(' ')
+        print(' ', 'Ending lr =', self.cnn_piano_lr * (self.cnn_piano_lr_decay ** self.cnn_piano_max_epochs))

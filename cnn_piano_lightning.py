@@ -106,7 +106,9 @@ class LitPiano(L.LightningModule):
         optim = torch.optim.Adam(
             self.cnnPiano.parameters(), lr=hParams.cnn_piano_lr, 
         )
-        sched = torch.optim.lr_scheduler.ExponentialLR(optim, gamma=0.97)
+        sched = torch.optim.lr_scheduler.ExponentialLR(
+            optim, gamma=hParams.cnn_piano_lr_decay, 
+        )
         return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
