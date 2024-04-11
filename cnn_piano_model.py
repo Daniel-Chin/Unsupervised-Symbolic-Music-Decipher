@@ -5,6 +5,12 @@ from shared import *
 from hparams import HParams
 from music import PIANO_RANGE
 
+class PermuteLayer(torch.nn.Module):
+    def forward(
+        self, x: Tensor, 
+    ) -> Tensor:
+        return x.permute(0, 2, 1)
+
 class CNNPianoModel(torch.nn.Module):
     def __init__(self, hParams: HParams):
         super().__init__()
@@ -16,7 +22,9 @@ class CNNPianoModel(torch.nn.Module):
                 kernel_size=radius * 2 + 1, padding=radius,
             ))
             current_n_channel = n_channel
+            self.convs.append(PermuteLayer())
             self.convs.append(torch.nn.LayerNorm([n_channel]))
+            self.convs.append(PermuteLayer())
             self.convs.append(torch.nn.ReLU())
         self.outProjector = torch.nn.Linear(
             current_n_channel, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
