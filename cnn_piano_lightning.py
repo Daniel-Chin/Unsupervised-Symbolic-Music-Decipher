@@ -84,7 +84,7 @@ class LitPiano(L.LightningModule):
     ):
         if not self.hP.cnn_piano_do_validate:
             return
-        
+
         _ = batch_idx
         x, y, _ = batch
 
@@ -201,7 +201,7 @@ def train(hParams: HParams, root_dir: str):
             ModelSummary(max_depth=2), 
         ], 
         log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
-        overfit_batches=1, 
+        # overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(litPiano, dataModule)
