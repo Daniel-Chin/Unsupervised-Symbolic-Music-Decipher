@@ -4,7 +4,8 @@ from shared import *
 
 @dataclass(frozen=True)
 class HParams:
-    cnn_piano_architecture: List[Tuple[int, int]]
+    cnn_piano_cnn: List[Tuple[int, int]]
+    cnn_piano_fc: List[List[int]]
 
     cnn_piano_train_set_size: int
     cnn_piano_val_monkey_set_size: int
@@ -19,7 +20,7 @@ class HParams:
     require_repo_working_tree_clean: bool
 
     def __post_init__(self):
-        pass    # put validation here
+        assert len(self.cnn_piano_fc) == ENCODEC_N_BOOKS
 
     def summary(self):
         print('HParams:')

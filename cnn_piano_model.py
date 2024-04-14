@@ -16,7 +16,7 @@ class CNNPianoModel(torch.nn.Module):
         super().__init__()
         self.convs = torch.nn.Sequential()
         current_n_channel = 2 * (PIANO_RANGE[1] - PIANO_RANGE[0])
-        for radius, n_channel in hParams.cnn_piano_architecture:
+        for radius, n_channel in hParams.cnn_piano_cnn:
             self.convs.append(torch.nn.Conv1d(
                 current_n_channel, n_channel, 
                 kernel_size=radius * 2 + 1, padding=radius,
@@ -26,9 +26,19 @@ class CNNPianoModel(torch.nn.Module):
             self.convs.append(torch.nn.LayerNorm([n_channel]))
             self.convs.append(PermuteLayer())
             self.convs.append(torch.nn.ReLU())
-        self.outProjector = torch.nn.Linear(
-            current_n_channel, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
-        )
+        self.fcs = torch.nn.ModuleList()
+        self.outProjectors = torch.nn.ModuleList()
+        for widths in hParams.cnn_piano_fc:
+            fc = torch.nn.Sequential()
+            self.fcs.append(fc)
+            for width in widths:
+                fc.append(torch.nn.Linear(current_n_channel, width))
+                current_n_channel = width
+                fc.append(torch.nn.ReLU())
+            outProjector = torch.nn.Linear(
+                current_n_channel, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
+            )
+            self.outProjectors.append(outProjector)
         receptive_field = (sum(
             radius for radius, _ in hParams.cnn_piano_architecture
         ) * 2 + 1) / ENCODEC_FPS
