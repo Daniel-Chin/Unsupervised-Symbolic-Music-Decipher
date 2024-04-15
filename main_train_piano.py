@@ -9,8 +9,10 @@ def main():
     initMainProcess()
     hParams = HParams(
         cnn_piano_architecture = [
-            (3, 256), 
-            (3, 512), 
+            (6, 512), 
+            (0, 512), 
+            (0, 512), 
+            (0, 512), 
         ], 
 
         cnn_piano_train_set_size = 8000, 
@@ -24,7 +26,7 @@ def main():
         cnn_piano_max_epochs = 1000,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_small'
+    exp_name = currentTimeDirName() + '_p_fc'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
