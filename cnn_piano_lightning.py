@@ -198,7 +198,7 @@ def train(hParams: HParams, root_dir: str):
         profiler=profiler, 
         callbacks=[
             # DeviceStatsMonitor(), 
-            ModelSummary(max_depth=2), 
+            ModelSummary(max_depth=3), 
         ], 
         log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
         # overfit_batches=1, 

@@ -2,9 +2,12 @@ from dataclasses import dataclass, asdict
 
 from shared import *
 
+ConvLayerHParam = Tuple[int, int]    # (kernel_radius, out_channels)
+CNNResidualBlockHParam = List[ConvLayerHParam]
+
 @dataclass(frozen=True)
 class HParams:
-    cnn_piano_architecture: List[Tuple[int, int]]
+    cnn_piano_architecture: Tuple[int, List[CNNResidualBlockHParam]]
 
     cnn_piano_train_set_size: int
     cnn_piano_val_monkey_set_size: int
