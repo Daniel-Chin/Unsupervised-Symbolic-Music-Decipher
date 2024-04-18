@@ -218,13 +218,13 @@ def prepareOneSet(
             if verbose:
                 print()
             while True:
-                if which_set == WhichSet.MONKEY:
+                if which_set == WhichSet.ORACLE:
                     midi_src = path.join(
                         PIANO_LA_DATASET_DIR, 
                         select_dir, 
                         midi_filenames.pop(0), 
                     )
-                elif which_set == WhichSet.ORACLE:
+                elif which_set == WhichSet.MONKEY:
                     midi_src = None
                 try:
                     out = prepareOneDatapoint(
