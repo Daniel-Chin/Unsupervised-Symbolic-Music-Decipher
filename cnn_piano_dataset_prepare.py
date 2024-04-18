@@ -33,6 +33,9 @@ class Stage(Enum):
     CPU = 'cpu'
     GPU = 'gpu'
 
+class BadMidi(Exception): pass
+class MidiTooShort(BadMidi): pass
+
 def generateMidi():
     midi = pretty_midi.PrettyMIDI()
     piano = pretty_midi.Instrument(0, is_drum=False, name='Piano')
@@ -64,13 +67,22 @@ def legalizeMidi(src_path: str):
     srcMidi = pretty_midi.PrettyMIDI(src_path)
     srcPiano, = srcMidi.instruments
     srcPiano: pretty_midi.Instrument
+    total_len = srcMidi.get_end_time()
+    if total_len <= SONG_LEN:
+        raise MidiTooShort()
+    leeway = total_len - SONG_LEN
+    offset = random.uniform(0, leeway)
     for srcNote in srcPiano.notes:
         srcNote: pretty_midi.Note
-        if srcNote.start >= SONG_LEN:
+        start = srcNote.start - offset
+        end   = srcNote.end   - offset
+        if start < 0.0:
+            continue
+        if start >= SONG_LEN:
             break   # because we know the notes are sorted by start time
         piano.notes.append(pretty_midi.Note(
             velocity=srcNote.velocity, pitch=srcNote.pitch, 
-            start=srcNote.start, end=min(srcNote.end, SONG_LEN),
+            start=start, end=min(end, SONG_LEN),
         ))
     return midi
 
@@ -190,27 +202,40 @@ def prepareOneSet(
 
     if which_set == WhichSet.MONKEY:
         dest_set_dir = CNN_PIANO_MONKEY_DATASET_DIR
-        midi_basenames = [None] * n_datapoints
     elif which_set == WhichSet.ORACLE:
         dest_set_dir = CNN_PIANO_ORACLE_DATASET_DIR
         with open(path.join(
             PIANO_LA_DATASET_DIR, select_dir, 'index.json', 
         ), 'r', encoding='utf-8') as f:
-            filenames = json.load(f)
-        midi_basenames = random.choices(filenames, k=n_datapoints)
+            midi_filenames: List = json.load(f)
+        random.shuffle(midi_filenames)
     dest_dir = path.join(dest_set_dir, select_dir)
     os.makedirs(dest_dir, exist_ok=True)
 
     data_ids = []
     try:
-        for datapoint_i, midi_basename in enumerate(tqdm(midi_basenames)):
+        for datapoint_i in tqdm(range(n_datapoints)):
             if verbose:
                 print()
-            out = prepareOneDatapoint(
-                stage, encodec, datapoint_i, dest_dir, 
-                midi_basename and path.join(PIANO_LA_DATASET_DIR, select_dir, midi_basename), 
-                verbose, do_fluidsynth_write_pcm, 
-            )
+            while True:
+                if which_set == WhichSet.MONKEY:
+                    midi_src = path.join(
+                        PIANO_LA_DATASET_DIR, 
+                        select_dir, 
+                        midi_filenames.pop(0), 
+                    )
+                elif which_set == WhichSet.ORACLE:
+                    midi_src = None
+                try:
+                    out = prepareOneDatapoint(
+                        stage, encodec, datapoint_i, dest_dir, 
+                        midi_src, verbose, do_fluidsynth_write_pcm, 
+                    )
+                except BadMidi:
+                    if verbose:
+                        print('BadMidi')
+                else:
+                    break
             data_ids.append(str(datapoint_i))
             if plot_x and out is not None:
                 x, _ = out
