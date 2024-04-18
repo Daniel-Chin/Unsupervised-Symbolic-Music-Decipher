@@ -26,7 +26,7 @@ def main():
         cnn_piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_fc'
+    exp_name = currentTimeDirName() + '_p_new_data'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
