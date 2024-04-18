@@ -144,12 +144,11 @@ def prepareOneDatapoint(
         wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
         
         printProfiling('Formatting datapoint')
-        x = (-torch.randn((
+        x = torch.zeros((
             2, 
             PIANO_RANGE[1] - PIANO_RANGE[0],
             N_TOKENS_PER_DATAPOINT, 
-        )).square()).exp()
-        x[0, :, :] = 0.0
+        ))
         for note in piano.notes:
             note: pretty_midi.Note
             duration = note.end - note.start
