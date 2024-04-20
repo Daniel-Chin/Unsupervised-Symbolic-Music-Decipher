@@ -17,12 +17,13 @@ class ConvBlock(torch.nn.Sequential):
     ) -> None:
         super().__init__()
 
+        self.layerNorm = torch.nn.LayerNorm([out_n_channel])
         self.append(torch.nn.Conv1d(
             in_n_channel, out_n_channel, 
             kernel_size=radius * 2 + 1, padding=radius,
         ))
         self.append(PermuteLayer())
-        self.append(torch.nn.LayerNorm([out_n_channel]))
+        self.append(self.layerNorm)
         self.append(PermuteLayer())
         self.append(torch.nn.ReLU())
 
