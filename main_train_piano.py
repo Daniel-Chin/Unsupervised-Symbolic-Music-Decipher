@@ -32,7 +32,7 @@ def main():
         cnn_piano_do_validate = True,
 
         cnn_piano_lr = 1e-3,
-        cnn_piano_lr_decay = 1.00, 
+        cnn_piano_lr_decay = 0.999, 
         cnn_piano_batch_size = 64,
         cnn_piano_max_epochs = 2000,
         require_repo_working_tree_clean = True, 
