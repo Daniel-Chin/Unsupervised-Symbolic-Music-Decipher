@@ -35,7 +35,7 @@ def main():
         cnn_piano_lr_decay = 1.00, 
         cnn_piano_batch_size = 64,
         cnn_piano_max_epochs = 2000,
-        require_repo_working_tree_clean = False, 
+        require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_rec_field'
     if not hParams.require_repo_working_tree_clean:
