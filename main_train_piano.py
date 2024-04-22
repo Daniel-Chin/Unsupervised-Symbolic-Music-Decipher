@@ -20,10 +20,10 @@ def main():
         gru_piano_lr = 1e-3,
         gru_piano_lr_decay = 0.999, 
         gru_piano_batch_size = 64,
-        gru_piano_max_epochs = 1600,
+        gru_piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_rec_field'
+    exp_name = currentTimeDirName() + '_p_gru'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
