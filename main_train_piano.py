@@ -12,16 +12,16 @@ def main():
         gru_piano_n_layers = 2, 
         gru_drop_out = 0.2,
 
-        gru_piano_train_set_size = 16, 
-        gru_piano_val_monkey_set_size = 16, 
-        gru_piano_val_oracle_set_size = 16, 
+        gru_piano_train_set_size = 8000, 
+        gru_piano_val_monkey_set_size = 2000, 
+        gru_piano_val_oracle_set_size = 128, 
         gru_piano_do_validate = True,
 
         gru_piano_lr = 1e-3,
         gru_piano_lr_decay = 0.999, 
-        gru_piano_batch_size = 16,
+        gru_piano_batch_size = 64,
         gru_piano_max_epochs = 300,
-        require_repo_working_tree_clean = False, 
+        require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_gru'
     if not hParams.require_repo_working_tree_clean:
