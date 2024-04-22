@@ -93,7 +93,7 @@ class LitPiano(L.LightningModule):
         def logName(x: str, /):
             return f'{VAL_CASES[dataloader_idx]}_{x}'
 
-        assert y.shape[:-1] == y_logits.shape
+        assert y.shape == y_logits.shape[:-1], (y.shape, y_logits.shape)
         loss = F.cross_entropy(
             y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y       .view   (-1).to(torch.long), 
