@@ -47,7 +47,7 @@ class LitPiano(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.cnnPiano = BiDiGRUPianoModel(hParams)
+        self.gruPiano = BiDiGRUPianoModel(hParams)
 
         # just for ModelSummary
         # self.convs = self.cnnPiano.convs
@@ -56,7 +56,7 @@ class LitPiano(L.LightningModule):
     def forward(
         self, x: Tensor, 
     ):
-        return self.cnnPiano.forward(x)
+        return self.gruPiano.forward(x)
     
     def training_step(
         self, batch: BatchType, batch_idx: int, 
@@ -93,6 +93,7 @@ class LitPiano(L.LightningModule):
         def logName(x: str, /):
             return f'{VAL_CASES[dataloader_idx]}_{x}'
 
+        assert y.shape[:-1] == y_logits.shape
         loss = F.cross_entropy(
             y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
             y       .view   (-1).to(torch.long), 
@@ -107,7 +108,7 @@ class LitPiano(L.LightningModule):
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.cnnPiano.parameters(), lr=hParams.gru_piano_lr, 
+            self.gruPiano.parameters(), lr=hParams.gru_piano_lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
             optim, gamma=hParams.gru_piano_lr_decay, 
@@ -115,7 +116,7 @@ class LitPiano(L.LightningModule):
         return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
-        norms = grad_norm(self.cnnPiano, norm_type=2)
+        norms = grad_norm(self.gruPiano, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
 
