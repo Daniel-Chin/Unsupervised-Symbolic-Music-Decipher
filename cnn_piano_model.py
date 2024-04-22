@@ -14,6 +14,7 @@ class PermuteLayer(torch.nn.Module):
 class ConvBlock(torch.nn.Sequential):
     def __init__(
         self, in_n_channel: int, out_n_channel: int, radius: int, 
+        dropout: float, 
     ) -> None:
         super().__init__()
 
@@ -24,11 +25,14 @@ class ConvBlock(torch.nn.Sequential):
         self.append(PermuteLayer())
         self.append(torch.nn.LayerNorm([out_n_channel]))
         self.append(PermuteLayer())
+        if dropout != 0.0:
+            self.append(torch.nn.Dropout(dropout))
         self.append(torch.nn.ReLU())
 
 class CNNResidualBlock(torch.nn.Module):
     def __init__(
         self, hParam: CNNResidualBlockHParam, in_n_channel: int, 
+        dropout: float, 
         name: Optional[str] = None, 
     ):
         super().__init__()
@@ -37,7 +41,9 @@ class CNNResidualBlock(torch.nn.Module):
         self.sequential = torch.nn.Sequential()
         current_n_channel = in_n_channel
         for radius, n_channel in hParam:
-            self.sequential.append(ConvBlock(current_n_channel, n_channel, radius))
+            self.sequential.append(ConvBlock(
+                current_n_channel, n_channel, radius, dropout, 
+            ))
             current_n_channel = n_channel
         self.out_n_channel = current_n_channel
         assert self.out_n_channel == in_n_channel   # otherwise residual connection is not possible
@@ -54,11 +60,15 @@ class CNNPianoModel(torch.nn.Module):
         entrance_n_channel, blocks_hp = hParams.cnn_piano_architecture
         self.entrance = ConvBlock(
             2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), entrance_n_channel, 0,
+            hParams.cnn_piano_dropout, 
         )
         current_n_channel = entrance_n_channel
         self.resBlocks = torch.nn.Sequential()
         for i, block_hp in enumerate(blocks_hp):
-            resBlock = CNNResidualBlock(block_hp, current_n_channel, name=f'res_{i}')
+            resBlock = CNNResidualBlock(
+                block_hp, current_n_channel, hParams.cnn_piano_dropout, 
+                name=f'res_{i}', 
+            )
             self.resBlocks.append(resBlock)
             current_n_channel = resBlock.out_n_channel
         self.outProjector = torch.nn.Linear(

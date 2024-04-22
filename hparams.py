@@ -8,6 +8,7 @@ CNNResidualBlockHParam = List[ConvLayerHParam]
 @dataclass(frozen=True)
 class HParams:
     cnn_piano_architecture: Tuple[int, List[CNNResidualBlockHParam]]
+    cnn_piano_dropout: float
 
     cnn_piano_train_set_size: int
     cnn_piano_val_monkey_set_size: int

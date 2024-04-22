@@ -25,6 +25,7 @@ def main():
                 (0, 512), 
             ], 
         ]), 
+        cnn_piano_dropout = 0.2, 
 
         cnn_piano_train_set_size = 8000, 
         cnn_piano_val_monkey_set_size = 2000, 
@@ -34,10 +35,10 @@ def main():
         cnn_piano_lr = 1e-3,
         cnn_piano_lr_decay = 0.999, 
         cnn_piano_batch_size = 64,
-        cnn_piano_max_epochs = 1600,
+        cnn_piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_rec_field'
+    exp_name = currentTimeDirName() + '_p_dropout'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
