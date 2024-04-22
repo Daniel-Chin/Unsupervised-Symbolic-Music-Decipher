@@ -6,8 +6,8 @@ import torch
 import scipy.io.wavfile as wavfile
 
 from shared import *
-from cnn_piano_dataset import BatchType
-from cnn_piano_lightning import LitPiano, LitPianoDataModule, VAL_CASES
+from gru_piano_dataset import BatchType
+from gru_piano_lightning import LitPiano, LitPianoDataModule, VAL_CASES
 
 @torch.no_grad()
 def evaluateAudio(
@@ -25,15 +25,15 @@ def evaluateAudio(
     os.makedirs(audio_dir)
     encodec = getEncodec().to(DEVICE)
     subsets = ['train', *VAL_CASES]
-    batch_size = min(8, dataModule.hP.cnn_piano_batch_size)
+    batch_size = min(8, dataModule.hP.gru_piano_batch_size)
     loaders = [
         dataModule.train_dataloader(batch_size, shuffle=False), 
         *dataModule.val_dataloader(batch_size, ),
     ]
     dataset_dirs = [    # violates DRY w/ VAL_CASES
-        CNN_PIANO_MONKEY_DATASET_DIR, 
-        CNN_PIANO_MONKEY_DATASET_DIR, 
-        CNN_PIANO_ORACLE_DATASET_DIR, 
+        GRU_PIANO_MONKEY_DATASET_DIR, 
+        GRU_PIANO_MONKEY_DATASET_DIR, 
+        GRU_PIANO_ORACLE_DATASET_DIR, 
     ]
     n_evals = []
     for subset in subsets:

@@ -15,8 +15,8 @@ from lightning.pytorch.profilers import SimpleProfiler
 from shared import *
 from hparams import HParams
 from music import PIANO_RANGE
-from cnn_piano_model import CNNPianoModel
-from cnn_piano_dataset import CNNPianoDataset, BatchType
+from gru_piano_model import BiDiGRUPianoModel
+from gru_piano_dataset import CNNPianoDataset, BatchType
 
 MONKEY_VAL = 'VAL_MONKEY'
 ORACLE_VAL = 'VAL_ORACLE'
@@ -39,7 +39,7 @@ class LitPiano(L.LightningModule):
     
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.cnn_piano_batch_size, **kw)
+        return super().log(*a, batch_size=hParams.gru_piano_batch_size, **kw)
     
     def setup(self, stage: str):
         _ = stage
@@ -47,7 +47,7 @@ class LitPiano(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.cnnPiano = CNNPianoModel(hParams)
+        self.cnnPiano = BiDiGRUPianoModel(hParams)
 
         # just for ModelSummary
         # self.convs = self.cnnPiano.convs
@@ -82,7 +82,7 @@ class LitPiano(L.LightningModule):
         self, batch: BatchType, 
         batch_idx: int, dataloader_idx: int, 
     ):
-        if not self.hP.cnn_piano_do_validate:
+        if not self.hP.gru_piano_do_validate:
             return
 
         _ = batch_idx
@@ -107,10 +107,10 @@ class LitPiano(L.LightningModule):
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.cnnPiano.parameters(), lr=hParams.cnn_piano_lr, 
+            self.cnnPiano.parameters(), lr=hParams.gru_piano_lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
-            optim, gamma=hParams.cnn_piano_lr_decay, 
+            optim, gamma=hParams.gru_piano_lr_decay, 
         )
         return [optim], [sched]
 
@@ -135,21 +135,21 @@ class LitPianoDataModule(L.LightningDataModule):
         @lru_cache(maxsize=1)
         def monkeyDataset():
             return CNNPianoDataset(
-                'monkey', CNN_PIANO_MONKEY_DATASET_DIR, 
-                hParams.cnn_piano_train_set_size + hParams.cnn_piano_val_monkey_set_size, 
+                'monkey', GRU_PIANO_MONKEY_DATASET_DIR, 
+                hParams.gru_piano_train_set_size + hParams.gru_piano_val_monkey_set_size, 
             )
 
         @lru_cache(maxsize=1)
         def oracleDataset():
             return CNNPianoDataset(
-                'oracle', CNN_PIANO_ORACLE_DATASET_DIR, 
-                hParams.cnn_piano_val_oracle_set_size,
+                'oracle', GRU_PIANO_ORACLE_DATASET_DIR, 
+                hParams.gru_piano_val_oracle_set_size,
             )
         
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkeyDataset(), [
-                hParams.cnn_piano_train_set_size, 
-                hParams.cnn_piano_val_monkey_set_size, 
+                hParams.gru_piano_train_set_size, 
+                hParams.gru_piano_val_monkey_set_size, 
             ], 
         )
         self.val_oracle_dataset = oracleDataset()
@@ -160,7 +160,7 @@ class LitPianoDataModule(L.LightningDataModule):
     
     def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
-        bs = batch_size or hParams.cnn_piano_batch_size
+        bs = batch_size or hParams.gru_piano_batch_size
         return DataLoader(
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
@@ -169,7 +169,7 @@ class LitPianoDataModule(L.LightningDataModule):
     
     def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
-        bs = batch_size or hParams.cnn_piano_batch_size
+        bs = batch_size or hParams.gru_piano_batch_size
         return [
             DataLoader(
                 self.val_sets[x], batch_size=bs, 
@@ -191,7 +191,7 @@ def train(hParams: HParams, root_dir: str):
     logger = TensorBoardLogger(root_dir, log_name)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
-        devices=[DEVICE.index], max_epochs=hParams.cnn_piano_max_epochs, 
+        devices=[DEVICE.index], max_epochs=hParams.gru_piano_max_epochs, 
         gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
@@ -200,7 +200,7 @@ def train(hParams: HParams, root_dir: str):
             # DeviceStatsMonitor(), 
             ModelSummary(max_depth=3), 
         ], 
-        log_every_n_steps=min(50, hParams.cnn_piano_train_set_size // hParams.cnn_piano_batch_size), 
+        log_every_n_steps=min(50, hParams.gru_piano_train_set_size // hParams.gru_piano_batch_size), 
         # overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)

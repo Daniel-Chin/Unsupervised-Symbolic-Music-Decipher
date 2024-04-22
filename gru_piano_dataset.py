@@ -64,7 +64,7 @@ BatchType = Tuple[Tensor, Tensor, Tuple[str]]
 
 if __name__ == '__main__':
     dataset = CNNPianoDataset(
-        '0', CNN_PIANO_MONKEY_DATASET_DIR, 32, 
+        '0', GRU_PIANO_MONKEY_DATASET_DIR, 32, 
     )
     import IPython; IPython.embed()
 

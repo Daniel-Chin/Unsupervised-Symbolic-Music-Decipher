@@ -2,39 +2,25 @@ from os import path
 
 from shared import *
 from hparams import HParams
-from cnn_piano_lightning import train
-from cnn_piano_evaluate_audio import evaluateAudio
+from gru_piano_lightning import train
+from gru_piano_evaluate_audio import evaluateAudio
 
 def main():
     initMainProcess()
     hParams = HParams(
-        cnn_piano_architecture = (512, [
-            [
-                (2, 512), 
-                (2, 512), 
-            ], 
-            [
-                (2, 512), 
-                (2, 512), 
-            ], 
-            [
-                (2, 512), 
-                (2, 512), 
-            ], 
-            [
-                (0, 512), 
-            ], 
-        ]), 
+        gru_piano_hidden_size = 512, 
+        gru_piano_n_layers = 2, 
+        gru_drop_out = 0.2,
 
-        cnn_piano_train_set_size = 8000, 
-        cnn_piano_val_monkey_set_size = 2000, 
-        cnn_piano_val_oracle_set_size = 128, 
-        cnn_piano_do_validate = True,
+        gru_piano_train_set_size = 8000, 
+        gru_piano_val_monkey_set_size = 2000, 
+        gru_piano_val_oracle_set_size = 128, 
+        gru_piano_do_validate = True,
 
-        cnn_piano_lr = 1e-3,
-        cnn_piano_lr_decay = 0.999, 
-        cnn_piano_batch_size = 64,
-        cnn_piano_max_epochs = 1600,
+        gru_piano_lr = 1e-3,
+        gru_piano_lr_decay = 0.999, 
+        gru_piano_batch_size = 64,
+        gru_piano_max_epochs = 1600,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_rec_field'
