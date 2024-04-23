@@ -124,7 +124,7 @@ class TransformerPianoModel(torch.nn.Module):
         if tf_hp.attn_radius is None:
             self.attn_mask = None
         else:
-            self.attn_mask = self.attnMask(
+            self.attn_mask = __class__.attnMask(
                 N_TOKENS_PER_DATAPOINT, tf_hp.attn_radius, 
             )
             receptive_field = (tf_hp.attn_radius * tf_hp.n_layers * 2 + 1) / ENCODEC_FPS
