@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import torch
 from torch import Tensor
 
@@ -118,6 +120,15 @@ class TransformerPianoModel(torch.nn.Module):
         self.outProjector = torch.nn.Linear(
             tf_hp.d_model, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
         )
+
+        if tf_hp.attn_radius is None:
+            self.attn_mask = None
+        else:
+            self.attn_mask = self.attnMask(
+                N_TOKENS_PER_DATAPOINT, tf_hp.attn_radius, 
+            )
+            receptive_field = (tf_hp.attn_radius * tf_hp.n_layers * 2 + 1) / ENCODEC_FPS
+            print(f'{receptive_field = : .2f} sec')
     
     def forward(
         self, x: Tensor, 
@@ -131,11 +142,19 @@ class TransformerPianoModel(torch.nn.Module):
         x = x.permute(0, 2, 1)
         x = self.inProjector.forward(x)
         x = x + positionalEncoding(n_frames, self.tf_hp.d_model, device=device)
-        x = self.tf.forward(x)
+        x = self.tf.forward(x, mask=self.attn_mask)
         x = self.outProjector.forward(x)
         x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
         x = x.permute(0, 2, 1, 3)
         return x
+
+    @lru_cache()
+    @staticmethod
+    def attnMask(n_tokens: int, radius: int):
+        x = torch.ones((n_tokens, n_tokens))
+        torch.triu(x, diagonal=-radius, out=x)
+        torch.tril(x, diagonal=+radius, out=x)
+        return x.log()
 
 def PianoModel(hParams: HParams):
     if hParams.piano_arch_type == PianoArchType.CNN:

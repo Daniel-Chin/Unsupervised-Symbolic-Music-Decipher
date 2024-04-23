@@ -34,6 +34,7 @@ class TransformerHParam(PianoArchHParam):
     n_heads: int
     d_feedforward: int
     n_layers: int
+    attn_radius: Optional[int]
 
 @dataclass(frozen=True)
 class HParams:
