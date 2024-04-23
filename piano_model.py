@@ -152,8 +152,8 @@ class TransformerPianoModel(torch.nn.Module):
 
     @lru_cache()
     @staticmethod
-    def attnMask(n_tokens: int, radius: int, device: torch.device):
-        x = torch.ones((n_tokens, n_tokens), device=device)
+    def attnMask(n_tokens: int, radius: int):
+        x = torch.ones((n_tokens, n_tokens))
         torch.triu(x, diagonal=-radius, out=x)
         torch.tril(x, diagonal=+radius, out=x)
         return x.log()
