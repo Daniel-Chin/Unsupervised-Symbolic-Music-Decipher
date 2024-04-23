@@ -33,7 +33,7 @@ def main():
             n_heads = 4, 
             d_feedforward = 1024, 
             n_layers = 3, 
-            attn_radius = 2, 
+            attn_radius = None, 
         ),
 
         piano_dropout = 0.0, 
@@ -49,7 +49,7 @@ def main():
         piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_tf_rec'
+    exp_name = currentTimeDirName() + '_p_tf'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
