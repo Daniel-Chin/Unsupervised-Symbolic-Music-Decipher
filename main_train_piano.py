@@ -1,44 +1,54 @@
 from os import path
 
 from shared import *
-from hparams import HParams
-from cnn_piano_lightning import train
-from cnn_piano_evaluate_audio import evaluateAudio
+from hparams import HParams, PianoArchType, CNNHParam, TransformerHParam
+from piano_lightning import train
+from piano_evaluate_audio import evaluateAudio
 
 def main():
     initMainProcess()
     hParams = HParams(
-        cnn_piano_architecture = (1024, [
-            [
-                (1, 1024), 
-                (1, 1024), 
-            ], 
-            [
-                (1, 1024), 
-                (1, 1024), 
-            ], 
-            [
-                (1, 1024), 
-                (1, 1024), 
-            ], 
-            [
-                (0, 1024), 
-            ], 
-        ]), 
-        cnn_piano_dropout = 0.0, 
+        # piano_arch_type = PianoArchType.CNN, 
+        # piano_arch_hparam = CNNHParam(1024, [
+        #     [
+        #         (1, 1024), 
+        #         (1, 1024), 
+        #     ], 
+        #     [
+        #         (1, 1024), 
+        #         (1, 1024), 
+        #     ], 
+        #     [
+        #         (1, 1024), 
+        #         (1, 1024), 
+        #     ], 
+        #     [
+        #         (0, 1024), 
+        #     ], 
+        # ]), 
 
-        cnn_piano_train_set_size = 8000, 
-        cnn_piano_val_monkey_set_size = 2000, 
-        cnn_piano_val_oracle_set_size = 128, 
-        cnn_piano_do_validate = True,
+        piano_arch_type = PianoArchType.Transformer,
+        piano_arch_hparam = TransformerHParam(
+            d_model = 512, 
+            n_heads = 4, 
+            d_feedforward = 1024, 
+            n_layers = 3, 
+        ),
 
-        cnn_piano_lr = 1e-3,
-        cnn_piano_lr_decay = 0.999, 
-        cnn_piano_batch_size = 32,
-        cnn_piano_max_epochs = 300,
+        piano_dropout = 0.0, 
+
+        piano_train_set_size = 8000, 
+        piano_val_monkey_set_size = 2000, 
+        piano_val_oracle_set_size = 128, 
+        piano_do_validate = True,
+
+        piano_lr = 1e-3,
+        piano_lr_decay = 0.999, 
+        piano_batch_size = 32,
+        piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_wide'
+    exp_name = currentTimeDirName() + '_p_tf'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)

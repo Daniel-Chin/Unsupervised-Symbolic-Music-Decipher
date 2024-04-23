@@ -2,7 +2,10 @@ import torch
 from torch import Tensor
 
 from shared import *
-from hparams import HParams, CNNResidualBlockHParam
+from hparams import (
+    HParams, PianoArchType, CNNHParam, TransformerHParam, 
+    CNNResidualBlockHParam, 
+)
 from music import PIANO_RANGE
 
 class PermuteLayer(torch.nn.Module):
@@ -54,19 +57,18 @@ class CNNResidualBlock(torch.nn.Module):
         return x + self.sequential(x)
 
 class CNNPianoModel(torch.nn.Module):
-    def __init__(self, hParams: HParams):
+    def __init__(self, hParams: HParams, cnn_hp: CNNHParam):
         super().__init__()
 
-        entrance_n_channel, blocks_hp = hParams.cnn_piano_architecture
         self.entrance = ConvBlock(
-            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), entrance_n_channel, 0,
-            hParams.cnn_piano_dropout, 
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_hp.entrance_n_channel, 
+            0, hParams.piano_dropout, 
         )
-        current_n_channel = entrance_n_channel
+        current_n_channel = cnn_hp.entrance_n_channel
         self.resBlocks = torch.nn.Sequential()
-        for i, block_hp in enumerate(blocks_hp):
+        for i, block_hp in enumerate(cnn_hp.blocks):
             resBlock = CNNResidualBlock(
-                block_hp, current_n_channel, hParams.cnn_piano_dropout, 
+                block_hp, current_n_channel, hParams.piano_dropout, 
                 name=f'res_{i}', 
             )
             self.resBlocks.append(resBlock)
@@ -77,7 +79,7 @@ class CNNPianoModel(torch.nn.Module):
         receptive_field = (sum(
             sum(
                 radius for radius, _ in x
-            ) for x in hParams.cnn_piano_architecture[1]
+            ) for x in cnn_hp.blocks
         ) * 2 + 1) / ENCODEC_FPS
         print(f'{receptive_field = : .2f} sec')
     
@@ -96,3 +98,53 @@ class CNNPianoModel(torch.nn.Module):
         x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
         x = x.permute(0, 2, 1, 3)
         return x
+
+class TransformerPianoModel(torch.nn.Module):
+    def __init__(self, hParams: HParams, tf_hp: TransformerHParam):
+        super().__init__()
+
+        self.tf_hp = tf_hp
+        
+        self.inProjector = torch.nn.Linear(
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), tf_hp.d_model, 
+        )
+        encoder_layer = torch.nn.TransformerEncoderLayer(
+            tf_hp.d_model, tf_hp.n_heads, tf_hp.d_feedforward, 
+            hParams.piano_dropout, batch_first=True, 
+        )
+        self.tf = torch.nn.TransformerEncoder(
+            encoder_layer, tf_hp.n_layers, 
+        )
+        self.outProjector = torch.nn.Linear(
+            tf_hp.d_model, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
+        )
+    
+    def forward(
+        self, x: Tensor, 
+    ) -> Tensor:
+        batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
+        assert n_pianoroll_channels == 2
+        assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
+        assert n_frames == N_TOKENS_PER_DATAPOINT
+        device = x.device
+        x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
+        x = x.permute(0, 2, 1)
+        x = self.inProjector.forward(x)
+        x = x + positionalEncoding(n_frames, self.tf_hp.d_model, device=device)
+        x = self.tf.forward(x)
+        x = self.outProjector.forward(x)
+        x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
+        x = x.permute(0, 2, 1, 3)
+        return x
+
+def PianoModel(hParams: HParams):
+    if hParams.piano_arch_type == PianoArchType.CNN:
+        cnn_hp = hParams.piano_arch_hparam
+        assert isinstance(cnn_hp, CNNHParam)
+        return CNNPianoModel(hParams, cnn_hp)
+    elif hParams.piano_arch_type == PianoArchType.Transformer:
+        tf_hp = hParams.piano_arch_hparam
+        assert isinstance(tf_hp, TransformerHParam)
+        return TransformerPianoModel(hParams, tf_hp)
+    else:
+        raise ValueError(f'unknown arch type: {hParams.piano_arch_type}')

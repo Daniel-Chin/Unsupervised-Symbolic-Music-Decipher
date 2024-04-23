@@ -1,4 +1,4 @@
 inspect/
 piano_la_dataset/
-cnn_piano_monkey_dataset/
-cnn_piano_oracle_dataset/
+piano_monkey_dataset/
+piano_oracle_dataset/

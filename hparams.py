@@ -1,33 +1,66 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, asdict
+from enum import Enum
 
 from shared import *
+
+class PianoArchType(Enum):
+    CNN = 'CNN'
+    Transformer = 'Transformer'
+
+arch_types = {}
+def registerArchType(x: PianoArchType, /):
+    def decorator(cls):
+        arch_types[x] = cls
+        return cls
+    return decorator
+
+class PianoArchHParam: pass
 
 ConvLayerHParam = Tuple[int, int]    # (kernel_radius, out_channels)
 CNNResidualBlockHParam = List[ConvLayerHParam]
 
+@registerArchType(PianoArchType.CNN)
+@dataclass(frozen=True)
+class CNNHParam(PianoArchHParam):
+    entrance_n_channel: int
+    blocks: List[CNNResidualBlockHParam]
+
+@registerArchType(PianoArchType.Transformer)
+@dataclass(frozen=True)
+class TransformerHParam(PianoArchHParam):
+    d_model: int
+    n_heads: int
+    d_feedforward: int
+    n_layers: int
+
 @dataclass(frozen=True)
 class HParams:
-    cnn_piano_architecture: Tuple[int, List[CNNResidualBlockHParam]]
-    cnn_piano_dropout: float
+    piano_arch_type: PianoArchType
+    piano_arch_hparam: PianoArchHParam
+    piano_dropout: float
 
-    cnn_piano_train_set_size: int
-    cnn_piano_val_monkey_set_size: int
-    cnn_piano_val_oracle_set_size: int
-    cnn_piano_do_validate: bool
+    piano_train_set_size: int
+    piano_val_monkey_set_size: int
+    piano_val_oracle_set_size: int
+    piano_do_validate: bool
 
-    cnn_piano_lr: float
-    cnn_piano_lr_decay: float
-    cnn_piano_batch_size: int
-    cnn_piano_max_epochs: int
+    piano_lr: float
+    piano_lr_decay: float
+    piano_batch_size: int
+    piano_max_epochs: int
 
     require_repo_working_tree_clean: bool
 
     def __post_init__(self):
-        pass    # put validation here
+        assert isinstance(
+            self.piano_arch_hparam, arch_types[self.piano_arch_type], 
+        )
 
     def summary(self):
         print('HParams:')
         for k, v in asdict(self).items():
             print(' ', k, '=', v)
         print(' ')
-        print(' ', 'Ending lr =', self.cnn_piano_lr * (self.cnn_piano_lr_decay ** self.cnn_piano_max_epochs))
+        print(' ', 'Ending lr =', self.piano_lr * (self.piano_lr_decay ** self.piano_max_epochs))

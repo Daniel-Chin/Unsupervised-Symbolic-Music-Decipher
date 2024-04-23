@@ -9,7 +9,7 @@ from tqdm import tqdm
 from shared import *
 from music import PIANO_RANGE
 
-class CNNPianoDataset(Dataset):
+class PianoDataset(Dataset):
     def __init__(
         self, name: str, dir_path: str, 
         size: int, offset: int = 0, 
@@ -63,8 +63,8 @@ class CNNPianoDataset(Dataset):
 BatchType = Tuple[Tensor, Tensor, Tuple[str]]
 
 if __name__ == '__main__':
-    dataset = CNNPianoDataset(
-        '0', CNN_PIANO_MONKEY_DATASET_DIR, 32, 
+    dataset = PianoDataset(
+        '0', PIANO_MONKEY_DATASET_DIR, 32, 
     )
     import IPython; IPython.embed()
 
