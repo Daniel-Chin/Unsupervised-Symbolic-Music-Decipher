@@ -8,24 +8,24 @@ from cnn_piano_evaluate_audio import evaluateAudio
 def main():
     initMainProcess()
     hParams = HParams(
-        cnn_piano_architecture = (512, [
+        cnn_piano_architecture = (1024, [
             [
-                (2, 512), 
-                (2, 512), 
+                (1, 1024), 
+                (1, 1024), 
             ], 
             [
-                (2, 512), 
-                (2, 512), 
+                (1, 1024), 
+                (1, 1024), 
             ], 
             [
-                (2, 512), 
-                (2, 512), 
+                (1, 1024), 
+                (1, 1024), 
             ], 
             [
-                (0, 512), 
+                (0, 1024), 
             ], 
         ]), 
-        cnn_piano_dropout = 0.2, 
+        cnn_piano_dropout = 0.0, 
 
         cnn_piano_train_set_size = 8000, 
         cnn_piano_val_monkey_set_size = 2000, 
@@ -34,11 +34,11 @@ def main():
 
         cnn_piano_lr = 1e-3,
         cnn_piano_lr_decay = 0.999, 
-        cnn_piano_batch_size = 64,
+        cnn_piano_batch_size = 32,
         cnn_piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_dropout'
+    exp_name = currentTimeDirName() + '_p_wide'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
