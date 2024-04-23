@@ -20,7 +20,7 @@ def main():
         gru_piano_lr = 1e-3,
         gru_piano_lr_decay = 0.999, 
         gru_piano_batch_size = 64,
-        gru_piano_max_epochs = 300,
+        gru_piano_max_epochs = 1370,
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_gru'
