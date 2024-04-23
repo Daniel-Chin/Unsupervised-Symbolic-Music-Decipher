@@ -64,4 +64,7 @@ class HParams:
         for k, v in asdict(self).items():
             print(' ', k, '=', v)
         print(' ')
-        print(' ', 'Ending lr =', self.piano_lr * (self.piano_lr_decay ** self.piano_max_epochs))
+        total_decay = self.piano_lr_decay ** self.piano_max_epochs
+        print(' ', f'{total_decay = :.2e}')
+        ending_lr = self.piano_lr * total_decay
+        print(' ', f'{ending_lr = :.2e}')
