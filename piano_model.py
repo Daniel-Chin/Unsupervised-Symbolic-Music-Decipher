@@ -138,6 +138,8 @@ class TransformerPianoModel(torch.nn.Module):
         assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
         assert n_frames == N_TOKENS_PER_DATAPOINT
         device = x.device
+        if self.attn_mask is not None and self.attn_mask.device != device:
+            self.attn_mask = self.attn_mask.to(device)
         x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
         x = x.permute(0, 2, 1)
         x = self.inProjector.forward(x)
@@ -150,8 +152,8 @@ class TransformerPianoModel(torch.nn.Module):
 
     @lru_cache()
     @staticmethod
-    def attnMask(n_tokens: int, radius: int):
-        x = torch.ones((n_tokens, n_tokens))
+    def attnMask(n_tokens: int, radius: int, device: torch.device):
+        x = torch.ones((n_tokens, n_tokens), device=device)
         torch.triu(x, diagonal=-radius, out=x)
         torch.tril(x, diagonal=+radius, out=x)
         return x.log()
