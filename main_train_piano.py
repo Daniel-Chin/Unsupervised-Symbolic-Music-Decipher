@@ -38,16 +38,16 @@ def main():
 
         piano_dropout = 0.0, 
 
-        piano_train_set_size = 16, 
-        piano_val_monkey_set_size = 16, 
-        piano_val_oracle_set_size = 16, 
+        piano_train_set_size = 8000, 
+        piano_val_monkey_set_size = 2000, 
+        piano_val_oracle_set_size = 128, 
         piano_do_validate = True,
 
         piano_lr = 1e-3,
         piano_lr_decay = 0.999, 
-        piano_batch_size = 16,
+        piano_batch_size = 32,
         piano_max_epochs = 300,
-        require_repo_working_tree_clean = False, 
+        require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_tf_rec'
     if not hParams.require_repo_working_tree_clean:
