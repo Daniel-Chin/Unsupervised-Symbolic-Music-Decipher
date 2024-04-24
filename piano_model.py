@@ -11,9 +11,7 @@ from hparams import (
 from music import PIANO_RANGE
 
 class PermuteLayer(torch.nn.Module):
-    def forward(
-        self, x: Tensor, 
-    ) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         return x.permute(0, 2, 1)
 
 class ConvBlock(torch.nn.Sequential):
@@ -53,9 +51,7 @@ class CNNResidualBlock(torch.nn.Module):
         self.out_n_channel = current_n_channel
         assert self.out_n_channel == in_n_channel   # otherwise residual connection is not possible
     
-    def forward(
-        self, x: Tensor, 
-    ) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         return x + self.sequential(x)
 
 class CNNPianoModel(torch.nn.Module):
@@ -85,9 +81,7 @@ class CNNPianoModel(torch.nn.Module):
         ) * 2 + 1) / ENCODEC_FPS
         print(f'{receptive_field = : .2f} sec')
     
-    def forward(
-        self, x: Tensor, 
-    ) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
         assert n_pianoroll_channels == 2
         assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
@@ -130,9 +124,7 @@ class TransformerPianoModel(torch.nn.Module):
             receptive_field = (tf_hp.attn_radius * tf_hp.n_layers * 2 + 1) / ENCODEC_FPS
             print(f'{receptive_field = : .2f} sec')
     
-    def forward(
-        self, x: Tensor, 
-    ) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
         assert n_pianoroll_channels == 2
         assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
@@ -150,8 +142,8 @@ class TransformerPianoModel(torch.nn.Module):
         x = x.permute(0, 2, 1, 3)
         return x
 
-    @lru_cache()
     @staticmethod
+    @lru_cache()
     def attnMask(n_tokens: int, radius: int):
         x = torch.ones((n_tokens, n_tokens))
         torch.triu(x, diagonal=-radius, out=x)
