@@ -202,7 +202,7 @@ def train(hParams: HParams, root_dir: str):
             ModelSummary(max_depth=3), 
         ], 
         log_every_n_steps=min(50, hParams.piano_train_set_size // hParams.piano_batch_size), 
-        # overfit_batches=1, 
+        overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(litPiano, dataModule)
