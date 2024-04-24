@@ -29,10 +29,10 @@ def main():
 
         piano_arch_type = PianoArchType.Transformer,
         piano_arch_hparam = TransformerHParam(
-            d_model = 512, 
-            n_heads = 4, 
-            d_feedforward = 1024, 
-            n_layers = 3, 
+            d_model = 1024, 
+            n_heads = 8, 
+            d_feedforward = 2048, 
+            n_layers = 6, 
             attn_radius = None, 
         ),
 
@@ -49,7 +49,7 @@ def main():
         piano_max_epochs = 300,
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_tf_1batch'
+    exp_name = currentTimeDirName() + '_p_tf_1b_ori_tf'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
