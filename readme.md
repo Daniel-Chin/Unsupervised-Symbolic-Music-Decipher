@@ -6,6 +6,6 @@
 - Install `fluidsynth`.  
 - Obtain "MuseScore_Basic.sf2" and put it in "./assets".  
   - Instructions are in "./assets/acknowledge.md".  
-- Run `conda activate env_neural_avh`
-- Run `main()` in "./midi_process.py"  
-- Run `python ./tf_piano_dataset_prepare.py --monkey_dataset_size 1024 --oracle_dataset_size 64`
+- Run `python3 ./hpc/midi_process_parallel.py` and wait for completion. 
+- Run `python3 ./hpc/prepare_datasets_parallel.py --stage cpu` and wait for completion. 
+- Run `python3 ./hpc/prepare_datasets_parallel.py --stage gpu` and wait for completion. 
