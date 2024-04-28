@@ -6,6 +6,7 @@
 - Install `fluidsynth`.  
 - Obtain "MuseScore_Basic.sf2" and put it in "./assets".  
   - Instructions are in "./assets/acknowledge.md".  
-- Run `python3 ./hpc/midi_process_parallel.py` and wait for completion. 
-- Run `python3 ./hpc/prepare_datasets_parallel.py --stage cpu` and wait for completion. 
-- Run `python3 ./hpc/prepare_datasets_parallel.py --stage gpu` and wait for completion. 
+- Run `cd ./hpc`
+- Run `python3 ./midi_process_parallel.py` and wait for completion. 
+- Run `python3 ./prepare_datasets_parallel.py --stage cpu` and wait for completion. 
+- Run `python3 ./prepare_datasets_parallel.py --stage gpu` and wait for completion. 
