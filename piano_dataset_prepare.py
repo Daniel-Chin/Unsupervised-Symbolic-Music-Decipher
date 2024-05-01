@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from shared import *
 from music import PIANO_RANGE
 from midi_synth_wav import midiSynthWav
-from my_encodec import getEncodec, HFEncodecCompressionModel
+from my_musicgen import getEncodec, HFEncodecCompressionModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
 (DURATION_MU, DURATION_SIGMA) = (-1.754, 1.077)

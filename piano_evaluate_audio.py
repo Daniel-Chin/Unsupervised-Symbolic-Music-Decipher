@@ -17,7 +17,7 @@ def evaluateAudio(
     # Both `litPiano` and `dataModule` are already `setup()`-ed.  
 
     # to speed up dataloader worker spawning
-    from my_encodec import getEncodec
+    from my_musicgen import getEncodec
     
     print('eval audio...', flush=True)
     litPiano.eval()
