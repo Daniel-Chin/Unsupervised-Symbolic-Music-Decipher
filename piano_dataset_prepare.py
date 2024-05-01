@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from shared import *
 from music import PIANO_RANGE
 from midi_synth_wav import midiSynthWav
-from my_musicgen import getEncodec, HFEncodecCompressionModel
+from my_musicgen import MY_MUSICGEN, EncodecModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
 (DURATION_MU, DURATION_SIGMA) = (-1.754, 1.077)
@@ -87,7 +87,7 @@ def legalizeMidi(src_path: str):
     return midi
 
 def prepareOneDatapoint(
-    stage: Stage, encodec: Optional[HFEncodecCompressionModel], 
+    stage: Stage, encodec: Optional[EncodecModel], 
     idx: int, dest_dir: str, midi_source: Optional[str], 
     verbose: bool, do_fluidsynth_write_pcm: bool, 
 ):
@@ -196,7 +196,7 @@ def prepareOneSet(
     plot_x: bool = False,
 ):
     if stage == Stage.GPU:
-        encodec = getEncodec().to(DEVICE)
+        encodec = MY_MUSICGEN.encodec.to(DEVICE)
     else:
         encodec = None
 

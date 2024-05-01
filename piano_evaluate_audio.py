@@ -17,13 +17,13 @@ def evaluateAudio(
     # Both `litPiano` and `dataModule` are already `setup()`-ed.  
 
     # to speed up dataloader worker spawning
-    from my_musicgen import getEncodec
+    from my_musicgen import MY_MUSICGEN
     
     print('eval audio...', flush=True)
     litPiano.eval()
     audio_dir = path.join(root_dir, 'audio')
     os.makedirs(audio_dir)
-    encodec = getEncodec().to(DEVICE)
+    encodec = MY_MUSICGEN.encodec.to(DEVICE)
     subsets = ['train', *VAL_CASES]
     batch_size = min(8, dataModule.hP.piano_batch_size)
     loaders = [
