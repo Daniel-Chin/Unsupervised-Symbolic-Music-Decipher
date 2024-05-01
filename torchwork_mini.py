@@ -125,6 +125,43 @@ def __inspectPositionalEncodingAt():
         ax.set_title(title)
     plt.show()
 
+def tensorCacheAndClone(*a, **kw):
+    '''
+    Just like lru_cache, except the returned tensor may be mutated without affecting the cache.
+    '''
+    try:
+        if callable(a[0]):
+            raise TypeError('Sorry, the non-calling shorthand is not supported. Use @tensorCacheAndClone(maxsize) instead.')
+    except IndexError:
+        pass
+    lruCache = lru_cache(*a, **kw)
+    def cache(func: Callable[..., Tensor]):
+        vanilla = lruCache(func)
+        def f(*a, **kw):
+            return vanilla(*a, **kw).clone()
+        return f
+    return cache
+
+def testCache():
+    from time import sleep
+
+    def slow():
+        sleep(1)
+        return torch.zeros((2, 3))
+    
+    for name, subject in (
+        ('vanilla', lru_cache()(slow)), 
+        ('ours', tensorCacheAndClone()(slow)),
+    ):
+        print(name)
+        input('Enter...')
+        a = subject()
+        print(a)
+        a[0, 0] = 69
+        b = subject()
+        print(b)
+
 if __name__ == '__main__':
     __inspectPositionalEncoding()
     __inspectPositionalEncodingAt()
+    testCache()
