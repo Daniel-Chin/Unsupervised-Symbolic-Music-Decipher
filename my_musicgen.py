@@ -1,7 +1,6 @@
 from functools import lru_cache
 
 from audiocraft.models.musicgen import MusicGen
-from audiocraft.models.encodec import HFEncodecCompressionModel
 
 from shared import *
 
@@ -18,7 +17,6 @@ def getEncodec():
     # encodec = CompressionModel.get_pretrained(
     #     'facebook/encodec_32khz', DEVICE, 
     # )
-    assert isinstance(encodec, HFEncodecCompressionModel)
     encodec.eval()
     return encodec
 
