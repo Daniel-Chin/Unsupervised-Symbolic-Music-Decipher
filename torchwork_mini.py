@@ -18,6 +18,7 @@ __all__ = [
     'getParams', 'getGradNorm', 'getCommitHash', 
     'writeLightningHparams', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
+    'tensorCacheAndClone', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
