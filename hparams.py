@@ -52,6 +52,8 @@ class HParams:
     piano_batch_size: int
     piano_max_epochs: int
 
+    interpreter_sample_not_polyphonic: bool
+
     require_repo_working_tree_clean: bool
 
     def __post_init__(self):

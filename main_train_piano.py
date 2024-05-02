@@ -47,6 +47,9 @@ def main():
         piano_lr_decay = 0.999, 
         piano_batch_size = 32,
         piano_max_epochs = 300,
+
+        interpreter_sample_not_polyphonic = False,
+        
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_tf_1b_ori_tf'
