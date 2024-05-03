@@ -13,7 +13,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 
 from shared import *
-from hparams import HParams
+from hparams import HParamsPiano
 from music import PIANO_RANGE
 from piano_model import PianoModel
 from piano_dataset import PianoDataset, BatchType
@@ -23,7 +23,7 @@ ORACLE_VAL = 'VAL_ORACLE'
 VAL_CASES = [MONKEY_VAL, ORACLE_VAL]
 
 class LitPiano(L.LightningModule):
-    def __init__(self, hParams: HParams) -> None:
+    def __init__(self, hParams: HParamsPiano) -> None:
         super().__init__()
         self.hP = hParams
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
@@ -39,7 +39,7 @@ class LitPiano(L.LightningModule):
     
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.piano_batch_size, **kw)
+        return super().log(*a, batch_size=hParams.batch_size, **kw)
     
     def setup(self, stage: str):
         _ = stage
@@ -82,7 +82,7 @@ class LitPiano(L.LightningModule):
         self, batch: BatchType, 
         batch_idx: int, dataloader_idx: int, 
     ):
-        if not self.hP.piano_do_validate:
+        if not self.hP.do_validate:
             return
 
         _ = batch_idx
@@ -108,10 +108,10 @@ class LitPiano(L.LightningModule):
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.piano.parameters(), lr=hParams.piano_lr, 
+            self.piano.parameters(), lr=hParams.lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
-            optim, gamma=hParams.piano_lr_decay, 
+            optim, gamma=hParams.lr_decay, 
         )
         return [optim], [sched]
 
@@ -121,7 +121,7 @@ class LitPiano(L.LightningModule):
         self.log_(key, norms[key])
 
 class LitPianoDataModule(L.LightningDataModule):
-    def __init__(self, hParams: HParams) -> None:
+    def __init__(self, hParams: HParamsPiano) -> None:
         super().__init__()
         self.hP = hParams
         self.did_setup: bool = False
@@ -137,20 +137,20 @@ class LitPianoDataModule(L.LightningDataModule):
         def monkeyDataset():
             return PianoDataset(
                 'monkey', PIANO_MONKEY_DATASET_DIR, 
-                hParams.piano_train_set_size + hParams.piano_val_monkey_set_size, 
+                hParams.train_set_size + hParams.val_monkey_set_size, 
             )
 
         @lru_cache(maxsize=1)
         def oracleDataset():
             return PianoDataset(
                 'oracle', PIANO_ORACLE_DATASET_DIR, 
-                hParams.piano_val_oracle_set_size,
+                hParams.val_oracle_set_size,
             )
         
         self.train_dataset, self.val_monkey_dataset = random_split(
             monkeyDataset(), [
-                hParams.piano_train_set_size, 
-                hParams.piano_val_monkey_set_size, 
+                hParams.train_set_size, 
+                hParams.val_monkey_set_size, 
             ], 
         )
         self.val_oracle_dataset = oracleDataset()
@@ -161,7 +161,7 @@ class LitPianoDataModule(L.LightningDataModule):
     
     def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
-        bs = batch_size or hParams.piano_batch_size
+        bs = batch_size or hParams.batch_size
         return DataLoader(
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
@@ -170,7 +170,7 @@ class LitPianoDataModule(L.LightningDataModule):
     
     def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
-        bs = batch_size or hParams.piano_batch_size
+        bs = batch_size or hParams.batch_size
         return [
             DataLoader(
                 self.val_sets[x], batch_size=bs, 
@@ -179,20 +179,15 @@ class LitPianoDataModule(L.LightningDataModule):
             for x in VAL_CASES
         ]
 
-def train(hParams: HParams, root_dir: str):
+def train(hParams: HParamsPiano, root_dir: str):
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
-    if GPU_NAME in (
-        'NVIDIA GeForce RTX 3050 Ti Laptop GPU', 
-        'NVIDIA GeForce RTX 3090', 
-    ):
-        torch.set_float32_matmul_precision('high')
     litPiano = LitPiano(hParams)
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
-        devices=[DEVICE.index], max_epochs=hParams.piano_max_epochs, 
+        devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
         gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
@@ -201,8 +196,8 @@ def train(hParams: HParams, root_dir: str):
             # DeviceStatsMonitor(), 
             ModelSummary(max_depth=3), 
         ], 
-        log_every_n_steps=min(50, hParams.piano_train_set_size // hParams.piano_batch_size), 
-        overfit_batches=1, 
+        log_every_n_steps=min(50, hParams.train_set_size // hParams.batch_size), 
+        # overfit_batches=1, 
     )
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(litPiano, dataModule)

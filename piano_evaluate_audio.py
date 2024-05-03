@@ -25,7 +25,7 @@ def evaluateAudio(
     os.makedirs(audio_dir)
     encodec = myMusicGen.encodec.to(DEVICE)
     subsets = ['train', *VAL_CASES]
-    batch_size = min(8, dataModule.hP.piano_batch_size)
+    batch_size = min(8, dataModule.hP.batch_size)
     loaders = [
         dataModule.train_dataloader(batch_size, shuffle=False), 
         *dataModule.val_dataloader(batch_size, ),

@@ -5,24 +5,24 @@ from torch import Tensor
 
 from shared import *
 from hparams import (
-    HParams, PianoArchType, CNNHParam, TransformerHParam, 
+    HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, 
     CNNResidualBlockHParam, 
 )
 from music import PIANO_RANGE
 
 class PianoModel(torch.nn.Module):
     @staticmethod
-    def new(hParams: HParams):
-        if hParams.piano_arch_type == PianoArchType.CNN:
-            cnn_hp = hParams.piano_arch_hparam
+    def new(hParams: HParamsPiano):
+        if hParams.arch_type == PianoArchType.CNN:
+            cnn_hp = hParams.arch_hparam
             assert isinstance(cnn_hp, CNNHParam)
             return CNNPianoModel(hParams, cnn_hp)
-        elif hParams.piano_arch_type == PianoArchType.Transformer:
-            tf_hp = hParams.piano_arch_hparam
+        elif hParams.arch_type == PianoArchType.Transformer:
+            tf_hp = hParams.arch_hparam
             assert isinstance(tf_hp, TransformerHParam)
             return TransformerPianoModel(hParams, tf_hp)
         else:
-            raise ValueError(f'unknown arch type: {hParams.piano_arch_type}')
+            raise ValueError(f'unknown arch type: {hParams.arch_type}')
     
     def forward(self, x: Tensor) -> Tensor:
         '''
@@ -77,18 +77,18 @@ class CNNResidualBlock(torch.nn.Module):
         return x + self.sequential(x)
 
 class CNNPianoModel(PianoModel):
-    def __init__(self, hParams: HParams, cnn_hp: CNNHParam):
+    def __init__(self, hParams: HParamsPiano, cnn_hp: CNNHParam):
         super().__init__()
 
         self.entrance = ConvBlock(
             2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_hp.entrance_n_channel, 
-            0, hParams.piano_dropout, 
+            0, hParams.dropout, 
         )
         current_n_channel = cnn_hp.entrance_n_channel
         self.resBlocks = torch.nn.Sequential()
         for i, block_hp in enumerate(cnn_hp.blocks):
             resBlock = CNNResidualBlock(
-                block_hp, current_n_channel, hParams.piano_dropout, 
+                block_hp, current_n_channel, hParams.dropout, 
                 name=f'res_{i}', 
             )
             self.resBlocks.append(resBlock)
@@ -118,7 +118,7 @@ class CNNPianoModel(PianoModel):
         return x
 
 class TransformerPianoModel(PianoModel):
-    def __init__(self, hParams: HParams, tf_hp: TransformerHParam):
+    def __init__(self, hParams: HParamsPiano, tf_hp: TransformerHParam):
         super().__init__()
 
         self.tf_hp = tf_hp
@@ -128,7 +128,7 @@ class TransformerPianoModel(PianoModel):
         )
         encoder_layer = torch.nn.TransformerEncoderLayer(
             tf_hp.d_model, tf_hp.n_heads, tf_hp.d_feedforward, 
-            hParams.piano_dropout, batch_first=True, 
+            hParams.dropout, batch_first=True, 
         )
         self.tf = torch.nn.TransformerEncoder(
             encoder_layer, tf_hp.n_layers, 

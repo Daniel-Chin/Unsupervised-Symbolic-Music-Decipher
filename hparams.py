@@ -38,37 +38,12 @@ class TransformerHParam(PianoArchHParam):
 
 @dataclass(frozen=True)
 class HParams:
-    piano_arch_type: PianoArchType
-    piano_arch_hparam: PianoArchHParam
-    piano_dropout: float
-
-    piano_train_set_size: int
-    piano_val_monkey_set_size: int
-    piano_val_oracle_set_size: int
-    piano_do_validate: bool
-
-    piano_lr: float
-    piano_lr_decay: float
-    piano_batch_size: int
-    piano_max_epochs: int
-
-    interpreter_sample_not_polyphonic: bool
-    decipher_loss_weight_left: float
-    decipher_loss_weight_right: float
-    decipher_train_set_size: int
-    decipher_val_set_size: int
-
-    decipher_lr: float
-    decipher_lr_decay: float
-    decipher_batch_size: int
-    decipher_max_epochs: int
+    lr: float
+    lr_decay: float
+    batch_size: int
+    max_epochs: int
 
     require_repo_working_tree_clean: bool
-
-    def __post_init__(self):
-        assert isinstance(
-            self.piano_arch_hparam, arch_types[self.piano_arch_type], 
-        )
 
     def summary(self):
         print('HParams:')
@@ -76,12 +51,35 @@ class HParams:
             print(' ', k, '=', v)
         print(' ')
 
-        piano_total_decay = self.piano_lr_decay ** self.piano_max_epochs
-        print(' ', f'{piano_total_decay = :.2e}')
-        piano_ending_lr = self.piano_lr * piano_total_decay
-        print(' ', f'{piano_ending_lr = :.2e}')
+        total_decay = self.lr_decay ** self.max_epochs
+        print(' ', f'{total_decay = :.2e}')
+        ending_lr = self.lr * total_decay
+        print(' ', f'{ending_lr = :.2e}')
 
-        decipher_total_decay = self.decipher_lr_decay ** self.decipher_max_epochs
-        print(' ', f'{decipher_total_decay = :.2e}')
-        decipher_ending_lr = self.piano_lr * decipher_total_decay
-        print(' ', f'{decipher_ending_lr = :.2e}')
+@dataclass(frozen=True)
+class HParamsPiano(HParams):
+    arch_type: PianoArchType
+    arch_hparam: PianoArchHParam
+    dropout: float
+
+    train_set_size: int
+    val_monkey_set_size: int
+    val_oracle_set_size: int
+    do_validate: bool
+
+    def __post_init__(self):
+        assert isinstance(
+            self.arch_hparam, arch_types[self.arch_type], 
+        )
+
+@dataclass(frozen=True)
+class HParamsDecipher(HParams):
+    using_piano: str
+
+    interpreter_sample_not_polyphonic: bool
+
+    loss_weight_left: float
+    loss_weight_right: float
+    
+    train_set_size: int
+    val_set_size: int

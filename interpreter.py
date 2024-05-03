@@ -3,12 +3,12 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from shared import *
-from hparams import HParams
+from hparams import HParamsDecipher
 from music import PIANO_RANGE
 from sample_with_ste_backward import sampleWithSTEBackward
 
 class Interpreter(torch.nn.Module):
-    def __init__(self, hParams: HParams) -> None:
+    def __init__(self, hParams: HParamsDecipher) -> None:
         super().__init__()
 
         self.hP = hParams

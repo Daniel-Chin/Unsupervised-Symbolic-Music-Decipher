@@ -4,18 +4,23 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 from torch.distributions.categorical import Categorical
 import lightning as L
+from lightning.pytorch.utilities import grad_norm
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.profilers import SimpleProfiler
+from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
 
 from shared import *
 from music import PIANO_RANGE
-from hparams import HParams
+from hparams import HParamsDecipher
 from piano_dataset import PianoDataset, BatchTypeScoreOnly
 from piano_model import PianoModel
 from interpreter import Interpreter
 from my_musicgen import myMusicGen, LMOutput
 from sample_with_ste_backward import sampleWithSTEBackward
+from piano_lightning import LitPiano
 
 class LitDecipherDataModule(L.LightningDataModule):
-    def __init__(self, hParams: HParams) -> None:
+    def __init__(self, hParams: HParamsDecipher) -> None:
         super().__init__()
         self.hP = hParams
         self.did_setup: bool = False
@@ -29,20 +34,20 @@ class LitDecipherDataModule(L.LightningDataModule):
 
         dataset = PianoDataset(
             'oracle', PIANO_ORACLE_DATASET_DIR, 
-            hParams.piano_val_oracle_set_size,
+            hParams.val_set_size,
             score_only=True, 
         )
         
         self.train_dataset, self.val_dataset = random_split(
             dataset, [
-                hParams.decipher_train_set_size, 
-                hParams.decipher_val_set_size, 
+                hParams.train_set_size, 
+                hParams.val_set_size, 
             ], 
         )
     
     def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
-        bs = batch_size or hParams.piano_batch_size
+        bs = batch_size or hParams.batch_size
         return DataLoader(
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
@@ -51,7 +56,7 @@ class LitDecipherDataModule(L.LightningDataModule):
     
     def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
-        bs = batch_size or hParams.piano_batch_size
+        bs = batch_size or hParams.batch_size
         return DataLoader(
             self.val_dataset, batch_size=bs, 
             num_workers=2, persistent_workers=True, 
@@ -59,11 +64,11 @@ class LitDecipherDataModule(L.LightningDataModule):
 
 class LitDecipher(L.LightningModule):
     def __init__(
-        self, hParams: HParams, pianoGetter: Callable[[], PianoModel],
+        self, hParams: HParamsDecipher, getPiano: Callable[[], PianoModel],
     ) -> None:
         super().__init__()
         self.hP = hParams
-        self.pianoGetter = pianoGetter
+        self.getPiano = getPiano
         writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         example_batch_size = 3
         self.example_input_array = torch.randn(
@@ -77,7 +82,7 @@ class LitDecipher(L.LightningModule):
 
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.decipher_batch_size, **kw)
+        return super().log(*a, batch_size=hParams.batch_size, **kw)
 
     def setup(self, stage: str):
         _ = stage
@@ -85,7 +90,8 @@ class LitDecipher(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.piano = self.pianoGetter()
+        self.piano = self.getPiano()
+        self.piano.eval()
         freeze(self.piano)
         self.interpreter = Interpreter(hParams)
 
@@ -98,8 +104,14 @@ class LitDecipher(L.LightningModule):
         x = self.piano.forward(x)
         return x
 
-    def training_step(
-        self, batch: BatchTypeScoreOnly, batch_idx: int, 
+    def training_step(self, batch: BatchTypeScoreOnly, batch_idx: int):
+        return self.shared_step('train', batch, batch_idx)
+    
+    def validation_step(self, batch: BatchTypeScoreOnly, batch_idx: int):
+        return self.shared_step('val', batch, batch_idx)
+    
+    def shared_step(
+        self, step_name: str, batch: BatchTypeScoreOnly, batch_idx: int, 
     ):
         hParams = self.hP
         _ = batch_idx
@@ -121,20 +133,23 @@ class LitDecipher(L.LightningModule):
         prediction = myMusicGen.lmPredict(sampled_encodec_onehots)
 
         loss = torch.zeros(( ), device=self.device)
-        if hParams.decipher_loss_weight_left != 0.0:
+        def logLoss(name: Optional[str], loss: Tensor):
+            suffix = '' if name is None else '_' + name
+            self.log_(f'{step_name}_loss' + suffix, loss)
+        if hParams.loss_weight_left != 0.0:
             loss_left, ce_per_codebook = myMusicGen.lmLoss(
                 prediction, 
                 sampled_encodec_onehots.argmax(dim=-1), 
             )
-            self.log_('train_loss_left', loss_left)
-            loss += hParams.decipher_loss_weight_left  * loss_left
+            logLoss('left', loss_left)
+            loss += hParams.loss_weight_left  * loss_left
             for k, ce_k in enumerate(ce_per_codebook):
-                self.log_(f'train_loss_left_codebook_{k}', ce_k)
-        if hParams.decipher_loss_weight_right != 0.0:
+                logLoss(f'left_codebook_{k}', ce_k)
+        if hParams.loss_weight_right != 0.0:
             loss_right = self.lossRight(encodec_tokens_logits, prediction)
-            self.log_('train_loss_right', loss_right)
-            loss += hParams.decipher_loss_weight_right * loss_right
-        self.log_('train_loss', loss)
+            logLoss('right', loss_right)
+            loss += hParams.loss_weight_right * loss_right
+        logLoss(None, loss)
         return loss
     
     @staticmethod
@@ -147,4 +162,51 @@ class LitDecipher(L.LightningModule):
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
         return F.l1_loss(valid_performed, onehots)
-    
+
+    def configure_optimizers(self):
+        hParams = self.hP
+        optim = torch.optim.Adam(
+            self.interpreter.parameters(), lr=hParams.lr, 
+        )
+        sched = torch.optim.lr_scheduler.ExponentialLR(
+            optim, gamma=hParams.lr_decay, 
+        )
+        return [optim], [sched]
+
+    def on_before_optimizer_step(self, _: torch.optim.Optimizer):
+        norms = grad_norm(self.interpreter, norm_type=2)
+        key = 'grad_2.0_norm_total'
+        self.log_(key, norms[key])
+
+def train(hParams: HParamsDecipher, root_dir: str):
+    log_name = '.'
+    os.makedirs(path.join(root_dir, log_name))
+    def getPiano():
+        litPiano = LitPiano.load_from_checkpoint(path.join(
+            EXPERIMENTS_DIR, hParams.using_piano, 
+        ))
+        litPiano.eval()
+        return litPiano.piano
+    litDecipher = LitDecipher(hParams, getPiano)
+    profiler = SimpleProfiler(filename='profile')
+    logger = TensorBoardLogger(root_dir, log_name)
+    # torch.cuda.memory._record_memory_history(max_entries=100000)
+    trainer = L.Trainer(
+        devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
+        gradient_clip_val=5.0, 
+        default_root_dir=root_dir,
+        logger=logger, 
+        profiler=profiler, 
+        callbacks=[
+            # DeviceStatsMonitor(), 
+            ModelSummary(max_depth=3), 
+        ], 
+        log_every_n_steps=min(50, hParams.train_set_size // hParams.batch_size), 
+        # overfit_batches=1, 
+    )
+    dataModule = LitDecipherDataModule(hParams)
+    trainer.fit(litDecipher, dataModule)
+    # torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
+    # torch.cuda.memory._record_memory_history(enabled=None) # type: ignore
+
+    return litDecipher, dataModule
