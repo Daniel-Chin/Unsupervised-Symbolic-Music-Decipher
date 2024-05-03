@@ -6,7 +6,7 @@ from parallel_sbatch import SbatchContext
 DIRS = '0123456789abcdef'
 TO_PREPARE = [
     ('monkey', 10000 // len(DIRS)), 
-    ('oracle', 128 // len(DIRS)),
+    ('oracle', 10000 // len(DIRS)),
 ]
 
 def main(stage: str):
