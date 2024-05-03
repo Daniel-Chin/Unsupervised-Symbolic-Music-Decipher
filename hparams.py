@@ -53,6 +53,15 @@ class HParams:
     piano_max_epochs: int
 
     interpreter_sample_not_polyphonic: bool
+    decipher_loss_weight_left: float
+    decipher_loss_weight_right: float
+    decipher_train_set_size: int
+    decipher_val_set_size: int
+
+    decipher_lr: float
+    decipher_lr_decay: float
+    decipher_batch_size: int
+    decipher_max_epochs: int
 
     require_repo_working_tree_clean: bool
 
@@ -66,7 +75,13 @@ class HParams:
         for k, v in asdict(self).items():
             print(' ', k, '=', v)
         print(' ')
-        total_decay = self.piano_lr_decay ** self.piano_max_epochs
-        print(' ', f'{total_decay = :.2e}')
-        ending_lr = self.piano_lr * total_decay
-        print(' ', f'{ending_lr = :.2e}')
+
+        piano_total_decay = self.piano_lr_decay ** self.piano_max_epochs
+        print(' ', f'{piano_total_decay = :.2e}')
+        piano_ending_lr = self.piano_lr * piano_total_decay
+        print(' ', f'{piano_ending_lr = :.2e}')
+
+        decipher_total_decay = self.decipher_lr_decay ** self.decipher_max_epochs
+        print(' ', f'{decipher_total_decay = :.2e}')
+        decipher_ending_lr = self.piano_lr * decipher_total_decay
+        print(' ', f'{decipher_ending_lr = :.2e}')

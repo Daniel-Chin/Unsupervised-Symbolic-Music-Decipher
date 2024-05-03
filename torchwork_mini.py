@@ -18,7 +18,7 @@ __all__ = [
     'getParams', 'getGradNorm', 'getCommitHash', 
     'writeLightningHparams', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
-    'tensorCacheAndClone', 
+    'tensorCacheAndClone', 'freeze', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -161,6 +161,10 @@ def testCache():
         a[0, 0] = 69
         b = subject()
         print(b)
+
+def freeze(module: torch.nn.Module):
+    for param in module.parameters():
+        param.requires_grad = False
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()

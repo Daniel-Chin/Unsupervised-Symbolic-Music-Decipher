@@ -31,7 +31,7 @@ class LitPiano(L.LightningModule):
         self.example_input_array = torch.randn(
             (
                 example_batch_size, 2, 
-                PIANO_RANGE[1] - PIANO_RANGE[0], N_TOKENS_PER_DATAPOINT, 
+                PIANO_RANGE[1] - PIANO_RANGE[0], N_FRAMES_PER_DATAPOINT, 
             ), 
         )
 
@@ -47,7 +47,7 @@ class LitPiano(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.cnnPiano = PianoModel(hParams)
+        self.piano = PianoModel.new(hParams)
 
         # just for ModelSummary
         # self.convs = self.cnnPiano.convs
@@ -56,7 +56,7 @@ class LitPiano(L.LightningModule):
     def forward(
         self, x: Tensor, 
     ):
-        return self.cnnPiano.forward(x)
+        return self.piano.forward(x)
     
     def training_step(
         self, batch: BatchType, batch_idx: int, 
@@ -108,7 +108,7 @@ class LitPiano(L.LightningModule):
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
-            self.cnnPiano.parameters(), lr=hParams.piano_lr, 
+            self.piano.parameters(), lr=hParams.piano_lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
             optim, gamma=hParams.piano_lr_decay, 
@@ -116,7 +116,7 @@ class LitPiano(L.LightningModule):
         return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
-        norms = grad_norm(self.cnnPiano, norm_type=2)
+        norms = grad_norm(self.piano, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
 

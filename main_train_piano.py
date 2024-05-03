@@ -49,7 +49,16 @@ def main():
         piano_max_epochs = 300,
 
         interpreter_sample_not_polyphonic = False,
-        
+        decipher_loss_weight_left = 1.0, 
+        decipher_loss_weight_right = 1.0, 
+        decipher_train_set_size = 800, 
+        decipher_val_set_size = 200,
+
+        decipher_lr = 1e-3, 
+        decipher_lr_decay = 1.0, 
+        decipher_batch_size = 64, 
+        decipher_max_epochs = 300, 
+
         require_repo_working_tree_clean = True, 
     )
     exp_name = currentTimeDirName() + '_p_tf_1b_ori_tf'

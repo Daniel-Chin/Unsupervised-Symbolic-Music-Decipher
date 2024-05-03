@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from shared import *
 from music import PIANO_RANGE
 from midi_synth_wav import midiSynthWav
-from my_musicgen import MY_MUSICGEN, EncodecModel
+from my_musicgen import myMusicGen, EncodecModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
 (DURATION_MU, DURATION_SIGMA) = (-1.754, 1.077)
@@ -159,7 +159,7 @@ def prepareOneDatapoint(
         x = torch.zeros((
             2, 
             PIANO_RANGE[1] - PIANO_RANGE[0],
-            N_TOKENS_PER_DATAPOINT, 
+            N_FRAMES_PER_DATAPOINT, 
         ))
         for note in piano.notes:
             note: pretty_midi.Note
@@ -174,7 +174,7 @@ def prepareOneDatapoint(
                 0, -1.0 * duration, t_slice.stop - t_slice.start,
             ).exp()
         y = codes[0, :, :].to(torch.int16).cpu()
-        assert y.shape == (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
+        assert y.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
 
         printProfiling('Writing datapoint')
         torch.save(x, path.join(
@@ -196,7 +196,7 @@ def prepareOneSet(
     plot_x: bool = False,
 ):
     if stage == Stage.GPU:
-        encodec = MY_MUSICGEN.encodec.to(DEVICE)
+        encodec = myMusicGen.encodec.to(DEVICE)
     else:
         encodec = None
 
@@ -239,7 +239,7 @@ def prepareOneSet(
             data_ids.append(str(datapoint_i))
             if plot_x and out is not None:
                 x, _ = out
-                img = x.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_TOKENS_PER_DATAPOINT)
+                img = x.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_FRAMES_PER_DATAPOINT)
                 plt.imshow(img, aspect='auto', interpolation='nearest')
                 plt.colorbar()
                 plt.show()

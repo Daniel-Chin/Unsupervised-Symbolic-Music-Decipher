@@ -28,6 +28,9 @@ class SampleWithSTEBackward(torch.autograd.Function):
     def backward(_: FunctionCtx, grad_output: Tensor):
         return grad_output.sum(dim=1)
 
+def sampleWithSTEBackward(probs: Tensor, n: int) -> Tensor:
+    return SampleWithSTEBackward.apply(probs, n) # type: ignore
+
 def checkSampleWithSTEBackward():
     batch_size = 2
     n_classes = 3

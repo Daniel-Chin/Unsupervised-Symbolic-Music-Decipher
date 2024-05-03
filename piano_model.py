@@ -10,6 +10,28 @@ from hparams import (
 )
 from music import PIANO_RANGE
 
+class PianoModel(torch.nn.Module):
+    @staticmethod
+    def new(hParams: HParams):
+        if hParams.piano_arch_type == PianoArchType.CNN:
+            cnn_hp = hParams.piano_arch_hparam
+            assert isinstance(cnn_hp, CNNHParam)
+            return CNNPianoModel(hParams, cnn_hp)
+        elif hParams.piano_arch_type == PianoArchType.Transformer:
+            tf_hp = hParams.piano_arch_hparam
+            assert isinstance(tf_hp, TransformerHParam)
+            return TransformerPianoModel(hParams, tf_hp)
+        else:
+            raise ValueError(f'unknown arch type: {hParams.piano_arch_type}')
+    
+    def forward(self, x: Tensor) -> Tensor:
+        '''
+        `x` shape: (batch_size, 2, n_pitches, n_frames)
+        out shape: (batch_size, ENCODEC_N_BOOKS, n_frames, ENCODEC_N_WORDS_PER_BOOK)
+        '''
+        _ = x
+        raise NotImplementedError()
+
 class PermuteLayer(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return x.permute(0, 2, 1)
@@ -54,7 +76,7 @@ class CNNResidualBlock(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return x + self.sequential(x)
 
-class CNNPianoModel(torch.nn.Module):
+class CNNPianoModel(PianoModel):
     def __init__(self, hParams: HParams, cnn_hp: CNNHParam):
         super().__init__()
 
@@ -85,7 +107,7 @@ class CNNPianoModel(torch.nn.Module):
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
         assert n_pianoroll_channels == 2
         assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
-        assert n_frames == N_TOKENS_PER_DATAPOINT
+        assert n_frames == N_FRAMES_PER_DATAPOINT
         x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
         x = self.entrance.forward(x)
         x = self.resBlocks.forward(x)
@@ -95,7 +117,7 @@ class CNNPianoModel(torch.nn.Module):
         x = x.permute(0, 2, 1, 3)
         return x
 
-class TransformerPianoModel(torch.nn.Module):
+class TransformerPianoModel(PianoModel):
     def __init__(self, hParams: HParams, tf_hp: TransformerHParam):
         super().__init__()
 
@@ -119,7 +141,7 @@ class TransformerPianoModel(torch.nn.Module):
             self.attn_mask = None
         else:
             self.attn_mask = __class__.attnMask(
-                N_TOKENS_PER_DATAPOINT, tf_hp.attn_radius, 
+                N_FRAMES_PER_DATAPOINT, tf_hp.attn_radius, 
             )
             receptive_field = (tf_hp.attn_radius * tf_hp.n_layers * 2 + 1) / ENCODEC_FPS
             print(f'{receptive_field = : .2f} sec')
@@ -128,7 +150,7 @@ class TransformerPianoModel(torch.nn.Module):
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
         assert n_pianoroll_channels == 2
         assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
-        assert n_frames == N_TOKENS_PER_DATAPOINT
+        assert n_frames == N_FRAMES_PER_DATAPOINT
         device = x.device
         if self.attn_mask is not None and self.attn_mask.device != device:
             self.attn_mask = self.attn_mask.to(device)
@@ -149,15 +171,3 @@ class TransformerPianoModel(torch.nn.Module):
         torch.triu(x, diagonal=-radius, out=x)
         torch.tril(x, diagonal=+radius, out=x)
         return x.log()
-
-def PianoModel(hParams: HParams):
-    if hParams.piano_arch_type == PianoArchType.CNN:
-        cnn_hp = hParams.piano_arch_hparam
-        assert isinstance(cnn_hp, CNNHParam)
-        return CNNPianoModel(hParams, cnn_hp)
-    elif hParams.piano_arch_type == PianoArchType.Transformer:
-        tf_hp = hParams.piano_arch_hparam
-        assert isinstance(tf_hp, TransformerHParam)
-        return TransformerPianoModel(hParams, tf_hp)
-    else:
-        raise ValueError(f'unknown arch type: {hParams.piano_arch_type}')
