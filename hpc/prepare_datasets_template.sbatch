@@ -2,7 +2,7 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=4:00:00
+#SBATCH --time=40:00:00
 #SBATCH --mem=4GB
 #SBATCH --gres=gpu:{N_GPU}
 #SBATCH --job-name=prep_data
@@ -18,4 +18,5 @@ source ./activate_env_nyush
 module load ffmpeg
 module load fluidsynth
 echo python starting...
-python piano_dataset_prepare.py --which_set {WHICH_SET} --stage {STAGE} --select_dir {SELECT_DIR} --n_datapoints {N_DATAPOINTS} --do_fluidsynth_write_pcm
+python 
+piano_dataset_prepare.py --which_set {WHICH_SET} --stage {STAGE} --select_dir {SELECT_DIR} --n_datapoints {N_DATAPOINTS} --do_fluidsynth_write_pcm
