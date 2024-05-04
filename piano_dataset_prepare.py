@@ -120,7 +120,12 @@ def prepareOneDatapoint(
 
         printProfiling('Loading midi')
         midi = pretty_midi.PrettyMIDI(midi_path)
-        piano, = midi.instruments
+        try:
+            piano, = midi.instruments
+        except ValueError as e:
+            print(f'{midi_path = }')
+            print(f'{midi.instruments = }')
+            raise e
         piano: pretty_midi.Instrument
         n_notes = len(piano.notes)
         
