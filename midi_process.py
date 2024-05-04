@@ -228,7 +228,34 @@ def trimStart(midi: pretty_midi.PrettyMIDI):
         note.start -= song_start
         note.end -= song_start
 
+def verifyAllHasOneInstrument():
+    with open(path.join(
+        PIANO_LA_DATASET_DIR, 'index.json', 
+    ), 'r', encoding='utf-8') as f:
+        all_dir_ = json.load(f)
+    for dir_ in tqdm.tqdm(all_dir_):
+        with open(path.join(
+            PIANO_LA_DATASET_DIR, dir_, 'index.json', 
+        ), 'r', encoding='utf-8') as f:
+            filenames = json.load(f)
+        for filename in tqdm.tqdm(filenames, desc=dir_):
+            midi = pretty_midi.PrettyMIDI(path.join(
+                PIANO_LA_DATASET_DIR, dir_, filename,
+            ))
+            try:
+                ( piano, ) = midi.instruments
+            except ValueError:
+                print('No piano:', dir_, filename)
+                raise ValueError
+            piano: pretty_midi.Instrument
+            if not piano.notes:
+                print('Piano no notes:', dir_, filename)
+                raise ValueError
+    print('all ok')
+
 if __name__ == '__main__':
+    # verifyAllHasOneInstrument()
+
     # test()
     # main([*LA_DATASET_DIRS], 4)
     # noteStats(30)
