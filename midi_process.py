@@ -144,15 +144,11 @@ def main(select_dirs: Optional[List[str]] = None, limit: Optional[int] = None):
     print('OK')
 
 def noteStats(limit: Optional[int] = None):
-    with open(path.join(
-        PIANO_LA_DATASET_DIR, 'index.json', 
-    ), 'r', encoding='utf-8') as f:
-        all_dir_ = json.load(f)
     densities = []
     durations = []
     velocities = []
     pitches = []
-    for dir_ in tqdm.tqdm(all_dir_):
+    for dir_ in tqdm.tqdm(LA_DATASET_DIRS):
         with open(path.join(
             PIANO_LA_DATASET_DIR, dir_, 'index.json', 
         ), 'r', encoding='utf-8') as f:
@@ -229,11 +225,7 @@ def trimStart(midi: pretty_midi.PrettyMIDI):
         note.end -= song_start
 
 def verifyAllHasOneInstrument():
-    with open(path.join(
-        PIANO_LA_DATASET_DIR, 'index.json', 
-    ), 'r', encoding='utf-8') as f:
-        all_dir_ = json.load(f)
-    for dir_ in tqdm.tqdm(all_dir_):
+    for dir_ in tqdm.tqdm(LA_DATASET_DIRS):
         with open(path.join(
             PIANO_LA_DATASET_DIR, dir_, 'index.json', 
         ), 'r', encoding='utf-8') as f:
