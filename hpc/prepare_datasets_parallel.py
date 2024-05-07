@@ -9,7 +9,7 @@ TO_PREPARE = [
     ('oracle', 100000 // len(DIRS)),
 ]
 
-def main(stage: str):
+def main():
     with open('./prepare_datasets_template.sbatch', 'r', encoding='utf-8') as f:
         template = f.read()
     
@@ -20,17 +20,15 @@ def main(stage: str):
                 auto_sb_filename = f'./auto_prep_dataset_{job_identifier}.sbatch'
                 with open(auto_sb_filename, 'w', encoding='utf-8') as f:
                     f.write(template.replace(
-                        '{N_GPU}', '0' if stage == 'cpu' else '1', 
+                        '{N_GPU}', '1', 
                     ).replace(
                         '{LOG_ID}', job_identifier, 
                     ).replace(
-                        '{PARTITION}', 'parallel' if stage == 'cpu' else 'aquila,gpu', 
+                        '{PARTITION}', 'aquila,gpu', 
                     ).replace(
-                        '{CONSTRAINT}', 'cpu' if stage == 'cpu' else '3090', 
+                        '{CONSTRAINT}', '3090', 
                     ).replace(
                         '{WHICH_SET}', which_set, 
-                    ).replace(
-                        '{STAGE}', stage, 
                     ).replace(
                         '{SELECT_DIR}', select_dir, 
                     ).replace(
@@ -40,11 +38,4 @@ def main(stage: str):
                 sbatch(auto_sb_filename)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--stage', type=str, required=True, choices=['cpu', 'gpu'],
-    )
-    args = parser.parse_args()
-    main(
-        args.stage, 
-    )
+    main()

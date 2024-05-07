@@ -18,4 +18,4 @@ source ./activate_env_nyush
 module load ffmpeg
 module load fluidsynth
 echo python starting...
-python piano_dataset_prepare.py --which_set {WHICH_SET} --stage {STAGE} --select_dir {SELECT_DIR} --n_datapoints {N_DATAPOINTS} --do_fluidsynth_write_pcm
+python piano_dataset_prepare.py --which_set {WHICH_SET} --select_dir {SELECT_DIR} --n_datapoints {N_DATAPOINTS} --do_fluidsynth_write_pcm
