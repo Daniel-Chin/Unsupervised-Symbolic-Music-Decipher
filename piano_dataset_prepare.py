@@ -107,9 +107,15 @@ def prepareOneDatapoint(
     piano, = midi.instruments
     piano: pretty_midi.Instrument
     n_notes = len(piano.notes)
+    assert n_notes != 0
 
     printProfiling('Writing MIDI')
     midi.write(midi_path)
+    
+    # debug
+    piano, = midi.instruments
+    midi = pretty_midi.PrettyMIDI(midi_path)
+    piano, = midi.instruments
 
     printProfiling('Synthesizing audio')
     midiSynthWav(midi_path, wav_path, verbose, do_fluidsynth_write_pcm)
