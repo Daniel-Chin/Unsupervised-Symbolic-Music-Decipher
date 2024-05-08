@@ -85,6 +85,8 @@ def legalizeMidi(src_path: str):
             velocity=srcNote.velocity, pitch=srcNote.pitch, 
             start=start, end=min(end, SONG_LEN),
         ))
+    if not piano.notes:
+        raise NoNotesInMidi(src_path)
     return midi
 
 def prepareOneDatapoint(
@@ -107,9 +109,6 @@ def prepareOneDatapoint(
         midi = legalizeMidi(midi_source)
     piano, = midi.instruments
     piano: pretty_midi.Instrument
-    n_notes = len(piano.notes)
-    if n_notes == 0:
-        raise NoNotesInMidi(midi_source)
 
     printProfiling('Writing MIDI')
     midi.write(midi_path)
