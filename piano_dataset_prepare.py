@@ -35,6 +35,7 @@ class Stage(Enum):
 
 class BadMidi(Exception): pass
 class MidiTooShort(BadMidi): pass
+class NoNotesInMidi(BadMidi): pass
 
 def generateMidi():
     midi = pretty_midi.PrettyMIDI()
@@ -69,7 +70,7 @@ def legalizeMidi(src_path: str):
     srcPiano: pretty_midi.Instrument
     total_len = srcMidi.get_end_time()
     if total_len <= SONG_LEN:
-        raise MidiTooShort()
+        raise MidiTooShort(src_path)
     leeway = total_len - SONG_LEN
     offset = random.uniform(0, leeway)
     for srcNote in srcPiano.notes:
@@ -107,16 +108,12 @@ def prepareOneDatapoint(
     piano, = midi.instruments
     piano: pretty_midi.Instrument
     n_notes = len(piano.notes)
-    assert n_notes != 0
+    if n_notes == 0:
+        raise NoNotesInMidi(midi_source)
 
     printProfiling('Writing MIDI')
     midi.write(midi_path)
     
-    # debug
-    piano, = midi.instruments
-    midi = pretty_midi.PrettyMIDI(midi_path)
-    piano, = midi.instruments
-
     printProfiling('Synthesizing audio')
     midiSynthWav(midi_path, wav_path, verbose, do_fluidsynth_write_pcm)
     
