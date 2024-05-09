@@ -8,33 +8,33 @@ from piano_evaluate_audio import evaluateAudio
 def main():
     initMainProcess()
     hParams = HParamsPiano(
-        # piano_arch_type = PianoArchType.CNN, 
-        # piano_arch_hparam = CNNHParam(1024, [
-        #     [
-        #         (1, 1024), 
-        #         (1, 1024), 
-        #     ], 
-        #     [
-        #         (1, 1024), 
-        #         (1, 1024), 
-        #     ], 
-        #     [
-        #         (1, 1024), 
-        #         (1, 1024), 
-        #     ], 
-        #     [
-        #         (0, 1024), 
-        #     ], 
-        # ]), 
+        arch_type = PianoArchType.CNN, 
+        arch_hparam = CNNHParam(1024, [
+            [
+                (1, 1024), 
+                (1, 1024), 
+            ], 
+            [
+                (1, 1024), 
+                (1, 1024), 
+            ], 
+            [
+                (1, 1024), 
+                (1, 1024), 
+            ], 
+            [
+                (0, 1024), 
+            ], 
+        ]), 
 
-        arch_type = PianoArchType.Transformer,
-        arch_hparam = TransformerHParam(
-            d_model = 1024, 
-            n_heads = 8, 
-            d_feedforward = 2048, 
-            n_layers = 6, 
-            attn_radius = None, 
-        ),
+        # arch_type = PianoArchType.Transformer,
+        # arch_hparam = TransformerHParam(
+        #     d_model = 1024, 
+        #     n_heads = 8, 
+        #     d_feedforward = 2048, 
+        #     n_layers = 6, 
+        #     attn_radius = None, 
+        # ),
 
         dropout = 0.0, 
 
@@ -50,7 +50,7 @@ def main():
 
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_big_set'
+    exp_name = currentTimeDirName() + '_p_big_set_cnn'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
