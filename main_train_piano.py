@@ -38,19 +38,22 @@ def main():
 
         dropout = 0.0, 
 
-        train_set_size = 80000, 
-        val_monkey_set_size = 20000, 
-        val_oracle_set_size = 128, 
+        train_set_size = 64, 
+        val_monkey_set_size = 64, 
+        val_oracle_set_size = 64, 
+        # train_set_size = 80000, 
+        # val_monkey_set_size = 20000, 
+        # val_oracle_set_size = 128, 
         do_validate = True,
 
         lr = 1e-3,
         lr_decay = 0.999, 
         batch_size = 32,
-        max_epochs = 30,
+        max_epochs = 3000,
 
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_big_set_cnn'
+    exp_name = currentTimeDirName() + '_p_cnn_1b'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
