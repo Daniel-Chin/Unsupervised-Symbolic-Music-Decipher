@@ -38,12 +38,9 @@ def main():
 
         dropout = 0.0, 
 
-        train_set_size = 64, 
-        val_monkey_set_size = 64, 
-        val_oracle_set_size = 64, 
-        # train_set_size = 80000, 
-        # val_monkey_set_size = 20000, 
-        # val_oracle_set_size = 128, 
+        train_set_size = 80000, 
+        val_monkey_set_size = 20000, 
+        val_oracle_set_size = 128, 
         do_validate = True,
 
         lr = 1e-3,
