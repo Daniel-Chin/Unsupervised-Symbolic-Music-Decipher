@@ -202,7 +202,7 @@ def train(hParams: HParamsDecipher, root_dir: str):
             ModelSummary(max_depth=3), 
         ], 
         log_every_n_steps=min(50, hParams.train_set_size // hParams.batch_size), 
-        # overfit_batches=1, 
+        overfit_batches=1 if hParams.overfit_first_batch else 0.0, 
     )
     dataModule = LitDecipherDataModule(hParams)
     trainer.fit(litDecipher, dataModule)

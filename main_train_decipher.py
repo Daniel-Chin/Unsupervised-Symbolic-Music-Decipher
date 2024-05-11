@@ -21,6 +21,7 @@ def main():
         lr_decay = 1.0, 
         batch_size = 64, 
         max_epochs = 300, 
+        overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
     )

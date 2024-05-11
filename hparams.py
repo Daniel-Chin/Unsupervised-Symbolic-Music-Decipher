@@ -42,6 +42,7 @@ class HParams:
     lr_decay: float
     batch_size: int
     max_epochs: int
+    overfit_first_batch: bool
 
     require_repo_working_tree_clean: bool
 
