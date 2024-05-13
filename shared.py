@@ -36,14 +36,14 @@ def fftTools():
         n_fft, 
         hop_length = hop_length, 
         power = power, 
-    )
+    ).to(DEVICE)
 
     griffinLim = torchaudio.transforms.GriffinLim(
         n_fft, 
         n_iter = 32, 
         hop_length = hop_length, 
         power = power, 
-    )
+    ).to(DEVICE)
 
     n_bins = n_fft // 2 + 1
 
