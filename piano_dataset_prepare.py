@@ -206,7 +206,7 @@ def prepareOneDatapoint(
     torch.save(encodec_tokens, path.join(
         dest_dir, f'{idx}_encodec_tokens.pt',
     ))
-    torch.save(log_spectrogram.cpu(), path.join(
+    torch.save(log_spectrogram.cpu().to(torch.float16), path.join(
         dest_dir, f'{idx}_log_spectrogram.pt',
     ))
 
