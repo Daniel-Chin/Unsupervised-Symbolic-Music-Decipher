@@ -52,6 +52,7 @@ class LitDecipherDataModule(L.LightningDataModule):
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
+            collate_fn=collateWithNone, 
         )
     
     def val_dataloader(self, batch_size: Optional[int] = None):
@@ -60,6 +61,7 @@ class LitDecipherDataModule(L.LightningDataModule):
         return DataLoader(
             self.val_dataset, batch_size=bs, 
             num_workers=2, persistent_workers=True, 
+            collate_fn=collateWithNone, 
         )
 
 class LitDecipher(L.LightningModule):

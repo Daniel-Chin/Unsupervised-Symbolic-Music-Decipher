@@ -6,6 +6,7 @@ from itertools import count
 
 import torch
 from torch import Tensor
+from torch.utils.data import default_collate
 import git
 import lightning as L
 from matplotlib import pyplot as plt
@@ -18,7 +19,7 @@ __all__ = [
     'getParams', 'getGradNorm', 'getCommitHash', 
     'writeLightningHparams', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
-    'tensorCacheAndClone', 'freeze', 
+    'tensorCacheAndClone', 'freeze', 'collateWithNone', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -165,6 +166,21 @@ def testCache():
 def freeze(module: torch.nn.Module):
     for param in module.parameters():
         param.requires_grad = False
+
+def collateWithNone(datapoints: List[Tuple[Optional[Tensor]]]):
+    non_none_indices = [i for (i, x) in enumerate(datapoints[0]) if x is not None]
+    squeezed = [[
+        x[i] for i in non_none_indices
+    ] for x in datapoints]
+    squeezed_batch: Iterable[Tensor] = default_collate(squeezed)
+    batch = []
+    i_squeezed_batch = iter(squeezed_batch)
+    for i in range(len(datapoints[0])):
+        if i in non_none_indices:
+            batch.append(next(i_squeezed_batch))
+        else:
+            batch.append(None)
+    return tuple(batch)
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()

@@ -100,6 +100,8 @@ class LitPiano(L.LightningModule):
             loss = F.mse_loss(y_hat, log_spectrigram)
             self.log_(log_prefix + '_loss', loss)
         
+        return loss
+        
     def configure_optimizers(self):
         hParams = self.hP
         optim = torch.optim.Adam(
@@ -165,6 +167,7 @@ class LitPianoDataModule(L.LightningDataModule):
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
             num_workers=2, persistent_workers=True, 
+            collate_fn=collateWithNone, 
         )
     
     def val_dataloader(self, batch_size: Optional[int] = None):
@@ -174,6 +177,7 @@ class LitPianoDataModule(L.LightningDataModule):
             DataLoader(
                 self.val_sets[x], batch_size=bs, 
                 num_workers=2, persistent_workers=True, 
+                collate_fn=collateWithNone, 
             )
             for x in VAL_CASES
         ]
