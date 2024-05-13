@@ -46,5 +46,6 @@ def fftTools():
     ).to(DEVICE)
 
     n_bins = n_fft // 2 + 1
+    print('# of freq bins for STFT:', n_bins, flush=True)
 
     return stft, griffinLim, n_bins
