@@ -6,6 +6,7 @@ import torch
 import scipy.io.wavfile as wavfile
 
 from shared import *
+from hparams import PianoOutType
 from piano_dataset import BatchType
 from piano_lightning import LitPiano, LitPianoDataModule, VAL_CASES
 
@@ -20,6 +21,7 @@ def evaluateAudio(
     from my_musicgen import myMusicGen
     
     print('eval audio...', flush=True)
+    hParams = litPiano.hP
     litPiano.eval()
     audio_dir = path.join(root_dir, 'audio')
     os.makedirs(audio_dir)
@@ -53,18 +55,23 @@ def evaluateAudio(
         print(f'{subset = }', flush=True)
         for batch_i, batch in enumerate(loader):
             batch: BatchType
-            x_cpu, _, data_ids = batch
-            x = x_cpu.to(DEVICE)
-            batch_size = x.shape[0]
+            score_cpu, _, _, data_ids = batch
+            score = score_cpu.to(DEVICE)
+            batch_size = score.shape[0]
 
             if batch_i * batch_size >= n_eval:
                 return
             
-            y_logits = litPiano.forward(x)
-            wave: np.ndarray = encodec.decode(
-                y_logits.argmax(dim=-1), 
-            ).cpu().numpy()
-            assert wave.shape[1] == 1
+            y_hat = litPiano.forward(score)
+            if hParams.out_type == PianoOutType.EncodecTokens:
+                wave = encodec.decode(
+                    y_hat.argmax(dim=-1), 
+                ).squeeze(1)
+            if hParams.out_type == PianoOutType.LogSpectrogram:
+                _, griffinLim, _= fftTools()
+                wave: torch.Tensor = griffinLim(y_hat)
+            assert wave.shape == (batch_size, wave.shape[1]), wave.shape
+            wave_cpu = wave.cpu().numpy()
 
             for i in range(batch_size):
                 datapoint_i = batch_i * batch_size + i
@@ -74,11 +81,17 @@ def evaluateAudio(
                 shutil.copyfile(src + '_synthed.wav', filename(
                     subset, datapoint_i, 'reference', 'wav', 
                 ))
-                shutil.copyfile(src + '_encodec_recon.wav', filename(
-                    subset, datapoint_i, 'encodec_recon', 'wav', 
-                ))
+                if hParams.out_type == PianoOutType.EncodecTokens:
+                    shutil.copyfile(src + '_encodec_recon.wav', filename(
+                        subset, datapoint_i, 'encodec_recon', 'wav', 
+                    ))
+                if hParams.out_type == PianoOutType.LogSpectrogram:
+                    shutil.copyfile(src + '_griffin_lim.wav', filename(
+                        subset, datapoint_i, 'griffin_lim', 'wav', 
+                    ))
                 wavfile.write(
-                    filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, wave[i, 0, :],
+                    filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, 
+                    wave_cpu[i, :],
                 )
             print(datapoint_i, '/', n_eval, flush=True)
 
