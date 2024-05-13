@@ -17,6 +17,8 @@ class PianoInnerModel(torch.nn.Module):
 
 class PianoModel(torch.nn.Module):
     def __init__(self, hParams: HParamsPiano):
+        super().__init__()
+
         self.hP = hParams
         if hParams.arch_type == PianoArchType.CNN:
             cnn_hp = hParams.arch_hparam
