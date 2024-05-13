@@ -57,12 +57,18 @@ class HParams:
         ending_lr = self.lr * total_decay
         print(' ', f'{ending_lr = :.2e}')
 
+class PianoOutType(Enum):
+    EncodecTokens = 'EncodecTokens'
+    LogSpectrogram = 'LogSpectrogram'
+
 @dataclass(frozen=True)
 class HParamsPiano(HParams):
     arch_type: PianoArchType
     arch_hparam: PianoArchHParam
     dropout: float
 
+    out_type: PianoOutType
+    
     train_set_size: int
     val_monkey_set_size: int
     val_oracle_set_size: int
@@ -72,6 +78,14 @@ class HParamsPiano(HParams):
         assert isinstance(
             self.arch_hparam, arch_types[self.arch_type], 
         )
+    
+    def outShape(self):
+        if self.out_type == PianoOutType.EncodecTokens:
+            return (ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
+        if self.out_type == PianoOutType.LogSpectrogram:
+            _, _, n_bins = fftTools()
+            return (n_bins, )
+        raise ValueError(self.out_type)
 
 @dataclass(frozen=True)
 class HParamsDecipher(HParams):

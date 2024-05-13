@@ -1,7 +1,7 @@
 from os import path
 
 from shared import *
-from hparams import HParamsPiano, PianoArchType, CNNHParam, TransformerHParam
+from hparams import HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, PianoOutType
 from piano_lightning import train
 from piano_evaluate_audio import evaluateAudio
 
@@ -37,6 +37,8 @@ def main():
         # ),
 
         dropout = 0.0, 
+
+        out_type = PianoOutType.EncodecTokens,
 
         train_set_size = 80000, 
         val_monkey_set_size = 20000, 

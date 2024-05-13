@@ -13,7 +13,7 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 
 from shared import *
-from hparams import HParamsPiano
+from hparams import HParamsPiano, PianoOutType
 from music import PIANO_RANGE
 from piano_model import PianoModel
 from piano_dataset import PianoDataset, BatchType
@@ -47,7 +47,7 @@ class LitPiano(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.piano = PianoModel.new(hParams)
+        self.piano = PianoModel(hParams)
 
         # just for ModelSummary
         # self.convs = self.cnnPiano.convs
@@ -61,22 +61,7 @@ class LitPiano(L.LightningModule):
     def training_step(
         self, batch: BatchType, batch_idx: int, 
     ):
-        _ = batch_idx
-        x, y, _ = batch
-
-        y_logits = self.forward(x)
-        loss = F.cross_entropy(
-            y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y       .view   (-1).to(torch.long), 
-        )
-        self.log_('train_loss', loss)
-
-        for book_i, accuracy in enumerate(
-            (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
-        ):
-            self.log_(f'train_accuracy_book_{book_i}', accuracy, on_step=False, on_epoch=True)
-
-        return loss
+        return self.shared_step(batch, batch_idx, 'train')
     
     def validation_step(
         self, batch: BatchType, 
@@ -84,26 +69,36 @@ class LitPiano(L.LightningModule):
     ):
         if not self.hP.do_validate:
             return
+        
+        return self.shared_step(batch, batch_idx, VAL_CASES[dataloader_idx])
 
+    def shared_step(
+        self, batch: BatchType, batch_idx: int, log_prefix: str, 
+    ):
         _ = batch_idx
-        x, y, _ = batch
+        score, encodec_tokens, log_spectrigram, _ = batch
+        hParams = self.hP
 
-        y_logits = self.forward(x)
+        y_hat = self.forward(score)
 
-        def logName(x: str, /):
-            return f'{VAL_CASES[dataloader_idx]}_{x}'
+        if hParams.out_type == PianoOutType.EncodecTokens:
+            assert encodec_tokens is not None
+            assert encodec_tokens.shape == y_hat.shape[:-1], (encodec_tokens.shape, y_hat.shape)
+            loss = F.cross_entropy(
+                y_hat.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
+                encodec_tokens       .view   (-1).to(torch.long), 
+            )
+            self.log_(log_prefix + '_loss', loss)
 
-        assert y.shape == y_logits.shape[:-1], (y.shape, y_logits.shape)
-        loss = F.cross_entropy(
-            y_logits.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
-            y       .view   (-1).to(torch.long), 
-        )
-        self.log_(logName('loss'), loss)
-
-        for book_i, accuracy in enumerate(
-            (y_logits.argmax(dim=-1) == y).float().mean(dim=2).mean(dim=0), 
-        ):
-            self.log_(logName(f'accuracy_book_{book_i}'), accuracy)
+            for book_i, accuracy in enumerate(
+                (y_hat.argmax(dim=-1) == encodec_tokens).float().mean(dim=2).mean(dim=0), 
+            ):
+                self.log_(log_prefix + f'_accuracy_book_{book_i}', accuracy, on_step=False, on_epoch=True)
+        
+        if hParams.out_type == PianoOutType.LogSpectrogram:
+            assert log_spectrigram is not None
+            loss = F.mse_loss(y_hat, log_spectrigram)
+            self.log_(log_prefix + '_loss', loss)
         
     def configure_optimizers(self):
         hParams = self.hP
@@ -137,6 +132,8 @@ class LitPianoDataModule(L.LightningDataModule):
         def monkeyDataset():
             return PianoDataset(
                 'monkey', PIANO_MONKEY_DATASET_DIR, 
+                hParams.out_type == PianoOutType.EncodecTokens, 
+                hParams.out_type == PianoOutType.LogSpectrogram, 
                 hParams.train_set_size + hParams.val_monkey_set_size, 
             )
 
@@ -144,6 +141,8 @@ class LitPianoDataModule(L.LightningDataModule):
         def oracleDataset():
             return PianoDataset(
                 'oracle', PIANO_ORACLE_DATASET_DIR, 
+                hParams.out_type == PianoOutType.EncodecTokens, 
+                hParams.out_type == PianoOutType.LogSpectrogram, 
                 hParams.val_oracle_set_size,
             )
         

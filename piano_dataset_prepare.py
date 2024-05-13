@@ -118,11 +118,11 @@ def prepareOneDatapoint(
     
     assert encodec is not None
 
-    printProfiling('Loading midi')
-    midi = pretty_midi.PrettyMIDI(midi_path)
-    piano, = midi.instruments
-    piano: pretty_midi.Instrument
-    n_notes = len(piano.notes)
+    # printProfiling('Loading midi')
+    # midi = pretty_midi.PrettyMIDI(midi_path)
+    # piano, = midi.instruments
+    # piano: pretty_midi.Instrument
+    # n_notes = len(piano.notes)
     
     printProfiling('Loading audio')
     buf = BytesIO()
@@ -154,9 +154,32 @@ def prepareOneDatapoint(
     printProfiling('Writing recon')
     recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
     wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
+
+    printProfiling('STFT')
+    stft, griffinLim, n_bins = fftTools()
+    spectrogram: Tensor = stft(wave)
+    freq, t = spectrogram.shape
+    assert freq == n_bins
+    if t == N_FRAMES_PER_DATAPOINT:
+        pass
+    elif t == N_FRAMES_PER_DATAPOINT + 1:
+        spectrogram = spectrogram[:, :-1]
+    elif t == N_FRAMES_PER_DATAPOINT - 1:
+        spectrogram = torch.nn.functional.pad(
+            spectrogram, (0, 1), value=1e-5, 
+        )
+        raise ValueError(t)
+    else:
+        raise ValueError(t)
+    log_spectrogram = spectrogram.log()
+
+    printProfiling('Writing Griffin-Lim')
+    griffin_lim_path = path.join(dest_dir, f'{idx}_griffin_lim.wav')
+    griffin_lim: Tensor = griffinLim(log_spectrogram.exp())
+    wavfile.write(griffin_lim_path, ENCODEC_SR, griffin_lim.cpu().numpy())
     
     printProfiling('Formatting datapoint')
-    x = torch.zeros((
+    score = torch.zeros((
         2, 
         PIANO_RANGE[1] - PIANO_RANGE[0],
         N_FRAMES_PER_DATAPOINT, 
@@ -169,22 +192,25 @@ def prepareOneDatapoint(
             round(note.end   * ENCODEC_FPS), 
         )
         pitch_index = note.pitch - PIANO_RANGE[0]
-        x[0, pitch_index, t_slice] = note.velocity / 127.0
-        x[1, pitch_index, t_slice] = torch.linspace(
+        score[0, pitch_index, t_slice] = note.velocity / 127.0
+        score[1, pitch_index, t_slice] = torch.linspace(
             0, -1.0 * duration, t_slice.stop - t_slice.start,
         ).exp()
-    y = codes[0, :, :].to(torch.int16).cpu()
-    assert y.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
+    encodec_tokens = codes[0, :, :].to(torch.int16).cpu()
+    assert encodec_tokens.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
 
     printProfiling('Writing datapoint')
-    torch.save(x, path.join(
-        dest_dir, f'{idx}_x.pt',
+    torch.save(score, path.join(
+        dest_dir, f'{idx}_score.pt',
     ))
-    torch.save(y, path.join(
-        dest_dir, f'{idx}_y.pt',
+    torch.save(encodec_tokens, path.join(
+        dest_dir, f'{idx}_encodec_tokens.pt',
+    ))
+    torch.save(log_spectrogram.cpu(), path.join(
+        dest_dir, f'{idx}_log_spectrogram.pt',
     ))
 
-    return x, y
+    return score, encodec_tokens, log_spectrogram
 
 def prepareOneSet(
     which_set: WhichSet,
@@ -192,7 +218,7 @@ def prepareOneSet(
     n_datapoints: int, 
     verbose: bool, 
     do_fluidsynth_write_pcm: bool, 
-    plot_x: bool = False,
+    plot_score: bool = False,
 ):
     encodec = myMusicGen.encodec.to(DEVICE)
 
@@ -233,9 +259,9 @@ def prepareOneSet(
                 else:
                     break
             data_ids.append(str(datapoint_i))
-            if plot_x and out is not None:
-                x, _ = out
-                img = x.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_FRAMES_PER_DATAPOINT)
+            if plot_score and out is not None:
+                score, _, _ = out
+                img = score.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_FRAMES_PER_DATAPOINT)
                 plt.imshow(img, aspect='auto', interpolation='nearest')
                 plt.colorbar()
                 plt.show()
@@ -259,7 +285,7 @@ def laptop():
                 n_datapoints, 
                 verbose=False, 
                 do_fluidsynth_write_pcm=False, 
-                # plot_x=True,
+                # plot_score=True,
             )
 
 if __name__ == '__main__':

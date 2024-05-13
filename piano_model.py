@@ -1,4 +1,5 @@
 from functools import lru_cache
+import math
 
 import torch
 from torch import Tensor
@@ -6,31 +7,47 @@ from torch import Tensor
 from shared import *
 from hparams import (
     HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, 
-    CNNResidualBlockHParam, 
+    CNNResidualBlockHParam, PianoOutType, 
 )
 from music import PIANO_RANGE
 
+class PianoInnerModel(torch.nn.Module):
+    def dimOutput(self) -> int:
+        raise NotImplementedError()
+
 class PianoModel(torch.nn.Module):
-    @staticmethod
-    def new(hParams: HParamsPiano):
+    def __init__(self, hParams: HParamsPiano):
+        self.hP = hParams
         if hParams.arch_type == PianoArchType.CNN:
             cnn_hp = hParams.arch_hparam
             assert isinstance(cnn_hp, CNNHParam)
-            return CNNPianoModel(hParams, cnn_hp)
+            self.mainModel = CNNPianoModel(hParams, cnn_hp)
         elif hParams.arch_type == PianoArchType.Transformer:
             tf_hp = hParams.arch_hparam
             assert isinstance(tf_hp, TransformerHParam)
-            return TransformerPianoModel(hParams, tf_hp)
+            self.mainModel = TransformerPianoModel(hParams, tf_hp)
         else:
             raise ValueError(f'unknown arch type: {hParams.arch_type}')
+        self.outProjector = torch.nn.Linear(
+            self.mainModel.dimOutput(), math.prod(hParams.outShape()),
+        )
     
     def forward(self, x: Tensor) -> Tensor:
-        '''
-        `x` shape: (batch_size, 2, n_pitches, n_frames)
-        out shape: (batch_size, ENCODEC_N_BOOKS, n_frames, ENCODEC_N_WORDS_PER_BOOK)
-        '''
-        _ = x
-        raise NotImplementedError()
+        batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
+        assert n_pianoroll_channels == 2
+        assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
+        assert n_frames == N_FRAMES_PER_DATAPOINT
+
+        x = self.mainModel.forward(x)
+        x = self.outProjector.forward(x)
+        if self.hP.out_type == PianoOutType.EncodecTokens:
+            x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
+            x = x.permute(0, 2, 1, 3)
+        if self.hP.out_type == PianoOutType.LogSpectrogram:
+            _, _, n_bins = fftTools()
+            x = x.view(batch_size, n_frames, n_bins)
+            x = x.permute(0, 2, 1)
+        return x
 
 class PermuteLayer(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
@@ -76,10 +93,12 @@ class CNNResidualBlock(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return x + self.sequential(x)
 
-class CNNPianoModel(PianoModel):
+class CNNPianoModel(PianoInnerModel):
     def __init__(self, hParams: HParamsPiano, cnn_hp: CNNHParam):
         super().__init__()
 
+        self.hP = hParams
+        
         self.entrance = ConvBlock(
             2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_hp.entrance_n_channel, 
             0, hParams.dropout, 
@@ -93,15 +112,16 @@ class CNNPianoModel(PianoModel):
             )
             self.resBlocks.append(resBlock)
             current_n_channel = resBlock.out_n_channel
-        self.outProjector = torch.nn.Linear(
-            current_n_channel, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
-        )
+        self.dim_output = current_n_channel
         receptive_field = (sum(
             sum(
                 radius for radius, _ in x
             ) for x in cnn_hp.blocks
         ) * 2 + 1) / ENCODEC_FPS
         print(f'{receptive_field = : .2f} sec')
+    
+    def dimOutput(self) -> int:
+        return self.dim_output
     
     def forward(self, x: Tensor) -> Tensor:
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
@@ -112,15 +132,13 @@ class CNNPianoModel(PianoModel):
         x = self.entrance.forward(x)
         x = self.resBlocks.forward(x)
         x = x.permute(0, 2, 1)
-        x = self.outProjector.forward(x)
-        x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
-        x = x.permute(0, 2, 1, 3)
         return x
 
-class TransformerPianoModel(PianoModel):
+class TransformerPianoModel(PianoInnerModel):
     def __init__(self, hParams: HParamsPiano, tf_hp: TransformerHParam):
         super().__init__()
 
+        self.hP = hParams
         self.tf_hp = tf_hp
         
         self.inProjector = torch.nn.Linear(
@@ -133,9 +151,6 @@ class TransformerPianoModel(PianoModel):
         self.tf = torch.nn.TransformerEncoder(
             encoder_layer, tf_hp.n_layers, 
         )
-        self.outProjector = torch.nn.Linear(
-            tf_hp.d_model, ENCODEC_N_BOOKS * ENCODEC_N_WORDS_PER_BOOK, 
-        )
 
         if tf_hp.attn_radius is None:
             self.attn_mask = None
@@ -145,6 +160,9 @@ class TransformerPianoModel(PianoModel):
             )
             receptive_field = (tf_hp.attn_radius * tf_hp.n_layers * 2 + 1) / ENCODEC_FPS
             print(f'{receptive_field = : .2f} sec')
+    
+    def dimOutput(self) -> int:
+        return self.tf_hp.d_model
     
     def forward(self, x: Tensor) -> Tensor:
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
@@ -159,9 +177,6 @@ class TransformerPianoModel(PianoModel):
         x = self.inProjector.forward(x)
         x = x + positionalEncoding(n_frames, self.tf_hp.d_model, device=device)
         x = self.tf.forward(x, mask=self.attn_mask)
-        x = self.outProjector.forward(x)
-        x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
-        x = x.permute(0, 2, 1, 3)
         return x
 
     @staticmethod

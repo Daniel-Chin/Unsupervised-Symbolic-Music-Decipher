@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
 from shared import *
 from music import PIANO_RANGE
 from hparams import HParamsDecipher
-from piano_dataset import PianoDataset, BatchTypeScoreOnly
+from piano_dataset import PianoDataset, BatchType
 from piano_model import PianoModel
 from interpreter import Interpreter
 from my_musicgen import myMusicGen, LMOutput
@@ -34,8 +34,8 @@ class LitDecipherDataModule(L.LightningDataModule):
 
         dataset = PianoDataset(
             'oracle', PIANO_ORACLE_DATASET_DIR, 
+            False, False, 
             hParams.val_set_size,
-            score_only=True, 
         )
         
         self.train_dataset, self.val_dataset = random_split(
@@ -104,18 +104,18 @@ class LitDecipher(L.LightningModule):
         x = self.piano.forward(x)
         return x
 
-    def training_step(self, batch: BatchTypeScoreOnly, batch_idx: int):
+    def training_step(self, batch: BatchType, batch_idx: int):
         return self.shared_step('train', batch, batch_idx)
     
-    def validation_step(self, batch: BatchTypeScoreOnly, batch_idx: int):
+    def validation_step(self, batch: BatchType, batch_idx: int):
         return self.shared_step('val', batch, batch_idx)
     
     def shared_step(
-        self, step_name: str, batch: BatchTypeScoreOnly, batch_idx: int, 
+        self, step_name: str, batch: BatchType, batch_idx: int, 
     ):
         hParams = self.hP
         _ = batch_idx
-        x, _ = batch
+        x, _, _, _ = batch
 
         encodec_tokens_logits = self.forward(x)
         (batch_size, n_books, n_frames, n_words_per_book) = encodec_tokens_logits.shape
