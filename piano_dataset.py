@@ -45,7 +45,7 @@ class PianoDataset(Dataset):
             _, _, n_bins = fftTools()
             self.log_spectrigram = torch.zeros((
                 len(self.data_ids), n_bins, N_FRAMES_PER_DATAPOINT, 
-            ), device=device)
+            ), dtype=torch.float16, device=device)
         for i, datapoint_id in enumerate(tqdm(self.data_ids, f'Load dataset "{self.name}"')):
             score: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_score.pt'))
             self.score[i, :, :, :] = score
