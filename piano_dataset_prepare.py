@@ -12,6 +12,10 @@ from audioread.rawread import RawAudioFile
 from tqdm import tqdm
 import scipy.io.wavfile as wavfile
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.image import AxesImage
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import librosa
 
 from shared import *
 from music import PIANO_RANGE
@@ -200,17 +204,18 @@ def prepareOneDatapoint(
     assert encodec_tokens.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
 
     printProfiling('Writing datapoint')
+    log_spectrogram_ = log_spectrogram.cpu().to(torch.float16)
     torch.save(score, path.join(
         dest_dir, f'{idx}_score.pt',
     ))
     torch.save(encodec_tokens, path.join(
         dest_dir, f'{idx}_encodec_tokens.pt',
     ))
-    torch.save(log_spectrogram.cpu().to(torch.float16), path.join(
+    torch.save(log_spectrogram_, path.join(
         dest_dir, f'{idx}_log_spectrogram.pt',
     ))
 
-    return score, encodec_tokens, log_spectrogram
+    return score, encodec_tokens, log_spectrogram_
 
 def prepareOneSet(
     which_set: WhichSet,
@@ -218,7 +223,7 @@ def prepareOneSet(
     n_datapoints: int, 
     verbose: bool, 
     do_fluidsynth_write_pcm: bool, 
-    plot_score: bool = False,
+    only_plot_no_write_disk: bool = False,
 ):
     encodec = myMusicGen.encodec.to(DEVICE)
 
@@ -249,7 +254,7 @@ def prepareOneSet(
                 elif which_set == WhichSet.MONKEY:
                     midi_src = None
                 try:
-                    out = prepareOneDatapoint(
+                    score, encodec_tokens, log_spectrogram = prepareOneDatapoint(
                         encodec, datapoint_i, dest_dir, 
                         midi_src, verbose, do_fluidsynth_write_pcm, 
                     )
@@ -259,17 +264,43 @@ def prepareOneSet(
                 else:
                     break
             data_ids.append(str(datapoint_i))
-            if plot_score and out is not None:
-                score, _, _ = out
-                img = score.permute(1, 0, 2).reshape(2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), N_FRAMES_PER_DATAPOINT)
-                plt.imshow(img, aspect='auto', interpolation='nearest')
-                plt.colorbar()
+            if only_plot_no_write_disk:
+                fig, axes = plt.subplots(2, 1, sharex=True)
+                axes: List[Axes]
+                def colorBar(ax: Axes, im: AxesImage):
+                    divider = make_axes_locatable(ax)
+                    cax = divider.append_axes('right', size='5%', pad=0.05)
+                    fig.colorbar(im, cax=cax, orientation='vertical')
+                im0 = axes[0].imshow(
+                    score.permute(1, 0, 2).reshape(
+                        2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), 
+                        N_FRAMES_PER_DATAPOINT, 
+                    ), aspect='auto', interpolation='nearest', 
+                    origin='lower', 
+                )
+                colorBar(axes[0], im0)
+
+                spectrogram: np.ndarray = log_spectrogram.exp().clamp(1e-6, 100.0).numpy()
+                # D = librosa.amplitude_to_db(spectrogram)
+                # im1 = axes[1].imshow(
+                #     D, aspect='auto', interpolation='nearest', 
+                #     origin='lower', 
+                # )
+                # colorBar(axes[1], im1)
+                _, _, n_bins = fftTools()
+                axes[1].pcolormesh(
+                    # np.linspace(0, SONG_LEN, N_FRAMES_PER_DATAPOINT),
+                    np.arange(N_FRAMES_PER_DATAPOINT),
+                    np.linspace(0, ENCODEC_SR / 2, n_bins), 
+                    spectrogram ** 0.5, 
+                )
                 plt.show()
     finally:
-        with open(path.join(
-            dest_dir, 'index.json',
-        ), 'w', encoding='utf-8') as f:
-            json.dump(data_ids, f)
+        if not only_plot_no_write_disk:
+            with open(path.join(
+                dest_dir, 'index.json',
+            ), 'w', encoding='utf-8') as f:
+                json.dump(data_ids, f)
 
 def laptop():
     TO_PREPARE: List[Tuple[WhichSet, int]] = [
@@ -285,7 +316,7 @@ def laptop():
                 n_datapoints, 
                 verbose=False, 
                 do_fluidsynth_write_pcm=False, 
-                # plot_score=True,
+                # only_plot_no_write_disk=True,
             )
 
 if __name__ == '__main__':
