@@ -40,20 +40,20 @@ def main():
 
         out_type = PianoOutType.LogSpectrogram,
 
-        train_set_size = 800, 
-        val_monkey_set_size = 200, 
+        train_set_size = 8000, 
+        val_monkey_set_size = 2000, 
         val_oracle_set_size = 128, 
         do_validate = True,
 
         lr = 1e-3,
         lr_decay = 0.999, 
         batch_size = 32,
-        max_epochs = 30,
+        max_epochs = 300,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_spec'
+    exp_name = currentTimeDirName() + '_p_spec_long'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
