@@ -40,8 +40,8 @@ def main():
 
         out_type = PianoOutType.LogSpectrogram,
 
-        train_set_size = 80000, 
-        val_monkey_set_size = 20000, 
+        train_set_size = 800, 
+        val_monkey_set_size = 200, 
         val_oracle_set_size = 128, 
         do_validate = True,
 
