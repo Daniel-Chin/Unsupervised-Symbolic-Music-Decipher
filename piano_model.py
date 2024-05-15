@@ -6,8 +6,8 @@ from torch import Tensor
 
 from shared import *
 from hparams import (
-    HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, 
-    CNNResidualBlockHParam, PianoOutType, 
+    HParamsPiano, PianoOutType, PianoArchType, 
+    CNNHParam, CNNResidualBlockHParam, TransformerHParam, GRUHParam, 
 )
 from music import PIANO_RANGE
 
@@ -28,6 +28,10 @@ class PianoModel(torch.nn.Module):
             tf_hp = hParams.arch_hparam
             assert isinstance(tf_hp, TransformerHParam)
             self.mainModel = TransformerPianoModel(hParams, tf_hp)
+        elif hParams.arch_type == PianoArchType.GRU:
+            gru_hp = hParams.arch_hparam
+            assert isinstance(gru_hp, GRUHParam)
+            self.mainModel = GRUPianoModel(hParams, gru_hp)
         else:
             raise ValueError(f'unknown arch type: {hParams.arch_type}')
         self.outProjector = torch.nn.Linear(
@@ -191,3 +195,32 @@ class TransformerPianoModel(PianoInnerModel):
         torch.triu(x, diagonal=-radius, out=x)
         torch.tril(x, diagonal=+radius, out=x)
         return x.log()
+
+class GRUPianoModel(PianoInnerModel):
+    def __init__(self, hParams: HParamsPiano, gru_hp: GRUHParam):
+        super().__init__()
+
+        self.hP = hParams
+        self.gru_hp = gru_hp
+        
+        self.inProjector = torch.nn.Linear(
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), gru_hp.n_hidden, 
+        )
+        self.gru = torch.nn.GRU(
+            gru_hp.n_hidden, gru_hp.n_hidden, gru_hp.n_layers, 
+            batch_first=True, dropout=hParams.dropout, bidirectional=True, 
+        )
+
+    def dimOutput(self) -> int:
+        return self.gru_hp.n_hidden * 2 # bidirectional
+    
+    def forward(self, x: Tensor) -> Tensor:
+        batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
+        assert n_pianoroll_channels == 2
+        assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
+        assert n_frames == N_FRAMES_PER_DATAPOINT
+        x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
+        x = x.permute(0, 2, 1)
+        x = self.inProjector.forward(x)
+        x, _ = self.gru.forward(x)
+        return x

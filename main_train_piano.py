@@ -1,31 +1,33 @@
 from os import path
 
 from shared import *
-from hparams import HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, PianoOutType
+from hparams import (
+    HParamsPiano, PianoOutType, PianoArchType, CNNHParam, TransformerHParam, GRUHParam, 
+)
 from piano_lightning import train
 from piano_subjective_eval import subjectiveEval
 
 def main():
     initMainProcess()
     hParams = HParamsPiano(
-        arch_type = PianoArchType.CNN, 
-        arch_hparam = CNNHParam(512, [
-            [
-                (1, 512), 
-                (1, 512), 
-            ], 
-            [
-                (1, 512), 
-                (1, 512), 
-            ], 
-            [
-                (1, 512), 
-                (1, 512), 
-            ], 
-            [
-                (0, 512), 
-            ], 
-        ]), 
+        # arch_type = PianoArchType.CNN, 
+        # arch_hparam = CNNHParam(512, [
+        #     [
+        #         (1, 512), 
+        #         (1, 512), 
+        #     ], 
+        #     [
+        #         (1, 512), 
+        #         (1, 512), 
+        #     ], 
+        #     [
+        #         (1, 512), 
+        #         (1, 512), 
+        #     ], 
+        #     [
+        #         (0, 512), 
+        #     ], 
+        # ]), 
 
         # arch_type = PianoArchType.Transformer,
         # arch_hparam = TransformerHParam(
@@ -36,24 +38,36 @@ def main():
         #     attn_radius = None, 
         # ),
 
+        arch_type = PianoArchType.GRU, 
+        arch_hparam = GRUHParam(
+            n_hidden = 512, 
+            n_layers = 4, 
+        ),
+
         dropout = 0.0, 
 
-        out_type = PianoOutType.Score,
+        out_type = PianoOutType.EncodecTokens,
 
-        train_set_size = 8000, 
-        val_monkey_set_size = 2000, 
+        train_set_size = 800, 
+        val_monkey_set_size = 200, 
         val_oracle_set_size = 128, 
+        # train_set_size = 16, 
+        # val_monkey_set_size = 16, 
+        # val_oracle_set_size = 16, 
         do_validate = True,
 
         lr = 1e-3,
         lr_decay = 0.999, 
         batch_size = 32,
+        # batch_size = 16,
         max_epochs = 300,
+        # max_epochs = 3,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
+        # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_out_score'
+    exp_name = currentTimeDirName() + '_p_gru'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)

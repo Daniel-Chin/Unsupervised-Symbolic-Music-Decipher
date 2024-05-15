@@ -9,6 +9,7 @@ from music import PIANO_RANGE
 class PianoArchType(Enum):
     CNN = 'CNN'
     Transformer = 'Transformer'
+    GRU = 'GRU'
 
 arch_types = {}
 def registerArchType(x: PianoArchType, /):
@@ -36,6 +37,12 @@ class TransformerHParam(PianoArchHParam):
     d_feedforward: int
     n_layers: int
     attn_radius: Optional[int]
+
+@registerArchType(PianoArchType.GRU)
+@dataclass(frozen=True)
+class GRUHParam(PianoArchHParam):
+    n_hidden: int
+    n_layers: int
 
 @dataclass(frozen=True)
 class HParams:
