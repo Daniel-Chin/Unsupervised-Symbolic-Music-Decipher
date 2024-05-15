@@ -70,9 +70,9 @@ class PianoDataset(Dataset):
 
     def __getitem__(self, index: int):
         '''
-        `score`: (2, PIANO_RANGE[1] - PIANO_RANGE[0], N_TOKENS_PER_DATAPOINT)
-        `encodec_tokens`: (ENCODEC_N_BOOKS, N_TOKENS_PER_DATAPOINT)
-        `log_spectrogram`: (n_bins, N_TOKENS_PER_DATAPOINT)
+        `score`: (2, PIANO_RANGE[1] - PIANO_RANGE[0], N_FRAMES_PER_DATAPOINT)
+        `encodec_tokens`: (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
+        `log_spectrogram`: (n_bins, N_FRAMES_PER_DATAPOINT)
         `data_id`: str
         '''
         # out = [ self.score[index, :, :, :] ]
