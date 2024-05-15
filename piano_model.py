@@ -4,10 +4,13 @@ import math
 import torch
 from torch import Tensor
 
+from performance_net import PerformanceNet
+
 from shared import *
 from hparams import (
     HParamsPiano, PianoOutType, PianoArchType, 
-    CNNHParam, CNNResidualBlockHParam, TransformerHParam, GRUHParam, 
+    CNNHParam, CNNResidualBlockHParam, TransformerHParam, 
+    GRUHParam, PerformanceNetHParam, 
 )
 from music import PIANO_RANGE
 
@@ -23,20 +26,29 @@ class PianoModel(torch.nn.Module):
         if hParams.arch_type == PianoArchType.CNN:
             cnn_hp = hParams.arch_hparam
             assert isinstance(cnn_hp, CNNHParam)
-            self.mainModel = CNNPianoModel(hParams, cnn_hp)
+            self.mainModel = CNNInnerModel(hParams, cnn_hp)
+            self.need_out_projector = True
         elif hParams.arch_type == PianoArchType.Transformer:
             tf_hp = hParams.arch_hparam
             assert isinstance(tf_hp, TransformerHParam)
-            self.mainModel = TransformerPianoModel(hParams, tf_hp)
+            self.mainModel = TransformerInnerModel(hParams, tf_hp)
+            self.need_out_projector = True
         elif hParams.arch_type == PianoArchType.GRU:
             gru_hp = hParams.arch_hparam
             assert isinstance(gru_hp, GRUHParam)
-            self.mainModel = GRUPianoModel(hParams, gru_hp)
+            self.mainModel = GRUInnerModel(hParams, gru_hp)
+            self.need_out_projector = True
+        elif hParams.arch_type == PianoArchType.PerformanceNet:
+            pn_hp = hParams.arch_hparam
+            assert isinstance(pn_hp, PerformanceNetHParam)
+            self.mainModel = PerformanceNetModel(hParams, pn_hp)
+            self.need_out_projector = False
         else:
             raise ValueError(f'unknown arch type: {hParams.arch_type}')
-        self.outProjector = torch.nn.Linear(
-            self.mainModel.dimOutput(), math.prod(hParams.outShape()),
-        )
+        if self.need_out_projector:
+            self.outProjector = torch.nn.Linear(
+                self.mainModel.dimOutput(), math.prod(hParams.outShape()),
+            )
     
     def forward(self, x: Tensor) -> Tensor:
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
@@ -45,7 +57,8 @@ class PianoModel(torch.nn.Module):
         assert n_frames == N_FRAMES_PER_DATAPOINT
 
         x = self.mainModel.forward(x)
-        x = self.outProjector.forward(x)
+        if self.need_out_projector:
+            x = self.outProjector.forward(x)
         if self.hP.out_type == PianoOutType.EncodecTokens:
             x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
             x = x.permute(0, 2, 1, 3)
@@ -102,7 +115,7 @@ class CNNResidualBlock(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return x + self.sequential(x)
 
-class CNNPianoModel(PianoInnerModel):
+class CNNInnerModel(PianoInnerModel):
     def __init__(self, hParams: HParamsPiano, cnn_hp: CNNHParam):
         super().__init__()
 
@@ -143,7 +156,7 @@ class CNNPianoModel(PianoInnerModel):
         x = x.permute(0, 2, 1)
         return x
 
-class TransformerPianoModel(PianoInnerModel):
+class TransformerInnerModel(PianoInnerModel):
     def __init__(self, hParams: HParamsPiano, tf_hp: TransformerHParam):
         super().__init__()
 
@@ -196,7 +209,7 @@ class TransformerPianoModel(PianoInnerModel):
         torch.tril(x, diagonal=+radius, out=x)
         return x.log()
 
-class GRUPianoModel(PianoInnerModel):
+class GRUInnerModel(PianoInnerModel):
     def __init__(self, hParams: HParamsPiano, gru_hp: GRUHParam):
         super().__init__()
 
@@ -223,4 +236,34 @@ class GRUPianoModel(PianoInnerModel):
         x = x.permute(0, 2, 1)
         x = self.inProjector.forward(x)
         x, _ = self.gru.forward(x)
+        return x
+
+class PerformanceNetModel(torch.nn.Module):
+    def __init__(self, hParams: HParamsPiano, pn_hp: PerformanceNetHParam):
+        super().__init__()
+
+        self.hP = hParams
+        self.pn_hp = pn_hp
+        
+        self.inProjector = torch.nn.Linear(
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), pn_hp.start_channels, 
+        )
+        self.performanceNet = PerformanceNet(
+            pn_hp.depth, pn_hp.start_channels, pn_hp.end_channels, 
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
+        assert n_pianoroll_channels == 2
+        assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
+        assert n_frames == N_FRAMES_PER_DATAPOINT
+        x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
+        x = x.permute(0, 2, 1)
+        x = self.inProjector.forward(x)
+        x = x.permute(0, 2, 1)
+        x = self.performanceNet.forward(
+            x, 
+            torch.zeros_like(x), # onset/offset condition
+        )
+        x = x.log()
         return x

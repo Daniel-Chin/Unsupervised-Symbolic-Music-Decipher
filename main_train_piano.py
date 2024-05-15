@@ -1,8 +1,10 @@
 from os import path
 
 from shared import *
+from music import PIANO_RANGE
 from hparams import (
-    HParamsPiano, PianoOutType, PianoArchType, CNNHParam, TransformerHParam, GRUHParam, 
+    HParamsPiano, PianoOutType, PianoArchType, CNNHParam, TransformerHParam, 
+    GRUHParam, PerformanceNetHParam, 
 )
 from piano_lightning import train
 from piano_subjective_eval import subjectiveEval
@@ -38,15 +40,22 @@ def main():
         #     attn_radius = None, 
         # ),
 
-        arch_type = PianoArchType.GRU, 
-        arch_hparam = GRUHParam(
-            n_hidden = 512, 
-            n_layers = 4, 
+        # arch_type = PianoArchType.GRU, 
+        # arch_hparam = GRUHParam(
+        #     n_hidden = 512, 
+        #     n_layers = 4, 
+        # ),
+
+        arch_type = PianoArchType.PerformanceNet,
+        arch_hparam = PerformanceNetHParam(
+            depth = 5, 
+            start_channels = 128, 
+            end_channels = 3201, 
         ),
 
         dropout = 0.0, 
 
-        out_type = PianoOutType.EncodecTokens,
+        out_type = PianoOutType.LogSpectrogram,
 
         train_set_size = 800, 
         val_monkey_set_size = 200, 
@@ -67,7 +76,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_gru'
+    exp_name = currentTimeDirName() + '_p_per_net'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)

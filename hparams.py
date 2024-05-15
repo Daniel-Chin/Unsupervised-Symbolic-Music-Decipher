@@ -10,6 +10,7 @@ class PianoArchType(Enum):
     CNN = 'CNN'
     Transformer = 'Transformer'
     GRU = 'GRU'
+    PerformanceNet = 'PerformanceNet'
 
 arch_types = {}
 def registerArchType(x: PianoArchType, /):
@@ -43,6 +44,13 @@ class TransformerHParam(PianoArchHParam):
 class GRUHParam(PianoArchHParam):
     n_hidden: int
     n_layers: int
+
+@registerArchType(PianoArchType.PerformanceNet)
+@dataclass(frozen=True)
+class PerformanceNetHParam(PianoArchHParam):
+    depth: int
+    start_channels: int
+    end_channels: int
 
 @dataclass(frozen=True)
 class HParams:
