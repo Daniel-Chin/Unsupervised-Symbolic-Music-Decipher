@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 
 from shared import *
+from music import PIANO_RANGE
 
 class PianoArchType(Enum):
     CNN = 'CNN'
@@ -60,6 +61,7 @@ class HParams:
 class PianoOutType(Enum):
     EncodecTokens = 'EncodecTokens'
     LogSpectrogram = 'LogSpectrogram'
+    Score = 'PianoRoll' # identity mapping, for debugging
 
 @dataclass(frozen=True)
 class HParamsPiano(HParams):
@@ -85,6 +87,8 @@ class HParamsPiano(HParams):
         if self.out_type == PianoOutType.LogSpectrogram:
             _, _, n_bins = fftTools()
             return (n_bins, )
+        if self.out_type == PianoOutType.Score:
+            return (2, PIANO_RANGE[1] - PIANO_RANGE[0])
         raise ValueError(self.out_type)
 
 @dataclass(frozen=True)

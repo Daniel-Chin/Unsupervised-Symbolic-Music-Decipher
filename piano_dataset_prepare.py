@@ -13,8 +13,6 @@ from tqdm import tqdm
 import scipy.io.wavfile as wavfile
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.image import AxesImage
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import librosa
 
 from shared import *
@@ -267,18 +265,8 @@ def prepareOneSet(
             if only_plot_no_write_disk:
                 fig, axes = plt.subplots(2, 1, sharex=True)
                 axes: List[Axes]
-                def colorBar(ax: Axes, im: AxesImage):
-                    divider = make_axes_locatable(ax)
-                    cax = divider.append_axes('right', size='5%', pad=0.05)
-                    fig.colorbar(im, cax=cax, orientation='vertical')
-                im0 = axes[0].imshow(
-                    score.permute(1, 0, 2).reshape(
-                        2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), 
-                        N_FRAMES_PER_DATAPOINT, 
-                    ), aspect='auto', interpolation='nearest', 
-                    origin='lower', 
-                )
-                colorBar(axes[0], im0)
+                im0 = plotScore(score, axes[0])
+                colorBar(fig, axes[0], im0)
 
                 spectrogram: np.ndarray = log_spectrogram.exp().clamp(1e-6, 100.0).numpy()
                 # D = librosa.amplitude_to_db(spectrogram)
@@ -286,7 +274,7 @@ def prepareOneSet(
                 #     D, aspect='auto', interpolation='nearest', 
                 #     origin='lower', 
                 # )
-                # colorBar(axes[1], im1)
+                # colorBar(fig, axes[1], im1)
                 _, _, n_bins = fftTools()
                 axes[1].pcolormesh(
                     # np.linspace(0, SONG_LEN, N_FRAMES_PER_DATAPOINT),

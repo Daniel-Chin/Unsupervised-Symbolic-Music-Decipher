@@ -100,6 +100,10 @@ class LitPiano(L.LightningModule):
             loss = F.mse_loss(y_hat, log_spectrigram)
             self.log_(log_prefix + '_loss', loss)
         
+        if hParams.out_type == PianoOutType.Score:
+            loss = F.mse_loss(y_hat, score)
+            self.log_(log_prefix + '_loss', loss)
+        
         return loss
         
     def configure_optimizers(self):

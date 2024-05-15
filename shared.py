@@ -1,13 +1,16 @@
 import socket
 from functools import lru_cache
 
+from torch import Tensor
 import torchaudio.transforms
 import numpy as np
+from matplotlib.axes import Axes
 
 import init as _
 from paths import *
 from torchwork_mini import *
 from domestic_typing import *
+from music import PIANO_RANGE
 
 SEC_PER_DATAPOINT = 30
 ENCODEC_SR = 32000
@@ -49,3 +52,12 @@ def fftTools():
     print('# of freq bins for STFT:', n_bins, flush=True)
 
     return stft, griffinLim, n_bins
+
+def plotScore(score: Tensor, ax: Axes):
+    return ax.imshow(
+        score.permute(1, 0, 2).reshape(
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), 
+            N_FRAMES_PER_DATAPOINT, 
+        ), aspect='auto', interpolation='nearest', 
+        origin='lower', 
+    )

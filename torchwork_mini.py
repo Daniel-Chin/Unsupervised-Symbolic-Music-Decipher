@@ -11,6 +11,9 @@ import git
 import lightning as L
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.image import AxesImage
+from matplotlib.figure import Figure
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from domestic_typing import *
 
@@ -20,6 +23,7 @@ __all__ = [
     'writeLightningHparams', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
+    'colorBar', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -181,6 +185,11 @@ def collateWithNone(datapoints: List[Tuple[Optional[Tensor]]]):
         else:
             batch.append(None)
     return tuple(batch)
+
+def colorBar(fig: Figure, ax: Axes, im: AxesImage):
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im, cax=cax, orientation='vertical')
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()

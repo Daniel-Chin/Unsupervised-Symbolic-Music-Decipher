@@ -3,7 +3,7 @@ from os import path
 from shared import *
 from hparams import HParamsPiano, PianoArchType, CNNHParam, TransformerHParam, PianoOutType
 from piano_lightning import train
-from piano_evaluate_audio import evaluateAudio
+from piano_subjective_eval import subjectiveEval
 
 def main():
     initMainProcess()
@@ -38,7 +38,7 @@ def main():
 
         dropout = 0.0, 
 
-        out_type = PianoOutType.LogSpectrogram,
+        out_type = PianoOutType.Score,
 
         train_set_size = 8000, 
         val_monkey_set_size = 2000, 
@@ -53,14 +53,14 @@ def main():
 
         require_repo_working_tree_clean = True, 
     )
-    exp_name = currentTimeDirName() + '_p_spec_long'
+    exp_name = currentTimeDirName() + '_p_out_score'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
     hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litPiano, dataModule = train(hParams, root_dir)
-    evaluateAudio(litPiano.to(DEVICE), dataModule, root_dir)
+    subjectiveEval(litPiano.to(DEVICE), dataModule, root_dir)
     print('OK')
 
 if __name__ == '__main__':
