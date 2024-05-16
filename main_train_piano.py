@@ -4,7 +4,7 @@ from shared import *
 from music import PIANO_RANGE
 from hparams import (
     HParamsPiano, PianoOutType, PianoArchType, CNNHParam, TransformerHParam, 
-    GRUHParam, PerformanceNetHParam, 
+    GRUHParam, PerformanceNetHParam, CNN_LSTM_HParam, 
 )
 from piano_lightning import train
 from piano_subjective_eval import subjectiveEval
@@ -46,16 +46,42 @@ def main():
         #     n_layers = 4, 
         # ),
 
-        arch_type = PianoArchType.PerformanceNet,
-        arch_hparam = PerformanceNetHParam(
-            depth = 5, 
-            start_channels = 128, 
-            end_channels = 3201, 
-        ),
+        # arch_type = PianoArchType.PerformanceNet,
+        # arch_hparam = PerformanceNetHParam(
+        #     depth = 5, 
+        #     start_channels = 128, 
+        #     end_channels = 3201, 
+        # ),
+
+        arch_type = PianoArchType.CNN_LSTM, 
+        arch_hparam = CNN_LSTM_HParam(
+            entrance_n_channel = 512, 
+            blocks = [
+                [
+                    (1, 512), 
+                    (1, 512), 
+                ], 
+                [
+                    (1, 512), 
+                    (1, 512), 
+                ], 
+                [
+                    (1, 512), 
+                    (1, 512), 
+                ], 
+                [
+                    (0, 512), 
+                ], 
+            ], 
+            lstm_hidden_size = 512,
+            lstm_n_layers = 2,
+            last_conv_kernel_radius = 3, 
+            last_conv_n_channel = 512,
+        ), 
 
         dropout = 0.0, 
 
-        out_type = PianoOutType.LogSpectrogram,
+        out_type = PianoOutType.EncodecTokens,
 
         train_set_size = 800, 
         val_monkey_set_size = 200, 
@@ -76,7 +102,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_perf_net'
+    exp_name = currentTimeDirName() + '_p_cnn_lstm'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)

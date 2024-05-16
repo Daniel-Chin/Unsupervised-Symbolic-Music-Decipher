@@ -10,7 +10,7 @@ from shared import *
 from hparams import (
     HParamsPiano, PianoOutType, PianoArchType, 
     CNNHParam, CNNResidualBlockHParam, TransformerHParam, 
-    GRUHParam, PerformanceNetHParam, 
+    GRUHParam, PerformanceNetHParam, CNN_LSTM_HParam,
 )
 from music import PIANO_RANGE
 
@@ -43,6 +43,11 @@ class PianoModel(torch.nn.Module):
             assert isinstance(pn_hp, PerformanceNetHParam)
             self.mainModel = PerformanceNetModel(hParams, pn_hp)
             self.need_out_projector = False
+        elif hParams.arch_type == PianoArchType.CNN_LSTM:
+            cnn_lstm_hp = hParams.arch_hparam
+            assert isinstance(cnn_lstm_hp, CNN_LSTM_HParam)
+            self.mainModel = CNN_LSTM_InnerModel(hParams, cnn_lstm_hp)
+            self.need_out_projector = True
         else:
             raise ValueError(f'unknown arch type: {hParams.arch_type}')
         if self.need_out_projector:
@@ -266,4 +271,58 @@ class PerformanceNetModel(torch.nn.Module):
             torch.zeros_like(x), # onset/offset condition
         )
         x = x.log()
+        return x
+
+class CNN_LSTM_InnerModel(PianoInnerModel):
+    def __init__(self, hParams: HParamsPiano, cnn_lstm_hp: CNN_LSTM_HParam):
+        super().__init__()
+
+        self.hP = hParams
+        
+        self.entrance = ConvBlock(
+            2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_lstm_hp.entrance_n_channel, 
+            0, hParams.dropout, 
+        )
+        current_n_channel = cnn_lstm_hp.entrance_n_channel
+        self.resBlocks = torch.nn.Sequential()
+        for i, block_hp in enumerate(cnn_lstm_hp.blocks):
+            resBlock = CNNResidualBlock(
+                block_hp, current_n_channel, hParams.dropout, 
+                name=f'res_{i}', 
+            )
+            self.resBlocks.append(resBlock)
+            current_n_channel = resBlock.out_n_channel
+        self.lstm = torch.nn.LSTM(
+            current_n_channel, 
+            cnn_lstm_hp.lstm_hidden_size, 
+            cnn_lstm_hp.lstm_n_layers,
+            batch_first=True, dropout=hParams.dropout,
+            bidirectional=False,
+        )
+        current_n_channel = cnn_lstm_hp.lstm_hidden_size
+        self.last_conv = ConvBlock(
+            current_n_channel, 
+            cnn_lstm_hp.last_conv_n_channel, 
+            cnn_lstm_hp.last_conv_kernel_radius, 
+            hParams.dropout, 
+        )
+        current_n_channel = cnn_lstm_hp.last_conv_n_channel
+        self.dim_output = current_n_channel
+    
+    def dimOutput(self) -> int:
+        return self.dim_output
+    
+    def forward(self, x: Tensor) -> Tensor:
+        batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
+        assert n_pianoroll_channels == 2
+        assert n_pitches == PIANO_RANGE[1] - PIANO_RANGE[0]
+        assert n_frames == N_FRAMES_PER_DATAPOINT
+        x = x.view(batch_size, n_pianoroll_channels * n_pitches, n_frames)
+        x = self.entrance.forward(x)
+        x = self.resBlocks.forward(x)
+        x = x.permute(0, 2, 1)
+        x, _ = self.lstm.forward(x)
+        x = x.permute(0, 2, 1)
+        x = self.last_conv.forward(x)
+        x = x.permute(0, 2, 1)
         return x

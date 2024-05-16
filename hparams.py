@@ -11,6 +11,7 @@ class PianoArchType(Enum):
     Transformer = 'Transformer'
     GRU = 'GRU'
     PerformanceNet = 'PerformanceNet'
+    CNN_LSTM = 'CNN_LSTM'
 
 arch_types = {}
 def registerArchType(x: PianoArchType, /):
@@ -51,6 +52,16 @@ class PerformanceNetHParam(PianoArchHParam):
     depth: int
     start_channels: int
     end_channels: int
+
+@registerArchType(PianoArchType.CNN_LSTM)
+@dataclass(frozen=True)
+class CNN_LSTM_HParam(PianoArchHParam):
+    entrance_n_channel: int
+    blocks: List[CNNResidualBlockHParam]
+    lstm_hidden_size: int
+    lstm_n_layers: int
+    last_conv_kernel_radius: int
+    last_conv_n_channel: int
 
 @dataclass(frozen=True)
 class HParams:
