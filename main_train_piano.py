@@ -12,24 +12,24 @@ from piano_subjective_eval import subjectiveEval
 def main():
     initMainProcess()
     hParams = HParamsPiano(
-        # arch_type = PianoArchType.CNN, 
-        # arch_hparam = CNNHParam(512, [
-        #     [
-        #         (1, 512), 
-        #         (1, 512), 
-        #     ], 
-        #     [
-        #         (1, 512), 
-        #         (1, 512), 
-        #     ], 
-        #     [
-        #         (1, 512), 
-        #         (1, 512), 
-        #     ], 
-        #     [
-        #         (0, 512), 
-        #     ], 
-        # ]), 
+        arch_type = PianoArchType.CNN, 
+        arch_hparam = CNNHParam(512, [
+            [
+                (1, 512), 
+                (1, 512), 
+            ], 
+            [
+                (1, 512), 
+                (1, 512), 
+            ], 
+            [
+                (1, 512), 
+                (1, 512), 
+            ], 
+            [
+                (0, 512), 
+            ], 
+        ]), 
 
         # arch_type = PianoArchType.Transformer,
         # arch_hparam = TransformerHParam(
@@ -46,12 +46,12 @@ def main():
         #     n_layers = 4, 
         # ),
 
-        arch_type = PianoArchType.PerformanceNet,
-        arch_hparam = PerformanceNetHParam(
-            depth = 5, 
-            start_channels = 128, 
-            end_channels = 3201, 
-        ),
+        # arch_type = PianoArchType.PerformanceNet,
+        # arch_hparam = PerformanceNetHParam(
+        #     depth = 5, 
+        #     start_channels = 128, 
+        #     end_channels = 3201, 
+        # ),
 
         dropout = 0.0, 
 
@@ -69,14 +69,14 @@ def main():
         lr_decay = 0.999, 
         batch_size = 32,
         # batch_size = 16,
-        max_epochs = 300,
+        max_epochs = 30,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_per_net'
+    exp_name = currentTimeDirName() + '_p_spec_nan'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
