@@ -86,7 +86,7 @@ def main():
 
         lr = 2e-3,
         lr_decay = 0.97, 
-        batch_size = 128,
+        batch_size = 64,
         # batch_size = 16,
         max_epochs = 120,
         # max_epochs = 3,
