@@ -72,7 +72,7 @@ def main():
             last_conv_n_channel = 512,
         ), 
 
-        dropout = 0.2, 
+        dropout = 0.0, 
 
         out_type = PianoOutType.EncodecTokens,
 
@@ -84,18 +84,18 @@ def main():
         # val_oracle_set_size = 16, 
         do_validate = True,
 
-        lr = 1e-3,
-        lr_decay = 0.999, 
-        batch_size = 32,
+        lr = 2e-3,
+        lr_decay = 0.97, 
+        batch_size = 128,
         # batch_size = 16,
-        max_epochs = 30,
+        max_epochs = 120,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_dropout'
+    exp_name = currentTimeDirName() + '_p_long'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
