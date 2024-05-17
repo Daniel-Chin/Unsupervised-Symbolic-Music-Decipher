@@ -84,8 +84,8 @@ def main():
         # val_oracle_set_size = 16, 
         do_validate = True,
 
-        lr = 2e-3,
-        lr_decay = 0.97, 
+        lr = 1e-3,
+        lr_decay = 0.999, 
         batch_size = 64,
         # batch_size = 16,
         max_epochs = 120,
@@ -95,7 +95,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_long'
+    exp_name = currentTimeDirName() + '_p_no_decay'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
