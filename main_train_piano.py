@@ -72,12 +72,12 @@ def main():
             last_conv_n_channel = 1024,
         ), 
 
-        dropout = 0.2, 
+        dropout = 0.0, 
 
         out_type = PianoOutType.EncodecTokens,
 
-        train_set_size = 800, 
-        val_monkey_set_size = 200, 
+        train_set_size = 8000, 
+        val_monkey_set_size = 2000, 
         val_oracle_set_size = 128, 
         # train_set_size = 16, 
         # val_monkey_set_size = 16, 
