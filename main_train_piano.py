@@ -76,8 +76,8 @@ def main():
 
         out_type = PianoOutType.EncodecTokens,
 
-        train_set_size = 8000, 
-        val_monkey_set_size = 2000, 
+        train_set_size = 800, 
+        val_monkey_set_size = 200, 
         val_oracle_set_size = 128, 
         # train_set_size = 16, 
         # val_monkey_set_size = 16, 
@@ -95,7 +95,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_big_set'
+    exp_name = currentTimeDirName() + '_p_baseline'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
