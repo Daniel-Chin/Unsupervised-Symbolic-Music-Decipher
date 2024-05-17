@@ -61,10 +61,6 @@ def main():
                     (1, 512), 
                     (1, 512), 
                 ], 
-                [
-                    (1, 512), 
-                    (1, 512), 
-                ], 
             ], 
             lstm_hidden_size = 512,
             lstm_n_layers = 2,
@@ -95,7 +91,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_baseline'
+    exp_name = currentTimeDirName() + '_p_shallow'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
