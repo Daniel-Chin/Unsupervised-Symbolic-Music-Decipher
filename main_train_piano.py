@@ -55,21 +55,21 @@ def main():
 
         arch_type = PianoArchType.CNN_LSTM, 
         arch_hparam = CNN_LSTM_HParam(
-            entrance_n_channel = 256, 
+            entrance_n_channel = 1024, 
             blocks = [
                 [
-                    (1, 256), 
-                    (1, 256), 
+                    (1, 1024), 
+                    (1, 1024), 
                 ], 
                 [
-                    (1, 256), 
-                    (1, 256), 
+                    (1, 1024), 
+                    (1, 1024), 
                 ], 
             ], 
-            lstm_hidden_size = 256,
+            lstm_hidden_size = 1024,
             lstm_n_layers = 2,
             last_conv_kernel_radius = 3, 
-            last_conv_n_channel = 256,
+            last_conv_n_channel = 1024,
         ), 
 
         dropout = 0.2, 
@@ -95,7 +95,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_narrow'
+    exp_name = currentTimeDirName() + '_p_wide'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
