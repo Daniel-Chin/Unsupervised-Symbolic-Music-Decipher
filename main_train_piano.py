@@ -76,8 +76,8 @@ def main():
 
         out_type = PianoOutType.EncodecTokens,
 
-        train_set_size = 8000, 
-        val_monkey_set_size = 2000, 
+        train_set_size = 80000, 
+        val_monkey_set_size = 20000, 
         val_oracle_set_size = 128, 
         # train_set_size = 16, 
         # val_monkey_set_size = 16, 
@@ -88,14 +88,14 @@ def main():
         lr_decay = 0.999, 
         batch_size = 64,
         # batch_size = 16,
-        max_epochs = 120,
+        max_epochs = 15,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_no_decay'
+    exp_name = currentTimeDirName() + '_p_big_set'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
