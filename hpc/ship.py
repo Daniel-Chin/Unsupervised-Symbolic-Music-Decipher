@@ -39,10 +39,22 @@ def doAll():
             print('Warning: unknown file:', node)
     # print(all_dir)
     # print(all_gz)
-    todo = [x for x in all_dir if x not in all_gz]
-    print('todo:', *todo, sep='\n')
+    available = [x for x in all_dir if x not in all_gz]
+    print('available:', *available, sep='\n')
     print()
-    for dir in todo:
+    print('Select. Enter empty string to tar all.')
+    selected = []
+    while True:
+        op = input('>').strip()
+        if not op:
+            break
+        if op not in available:
+            print('Invalid selection.')
+            continue
+        selected.append(op)
+    if not selected:
+        selected = available
+    for dir in selected:
         tar(dir)
 
 if __name__ == '__main__':
