@@ -88,14 +88,14 @@ def main():
         lr_decay = 0.995, 
         batch_size = 64,
         # batch_size = 16,
-        max_epochs = 90,
+        max_epochs = 180,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_lr'
+    exp_name = currentTimeDirName() + '_p_decay_.995'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
