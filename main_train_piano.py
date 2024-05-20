@@ -85,7 +85,7 @@ def main():
         do_validate = True,
 
         lr = 1e-3,
-        lr_decay = 0.995, 
+        lr_decay = 0.998, 
         batch_size = 64,
         # batch_size = 16,
         max_epochs = 180,
@@ -95,7 +95,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_p_decay_.995'
+    exp_name = currentTimeDirName() + '_p_decay_.998'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
