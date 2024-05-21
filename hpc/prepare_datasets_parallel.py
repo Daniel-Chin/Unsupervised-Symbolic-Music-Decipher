@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-import argparse
 
 from parallel_sbatch import SbatchContext
 
 DIRS = '0123456789abcdef'
 TO_PREPARE = [
-    ('monkey', 100000 // len(DIRS)), 
-    ('oracle', 100000 // len(DIRS)),
+    ('monkey', 10000 // len(DIRS)), 
+    ('oracle', 10000 // len(DIRS)),
 ]
 
 def main():
