@@ -92,7 +92,7 @@ def legalizeMidi(src_path: str):
     return midi
 
 def prepareOneDatapoint(
-    encodec: Optional[EncodecModel], 
+    encodec: EncodecModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
     verbose: bool, do_fluidsynth_write_pcm: bool, 
 ):
@@ -100,7 +100,8 @@ def prepareOneDatapoint(
         if verbose:
             print(*a, **kw, flush=True)
     
-    wav_path = path.join(dest_dir, f'{idx}_synthed.wav')
+    # wav_path = path.join(dest_dir, f'{idx}_synthed.wav')
+    wav_path = path.join(dest_dir, f'temp.wav')
     midi_path = path.join(dest_dir, f'{idx}.mid')
 
     if midi_source is None:
@@ -118,8 +119,6 @@ def prepareOneDatapoint(
     printProfiling('Synthesizing audio')
     midiSynthWav(midi_path, wav_path, verbose, do_fluidsynth_write_pcm)
     
-    assert encodec is not None
-
     # printProfiling('Loading midi')
     # midi = pretty_midi.PrettyMIDI(midi_path)
     # piano, = midi.instruments
@@ -150,35 +149,35 @@ def prepareOneDatapoint(
     with torch.no_grad():
         printProfiling('Encodec.encode')
         codes, _ = encodec.encode(wave.unsqueeze(0).unsqueeze(0))
-        printProfiling('Encodec.decode')
-        recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
+        # printProfiling('Encodec.decode')
+        # recon: Tensor = encodec.decode(codes)[0, 0, :]   # type: ignore
     
-    printProfiling('Writing recon')
-    recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
-    wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
+    # printProfiling('Writing recon')
+    # recon_path = path.join(dest_dir, f'{idx}_encodec_recon.wav')
+    # wavfile.write(recon_path, ENCODEC_SR, recon.cpu().numpy())
 
-    printProfiling('STFT')
-    stft, griffinLim, n_bins = fftTools()
-    spectrogram: Tensor = stft(wave)
-    freq, t = spectrogram.shape
-    assert freq == n_bins
-    if t == N_FRAMES_PER_DATAPOINT:
-        pass
-    elif t == N_FRAMES_PER_DATAPOINT + 1:
-        spectrogram = spectrogram[:, :-1]
-    elif t == N_FRAMES_PER_DATAPOINT - 1:
-        spectrogram = torch.nn.functional.pad(
-            spectrogram, (0, 1), value=1e-5, 
-        )
-        raise ValueError(t)
-    else:
-        raise ValueError(t)
-    log_spectrogram = spectrogram.log()
+    # printProfiling('STFT')
+    # stft, griffinLim, n_bins = fftTools()
+    # spectrogram: Tensor = stft(wave)
+    # freq, t = spectrogram.shape
+    # assert freq == n_bins
+    # if t == N_FRAMES_PER_DATAPOINT:
+    #     pass
+    # elif t == N_FRAMES_PER_DATAPOINT + 1:
+    #     spectrogram = spectrogram[:, :-1]
+    # elif t == N_FRAMES_PER_DATAPOINT - 1:
+    #     spectrogram = torch.nn.functional.pad(
+    #         spectrogram, (0, 1), value=1e-5, 
+    #     )
+    #     raise ValueError(t)
+    # else:
+    #     raise ValueError(t)
+    # log_spectrogram = spectrogram.log()
 
-    printProfiling('Writing Griffin-Lim')
-    griffin_lim_path = path.join(dest_dir, f'{idx}_griffin_lim.wav')
-    griffin_lim: Tensor = griffinLim(log_spectrogram.exp())
-    wavfile.write(griffin_lim_path, ENCODEC_SR, griffin_lim.cpu().numpy())
+    # printProfiling('Writing Griffin-Lim')
+    # griffin_lim_path = path.join(dest_dir, f'{idx}_griffin_lim.wav')
+    # griffin_lim: Tensor = griffinLim(log_spectrogram.exp())
+    # wavfile.write(griffin_lim_path, ENCODEC_SR, griffin_lim.cpu().numpy())
     
     printProfiling('Formatting datapoint')
     score = torch.zeros((
@@ -202,18 +201,22 @@ def prepareOneDatapoint(
     assert encodec_tokens.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
 
     printProfiling('Writing datapoint')
-    log_spectrogram_ = log_spectrogram.cpu().to(torch.float16)
     torch.save(score, path.join(
         dest_dir, f'{idx}_score.pt',
     ))
     torch.save(encodec_tokens, path.join(
         dest_dir, f'{idx}_encodec_tokens.pt',
     ))
-    torch.save(log_spectrogram_, path.join(
-        dest_dir, f'{idx}_log_spectrogram.pt',
-    ))
+    # log_spectrogram_ = log_spectrogram.cpu().to(torch.float16)
+    # torch.save(log_spectrogram_, path.join(
+    #     dest_dir, f'{idx}_log_spectrogram.pt',
+    # ))
 
-    return score, encodec_tokens, log_spectrogram_
+    return (
+        score, encodec_tokens, 
+        # log_spectrogram_, 
+        None, 
+    )
 
 def prepareOneSet(
     which_set: WhichSet,
@@ -268,6 +271,7 @@ def prepareOneSet(
                 im0 = plotScore(score, axes[0])
                 colorBar(fig, axes[0], im0)
 
+                assert isinstance(log_spectrogram, Tensor)
                 spectrogram: np.ndarray = log_spectrogram.exp().clamp(1e-6, 100.0).numpy()
                 # D = librosa.amplitude_to_db(spectrogram)
                 # im1 = axes[1].imshow(

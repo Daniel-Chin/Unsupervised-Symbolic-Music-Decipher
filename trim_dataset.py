@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from shared import *
 
-TRIM_TO_SIZE = 10000
+TRIM_TO_SIZE = 100000
 
 def main():
     for set_dir in (PIANO_MONKEY_DATASET_DIR, PIANO_ORACLE_DATASET_DIR):
