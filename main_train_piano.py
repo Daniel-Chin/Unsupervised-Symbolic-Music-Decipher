@@ -88,7 +88,7 @@ def main():
         lr_decay = 0.99, 
         batch_size = 64,
         # batch_size = 16,
-        max_epochs = 180,
+        max_epochs = 200,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
