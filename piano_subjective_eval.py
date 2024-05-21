@@ -58,8 +58,9 @@ def subjectiveEval(
         print(f'{subset = }', flush=True)
         for batch_i, batch in enumerate(loader):
             batch: BatchType
-            score_cpu, _, _, data_ids = batch
+            score_cpu, encodec_tokens_cpu, _, data_ids = batch
             score = score_cpu.to(DEVICE)
+            encodec_tokens = encodec_tokens_cpu.to(DEVICE)
             batch_size = score.shape[0]
 
             if batch_i * batch_size >= n_eval:
@@ -71,13 +72,15 @@ def subjectiveEval(
                 score_hat = y_hat
             else:
                 if hParams.out_type == PianoOutType.EncodecTokens:
-                    wave = encodec.decode(
+                    wave_hat = encodec.decode(
                         y_hat.argmax(dim=-1), 
                     ).squeeze(1)
+                    wave = encodec.decode(encodec_tokens).squeeze(1)
                 if hParams.out_type == PianoOutType.LogSpectrogram:
                     _, griffinLim, _= fftTools()
-                    wave: torch.Tensor = griffinLim(y_hat)
-                assert wave.shape == (batch_size, wave.shape[1]), wave.shape
+                    wave_hat: torch.Tensor = griffinLim(y_hat)
+                assert wave_hat.shape == (batch_size, wave_hat.shape[1]), wave_hat.shape
+                wave_hat_cpu = wave_hat.cpu().numpy()
                 wave_cpu = wave.cpu().numpy()
 
             for i in range(batch_size):
@@ -85,13 +88,20 @@ def subjectiveEval(
                 if datapoint_i == n_eval:
                     break
                 src = path.join(dataset_dir, data_ids[i])
-                shutil.copyfile(src + '_synthed.wav', filename(
-                    subset, datapoint_i, 'reference', 'wav', 
+                shutil.copyfile(src + '.mid', filename(
+                    subset, datapoint_i, 'reference', 'mid', 
                 ))
+                # shutil.copyfile(src + '_synthed.wav', filename(
+                #     subset, datapoint_i, 'reference', 'wav', 
+                # ))
                 if hParams.out_type == PianoOutType.EncodecTokens:
-                    shutil.copyfile(src + '_encodec_recon.wav', filename(
-                        subset, datapoint_i, 'encodec_recon', 'wav', 
-                    ))
+                    # shutil.copyfile(src + '_encodec_recon.wav', filename(
+                    #     subset, datapoint_i, 'encodec_recon', 'wav', 
+                    # ))
+                    wavfile.write(
+                        filename(subset, datapoint_i, 'encodec_recon', 'wav'), ENCODEC_SR, 
+                        wave_cpu[i, :],
+                    )
                 if hParams.out_type == PianoOutType.LogSpectrogram:
                     shutil.copyfile(src + '_griffin_lim.wav', filename(
                         subset, datapoint_i, 'griffin_lim', 'wav', 
@@ -113,7 +123,7 @@ def subjectiveEval(
                 else:
                     wavfile.write(
                         filename(subset, datapoint_i, 'predict', 'wav'), ENCODEC_SR, 
-                        wave_cpu[i, :],
+                        wave_hat_cpu[i, :],
                     )
             print(datapoint_i, '/', n_eval, flush=True)
 
