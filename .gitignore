@@ -3,3 +3,4 @@ active.env
 rl-course-2023fall-slides2-v5-rwithnotes.pdf
 envs/
 auto_*.py
+env_on_hpc_as_is.yaml
