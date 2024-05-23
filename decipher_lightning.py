@@ -109,6 +109,7 @@ class LitDecipher(L.LightningModule):
         out shape: (batch_size, ENCODEC_N_BOOKS, n_frames, ENCODEC_N_WORDS_PER_BOOK)
         '''
         x = self.interpreter.forward(x)
+        x = x.contiguous()
         x = self.piano.forward(x)
         return x
 
@@ -131,7 +132,7 @@ class LitDecipher(L.LightningModule):
         assert n_frames == N_FRAMES_PER_DATAPOINT
         assert n_words_per_book == ENCODEC_N_WORDS_PER_BOOK
         sampled_encodec_onehots = sampleWithSTEBackward(
-            encodec_tokens_logits.view(
+            encodec_tokens_logits.reshape(
                 batch_size * n_books * n_frames, n_words_per_book,
             ).softmax(dim=1), 
             n=1,
