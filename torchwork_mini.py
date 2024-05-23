@@ -6,6 +6,8 @@ from itertools import count
 import json
 from queue import Queue
 from threading import Thread
+import math
+import typing
 
 import torch
 from torch import Tensor
@@ -197,6 +199,28 @@ def colorBar(fig: Figure, ax: Axes, im: AxesImage):
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im, cax=cax, orientation='vertical')
 
+class GeneratorWithLen(Iterable):
+    def __init__(self, g: typing.Generator, size: int):
+        self.g = g
+        self.size = size
+    
+    @staticmethod
+    def decorate(size: int):
+        def decorator(G: Callable[[], typing.Generator]):
+            def decorated(*a, **kw):
+                return __class__(G(*a, **kw), size)
+            return decorated
+        return decorator
+    
+    def __len__(self):
+        return self.size
+    
+    def __next__(self):
+        return next(self.g)
+    
+    def __iter__(self):
+        return self
+
 class SingleProcessNewThreadPreFetchDataLoader:
     # supports map-style datasets
     def __init__(
@@ -208,16 +232,20 @@ class SingleProcessNewThreadPreFetchDataLoader:
         self.shuffle = shuffle
         self.collate_fn = collate_fn
 
+        self.dataset_size = len(self.dataset)    # type: ignore
+
         self.q = Queue(prefetch_factor)
+
+    def __len__(self):
+        return math.ceil(self.dataset_size / self.batch_size)
     
     def worker(self):
-        size = len(self.dataset)    # type: ignore
         if self.shuffle:
-            indices = torch.randperm(size)
+            indices = torch.randperm(self.dataset_size)
         else:
-            indices = torch.arange(size)
+            indices = torch.arange(self.dataset_size)
         cursor = 0
-        while cursor < size:
+        while cursor < self.dataset_size:
             batch_indices = indices[cursor : cursor + self.batch_size]
             # len(indices) <= self.batch_size
             batch = self.collate_fn([
@@ -227,7 +255,7 @@ class SingleProcessNewThreadPreFetchDataLoader:
             cursor += self.batch_size
         self.q.put(None)
     
-    def __iter__(self):
+    def Generator(self):
         t = Thread(target=self.worker)
         t.start()
         while True:
@@ -236,6 +264,9 @@ class SingleProcessNewThreadPreFetchDataLoader:
                 break
             yield batch
         t.join()
+    
+    def __iter__(self):
+        return GeneratorWithLen(self.Generator(), len(self))
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()
