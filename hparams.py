@@ -119,7 +119,7 @@ class HParamsPiano(HParams):
 
 @dataclass(frozen=True)
 class HParamsDecipher(HParams):
-    using_piano: str
+    using_piano: Tuple[str, str]    # (hParams, checkpoint)
 
     interpreter_sample_not_polyphonic: bool
 
@@ -128,3 +128,10 @@ class HParamsDecipher(HParams):
     
     train_set_size: int
     val_set_size: int
+
+    def getPianoAbsPaths(self):
+        h_params, checkpoint = [
+            path.join(EXPERIMENTS_DIR, x) 
+            for x in self.using_piano
+        ]
+        return h_params, checkpoint

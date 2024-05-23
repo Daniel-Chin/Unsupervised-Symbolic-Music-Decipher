@@ -35,7 +35,7 @@ class LitDecipherDataModule(L.LightningDataModule):
         dataset = PianoDataset(
             'oracle', PIANO_ORACLE_DATASET_DIR, 
             False, False, 
-            hParams.val_set_size,
+            hParams.train_set_size + hParams.val_set_size,
         )
         
         self.train_dataset, self.val_dataset = random_split(
@@ -184,9 +184,10 @@ def train(hParams: HParamsDecipher, root_dir: str):
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
     def getPiano():
-        litPiano = LitPiano.load_from_checkpoint(path.join(
-            EXPERIMENTS_DIR, hParams.using_piano, 
-        ))
+        h_params, checkpoint = hParams.getPianoAbsPaths()
+        litPiano = LitPiano.load_from_checkpoint(
+            checkpoint, hparams_file=h_params, 
+        )
         litPiano.eval()
         return litPiano.piano
     litDecipher = LitDecipher(hParams, getPiano)
