@@ -239,6 +239,9 @@ class SingleProcessNewThreadPreFetchDataLoader:
     
     def __iter__(self):
         return SingleProcessNewThreadPreFetchDataLoaderIter(self)
+    
+    def __len__(self):
+        return self.n_batches
 
 class SingleProcessNewThreadPreFetchDataLoaderIter:
     def __init__(self, l: SingleProcessNewThreadPreFetchDataLoader):
