@@ -76,14 +76,14 @@ def myChosenDataLoader(dataset: Dataset, batch_size: int, shuffle: bool):
         shuffle=shuffle, 
         collate_fn=collateWithNone, 
     )
-    # return SingleProcessNewThreadPreFetchDataLoader(
-    #     **kw, # type: ignore
-    #     prefetch_factor=2, 
-    # )
-    return DataLoader(
+    return SingleProcessNewThreadPreFetchDataLoader(
         **kw, # type: ignore
-        # num_workers=2, 
-        # prefetch_factor=2, 
-        num_workers=0, 
-        # persistent_workers=True,
+        prefetch_factor=3, 
     )
+    # return DataLoader(
+    #     **kw, # type: ignore
+    #     # num_workers=2, 
+    #     # prefetch_factor=2, 
+    #     num_workers=0, 
+    #     # persistent_workers=True,
+    # )

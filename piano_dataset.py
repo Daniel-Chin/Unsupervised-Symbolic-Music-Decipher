@@ -1,6 +1,7 @@
 import json
 from os import path
 from multiprocessing import Lock
+import gc
 
 import torch
 from torch import Tensor
@@ -97,6 +98,8 @@ class PianoDataset(Dataset):
                         if self.has_log_spectrogram:
                             self.log_spectrigram[index, :, :] = log_spectrogram
                         self._has_cached[index] = True
+                    if index % 32 == 0:
+                        gc.collect()    # Does this help? I do not know.
             else:
                 with self.lock:
                     if self._has_cached.all():
