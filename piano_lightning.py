@@ -5,7 +5,7 @@ import dataclasses
 import torch
 from torch import Tensor
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import random_split
 import lightning as L
 from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
 from lightning.pytorch.utilities import grad_norm
@@ -164,21 +164,21 @@ class LitPianoDataModule(L.LightningDataModule):
     def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
         bs = batch_size or hParams.batch_size
-        return DataLoader(
+        return SingleProcessNewThreadPreFetchDataLoader(
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
-            num_workers=2, persistent_workers=True, 
-            collate_fn=collateWithNone, 
+            collate_fn=collateWithNone, prefetch_factor=2, 
         )
     
     def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
         bs = batch_size or hParams.batch_size
         return [
-            DataLoader(
+            SingleProcessNewThreadPreFetchDataLoader(
                 self.val_sets[x], batch_size=bs, 
-                num_workers=2, persistent_workers=True, 
+                shuffle=False,
                 collate_fn=collateWithNone, 
+                prefetch_factor=2, 
             )
             for x in VAL_CASES
         ]

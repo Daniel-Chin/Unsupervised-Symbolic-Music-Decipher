@@ -4,10 +4,12 @@ from functools import lru_cache
 from datetime import datetime
 from itertools import count
 import json
+from queue import Queue
+from threading import Thread
 
 import torch
 from torch import Tensor
-from torch.utils.data import default_collate
+from torch.utils.data import default_collate, Dataset
 import git
 from lightning.pytorch.loggers import Logger
 from matplotlib import pyplot as plt
@@ -24,7 +26,7 @@ __all__ = [
     'logJobMeta', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
-    'colorBar', 
+    'colorBar', 'SingleProcessNewThreadPreFetchDataLoader', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -194,6 +196,46 @@ def colorBar(fig: Figure, ax: Axes, im: AxesImage):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im, cax=cax, orientation='vertical')
+
+class SingleProcessNewThreadPreFetchDataLoader:
+    # supports map-style datasets
+    def __init__(
+        self, dataset: Dataset, batch_size: int, shuffle: bool, 
+        collate_fn: Callable = collateWithNone, prefetch_factor: int = 2, 
+    ):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.collate_fn = collate_fn
+
+        self.q = Queue(prefetch_factor)
+    
+    def worker(self):
+        size = len(self.dataset)    # type: ignore
+        if self.shuffle:
+            indices = torch.randperm(size)
+        else:
+            indices = torch.arange(size)
+        cursor = 0
+        while cursor < size:
+            batch_indices = indices[cursor : cursor + self.batch_size]
+            # len(indices) <= self.batch_size
+            batch = self.collate_fn([
+                self.dataset[i] for i in batch_indices
+            ])
+            self.q.put(batch)
+            cursor += self.batch_size
+        self.q.put(None)
+    
+    def __iter__(self):
+        t = Thread(target=self.worker)
+        t.start()
+        while True:
+            batch = self.q.get()
+            if batch is None:
+                break
+            yield batch
+        t.join()
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()
