@@ -4,7 +4,7 @@ from functools import lru_cache
 from datetime import datetime
 from itertools import count
 import json
-from queue import Queue
+from queue import Queue, Empty
 from threading import Thread
 import math
 import typing
@@ -19,6 +19,7 @@ from matplotlib.axes import Axes
 from matplotlib.image import AxesImage
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import uuid
 
 from domestic_typing import *
 
@@ -199,7 +200,7 @@ def colorBar(fig: Figure, ax: Axes, im: AxesImage):
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im, cax=cax, orientation='vertical')
 
-class GeneratorWithLen(Iterable):
+class GeneratorWithLen:
     def __init__(self, g: typing.Generator, size: int):
         self.g = g
         self.size = size
@@ -231,45 +232,83 @@ class SingleProcessNewThreadPreFetchDataLoader:
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.collate_fn = collate_fn
+        self.prefetch_factor = prefetch_factor
 
         self.dataset_size = len(self.dataset)    # type: ignore
+        self.n_batches = math.ceil(self.dataset_size / batch_size)
+    
+    def __iter__(self):
+        return SingleProcessNewThreadPreFetchDataLoaderIter(self)
 
-        self.q = Queue(prefetch_factor)
+class SingleProcessNewThreadPreFetchDataLoaderIter:
+    def __init__(self, l: SingleProcessNewThreadPreFetchDataLoader):
+        self.l = l
+
+        self.q = Queue()
+        self.name = uuid.uuid4()
+        self.is_deleted = False
+        self.thread = Thread(target=self.worker)
+        self.thread.start()
+        self.g = self.Generator()
 
     def __len__(self):
-        return math.ceil(self.dataset_size / self.batch_size)
+        return self.l.n_batches
+    
+    def __next__(self):
+        return next(self.g)
     
     def worker(self):
         try:
-            if self.shuffle:
-                indices = torch.randperm(self.dataset_size)
+            if self.l.shuffle:
+                indices = torch.randperm(self.l.dataset_size)
             else:
-                indices = torch.arange(self.dataset_size)
+                indices = torch.arange(self.l.dataset_size)
             cursor = 0
-            while cursor < self.dataset_size:
-                batch_indices = indices[cursor : cursor + self.batch_size]
+            while cursor < self.l.dataset_size:
+                batch_indices = indices[cursor : cursor + self.l.batch_size]
                 # len(indices) <= self.batch_size
-                batch = self.collate_fn([
-                    self.dataset[i] for i in batch_indices
+                batch = self.l.collate_fn([
+                    self.l.dataset[i] for i in batch_indices
                 ])
                 assert batch is not None
+                # self.debug('put(batch)...')
                 self.q.put(batch)
-                cursor += self.batch_size
+                # self.debug('put(batch) ok')
+                if self.is_deleted:
+                    break
+                cursor += self.l.batch_size
         finally:
+            # self.debug('put(None)...')
             self.q.put(None)
+            # self.debug('put(None) ok')
     
     def Generator(self):
-        t = Thread(target=self.worker)
-        t.start()
         while True:
+            # self.debug('get()...')
             batch = self.q.get()
+            # self.debug('get() ok')
             if batch is None:
+                # self.debug('batch is None')
                 break
             yield batch
-        t.join()
+        # self.debug('join()...')
+        self.thread.join()
+        # self.debug('join() ok')
     
-    def __iter__(self):
-        return GeneratorWithLen(self.Generator(), len(self))
+    def __del__(self):
+        # self.debug('__del__()...')
+        self.is_deleted = True
+        try:
+            self.q.get_nowait()
+            self.q.get_nowait()
+        except Empty:
+            pass
+        # self.debug('__del__() 1')
+        self.thread.join()
+        # self.debug('__del__() ok')
+    
+    def debug(self, *a, **kw):
+        print('\n', self.name, *a, **kw)
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()
