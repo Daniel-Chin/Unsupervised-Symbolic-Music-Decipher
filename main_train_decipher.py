@@ -7,28 +7,28 @@ from decipher_lightning import train
 def main():
     initMainProcess()
     hParams = HParamsDecipher(
-        using_piano='2024_m05_d23@07_17_00_p_decay_.99_dirty_working_tree/version_0/checkpoints/epoch=128-step=161250.ckpt', 
+        using_piano='2024_m05_d23@21_36_55_p_tofu/version_0/checkpoints/epoch=2-step=3.ckpt', 
 
         interpreter_sample_not_polyphonic = False,
 
         loss_weight_left = 1.0, 
         loss_weight_right = 1.0, 
 
-        # train_set_size = 800, 
-        # val_set_size = 200,
-        train_set_size = 16, 
-        val_set_size = 16,
+        train_set_size = 800, 
+        val_set_size = 200,
+        # train_set_size = 16, 
+        # val_set_size = 16,
 
         lr = 1e-3, 
         lr_decay = 1.0, 
-        # batch_size = 64, 
-        batch_size = 16, 
-        # max_epochs = 300, 
-        max_epochs = 3, 
+        batch_size = 64, 
+        # batch_size = 8, 
+        max_epochs = 300, 
+        # max_epochs = 3, 
         overfit_first_batch = False, 
 
-        # require_repo_working_tree_clean = True, 
-        require_repo_working_tree_clean = False, 
+        require_repo_working_tree_clean = True, 
+        # require_repo_working_tree_clean = False, 
     )
     exp_name = currentTimeDirName() + '_decipher_first'
     if not hParams.require_repo_working_tree_clean:
