@@ -4,6 +4,7 @@ from functools import lru_cache
 
 import torch
 from torch import Tensor
+import torch.nn.functional as F
 from audiocraft.models.musicgen import MusicGen
 from audiocraft.models.lm import ConditionTensors, LMOutput
 from audiocraft.models.encodec import EncodecModel
@@ -16,16 +17,20 @@ from shared import *
 class PatternOnehot(Pattern):
     def build_pattern_sequence_onehot(self, z: Tensor):
         keep_only_valid_steps = True
-        special_token = float('nan')
-        B, K, T, n_word_per_book = z.shape
+        B, K, T, n_words_per_book = z.shape
+        assert n_words_per_book == ENCODEC_N_WORDS_PER_BOOK
+        device = z.device
+        special_onehot = torch.zeros((n_words_per_book + 1, ), device=device)
+        special_onehot[n_words_per_book] = 1.0
         indexes, mask = self._build_pattern_sequence_scatter_indexes(
             T, K, keep_only_valid_steps=keep_only_valid_steps, device=str(z.device)
         )
-        z = z.view(B, K * T, n_word_per_book)
+        z = z.view(B, K * T, n_words_per_book)
+        z = F.pad(z, (0, 1))
         # we append the special token as the last index of our flattened z tensor
-        z = torch.cat([z, torch.zeros_like(z[:, :1, :]) + special_token], dim=1)
+        z = torch.cat([z, torch.zeros_like(z[:, :1, :]) + special_onehot], dim=1)
         values = z[:, indexes.view(-1), :]
-        values = values.view(B, K, indexes.shape[-1], n_word_per_book)
+        values = values.view(B, K, indexes.shape[-1], n_words_per_book + 1)
         return values, indexes, mask
     
     def revert_pattern_sequence_onehot(self, s: Tensor):
@@ -59,12 +64,12 @@ class MyMusicGen:
             assert isinstance(emb, torch.nn.Embedding)
             return emb.weight.shape[1]
         self.lm_emb_w = torch.zeros((
-            1, ENCODEC_N_BOOKS, dModel(), ENCODEC_N_WORDS_PER_BOOK, 
+            1, ENCODEC_N_BOOKS, dModel(), ENCODEC_N_WORDS_PER_BOOK + 1, 
         ), device=DEVICE)
         for k in range(ENCODEC_N_BOOKS):
             emb = self.lm.emb[k]
             assert isinstance(emb, torch.nn.Embedding)
-            self.lm_emb_w[0, k, :, :] = emb.weight[:ENCODEC_N_WORDS_PER_BOOK, :].T
+            self.lm_emb_w[0, k, :, :] = emb.weight.T
         self.lm_emb_w = self.lm_emb_w.contiguous()
 
     @lru_cache()
@@ -121,13 +126,11 @@ class MyMusicGen:
         conditions: List[ConditioningAttributes],
         condition_tensors: Optional[ConditionTensors] = None, 
     ) -> torch.Tensor:
-        B, K, S, card = sequence_onehots.shape
+        B, K, S, card_plus_one = sequence_onehots.shape
         assert K == self.lm.num_codebooks, "Sequence shape must match the specified number of codebooks"
-        if DO_CHECK_NAN:
-            assert not sequence_onehots.isnan().any(), pdb.set_trace()
         emb = self.lm_emb_w @ sequence_onehots.permute(
             0, 1, 3, 2, 
-            # (B, K, card, S)
+            # (B, K, card + 1, S)
         )
         # (B, K, d_model, S)
         input_ = emb.sum(dim=1).permute(0, 2, 1)
@@ -185,6 +188,9 @@ if __name__ == '__main__':
         print(f'{reverted.isnan().any() = }')
         print(f'{mask = }')
         print(f'{mask.all() = }')
+        # because keep_only_valid_steps = True, we should see 
+        # seq.shape = (... 1501 ...)
+        # mask = True / False (lower right triangle False)
 
     testPattern()
     import pdb; pdb.set_trace()
