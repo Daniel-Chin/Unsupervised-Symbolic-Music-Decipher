@@ -59,12 +59,12 @@ class MyMusicGen:
             assert isinstance(emb, torch.nn.Embedding)
             return emb.weight.shape[1]
         self.lm_emb_w = torch.zeros((
-            1, ENCODEC_N_BOOKS, 1, dModel(), ENCODEC_N_WORDS_PER_BOOK, 
+            1, ENCODEC_N_BOOKS, dModel(), ENCODEC_N_WORDS_PER_BOOK, 
         ), device=DEVICE)
         for k in range(ENCODEC_N_BOOKS):
             emb = self.lm.emb[k]
             assert isinstance(emb, torch.nn.Embedding)
-            self.lm_emb_w[0, k, 0, :, :] = emb.weight[:ENCODEC_N_WORDS_PER_BOOK, :].T
+            self.lm_emb_w[0, k, :, :] = emb.weight[:ENCODEC_N_WORDS_PER_BOOK, :].T
         self.lm_emb_w = self.lm_emb_w.contiguous()
 
     @lru_cache()
@@ -121,7 +121,13 @@ class MyMusicGen:
     ) -> torch.Tensor:
         B, K, S, card = sequence_onehots.shape
         assert K == self.lm.num_codebooks, "Sequence shape must match the specified number of codebooks"
-        input_ = (self.lm_emb_w @ sequence_onehots).sum(dim=1)
+        emb = self.lm_emb_w @ sequence_onehots.permute(
+            0, 1, 3, 2, 
+            # (B, K, card, S)
+        )
+        # (B, K, d_model, S)
+        input_ = emb.sum(dim=3).permute(2, 1, 0)
+        # (B, S, d_model)
         assert condition_tensors is not None
         assert not conditions
 
