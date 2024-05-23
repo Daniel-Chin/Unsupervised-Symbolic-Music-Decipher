@@ -26,12 +26,12 @@ class SampleWithSTEBackward(torch.autograd.Function):
     @once_differentiable
     @staticmethod
     def backward(_: FunctionCtx, grad_output: Tensor):
-        return grad_output.sum(dim=1)
+        return grad_output.sum(dim=1), None
 
 def sampleWithSTEBackward(probs: Tensor, n: int) -> Tensor:
     return SampleWithSTEBackward.apply(probs, n) # type: ignore
 
-def checkSampleWithSTEBackward():
+def checkAccuracy():
     batch_size = 2
     n_classes = 3
     kk = 1
@@ -59,5 +59,17 @@ def checkSampleWithSTEBackward():
             print(f'{test = }')
             break
 
+def checkDim():
+    bs = 3
+    n = 7
+    logits = torch.randn((bs, 6), requires_grad=True)
+    probs = F.softmax(logits, dim=-1)
+    sampled = sampleWithSTEBackward(probs, n)
+    print(f'{sampled.shape = }')
+    sampled.sum().backward()
+    assert logits.grad is not None
+    print(f'{logits.grad.shape = }')
+
 if __name__ == '__main__':
-    checkSampleWithSTEBackward()
+    checkDim()
+    checkAccuracy()
