@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from enum import Enum
 
+import dacite
+
 from shared import *
 from music import PIANO_RANGE
 
@@ -13,7 +15,7 @@ class PianoArchType(Enum):
     PerformanceNet = 'PerformanceNet'
     CNN_LSTM = 'CNN_LSTM'
 
-arch_types = {}
+arch_types: Dict[PianoArchType, type] = {}
 def registerArchType(x: PianoArchType, /):
     def decorator(cls):
         arch_types[x] = cls
@@ -116,6 +118,15 @@ class HParamsPiano(HParams):
         if self.out_type == PianoOutType.Score:
             return (2, PIANO_RANGE[1] - PIANO_RANGE[0])
         raise ValueError(self.out_type)
+    
+    @staticmethod
+    def fromDict(d: Dict, /):
+        t = arch_types[d['arch_type']]
+        def f(x):
+            return dacite.from_dict(t, x)
+        return dacite.from_dict(__class__, d, config=dacite.Config(type_hooks={
+            PianoArchHParam: f, 
+        }))
 
 @dataclass(frozen=True)
 class HParamsDecipher(HParams):
@@ -135,3 +146,7 @@ class HParamsDecipher(HParams):
             for x in self.using_piano
         ]
         return h_params, checkpoint
+
+    @staticmethod
+    def fromDict(d: Dict, /):
+        return dacite.from_dict(__class__, d)

@@ -1,5 +1,6 @@
 import os
 from functools import lru_cache
+import dataclasses
 
 import torch
 from torch import Tensor
@@ -23,10 +24,11 @@ ORACLE_VAL = 'VAL_ORACLE'
 VAL_CASES = [MONKEY_VAL, ORACLE_VAL]
 
 class LitPiano(L.LightningModule):
-    def __init__(self, hParams: HParamsPiano) -> None:
+    def __init__(self, **kw) -> None:
         super().__init__()
+        self.save_hyperparameters()
+        hParams = HParamsPiano.fromDict(kw)
         self.hP = hParams
-        writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         example_batch_size = 3
         self.example_input_array = torch.randn(
             (
@@ -189,9 +191,10 @@ class LitPianoDataModule(L.LightningDataModule):
 def train(hParams: HParamsPiano, root_dir: str):
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
-    litPiano = LitPiano(hParams)
+    litPiano = LitPiano(**dataclasses.asdict(hParams))
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
+    logJobMeta(logger, hParams.require_repo_working_tree_clean)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 

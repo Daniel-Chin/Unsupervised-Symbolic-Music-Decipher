@@ -1,14 +1,15 @@
 import os
-import dataclasses
+from os import path
 from functools import lru_cache
 from datetime import datetime
 from itertools import count
+import json
 
 import torch
 from torch import Tensor
 from torch.utils.data import default_collate
 import git
-import lightning as L
+from lightning.pytorch.loggers import Logger
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.image import AxesImage
@@ -20,7 +21,7 @@ from domestic_typing import *
 __all__ = [
     'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'GPU_NAME', 
     'getParams', 'getGradNorm', 'getCommitHash', 
-    'writeLightningHparams', 'currentTimeDirName', 
+    'logJobMeta', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
     'colorBar', 
@@ -63,15 +64,18 @@ def getCommitHash(do_assert_working_tree_clean: bool = False):
         assert not repo.is_dirty()
     return next(repo.iter_commits()).hexsha
 
-def writeLightningHparams(
-    dataclassObject, litModule: L.LightningModule, 
+def logJobMeta(
+    logger: Logger, 
     do_assert_working_tree_clean: bool = False, 
 ):
-    litModule.save_hyperparameters(dataclasses.asdict(dataclassObject))
-    litModule.save_hyperparameters(dict(
+    d = dict(
         commit_hash = getCommitHash(do_assert_working_tree_clean), 
         slurm_job_id = os.environ.get('SLURM_JOB_ID'),
-    ))
+    )
+    assert logger.log_dir is not None
+    os.makedirs(logger.log_dir, exist_ok=True)
+    with open(path.join(logger.log_dir, 'job_meta.json'), 'w', encoding='utf-8') as f:
+        json.dump(d, f, indent=2)
 
 def currentTimeDirName():
     # file system friendly

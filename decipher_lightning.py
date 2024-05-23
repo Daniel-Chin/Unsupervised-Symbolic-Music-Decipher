@@ -1,3 +1,5 @@
+import dataclasses
+
 import torch
 from torch import Tensor
 import torch.nn.functional as F
@@ -65,13 +67,11 @@ class LitDecipherDataModule(L.LightningDataModule):
         )
 
 class LitDecipher(L.LightningModule):
-    def __init__(
-        self, hParams: HParamsDecipher, getPiano: Callable[[], PianoModel],
-    ) -> None:
+    def __init__(self, **kw) -> None:
         super().__init__()
+        self.save_hyperparameters()
+        hParams = HParamsDecipher.fromDict(kw)
         self.hP = hParams
-        self.getPiano = getPiano
-        writeLightningHparams(hParams, self, hParams.require_repo_working_tree_clean)
         example_batch_size = 3
         self.example_input_array = torch.randn(
             (
@@ -92,8 +92,16 @@ class LitDecipher(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-        self.piano = self.getPiano()
-        self.piano.eval()
+
+        def getPiano():
+            h_params, checkpoint = hParams.getPianoAbsPaths()
+            litPiano = LitPiano.load_from_checkpoint(
+                checkpoint, hparams_file=h_params, 
+            )
+            litPiano.eval()
+            return litPiano.piano
+
+        self.piano = getPiano()
         freeze(self.piano)
         self.interpreter = Interpreter(hParams)
 
@@ -183,16 +191,10 @@ class LitDecipher(L.LightningModule):
 def train(hParams: HParamsDecipher, root_dir: str):
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
-    def getPiano():
-        h_params, checkpoint = hParams.getPianoAbsPaths()
-        litPiano = LitPiano.load_from_checkpoint(
-            checkpoint, hparams_file=h_params, 
-        )
-        litPiano.eval()
-        return litPiano.piano
-    litDecipher = LitDecipher(hParams, getPiano)
+    litDecipher = LitDecipher(**dataclasses.asdict(hParams))
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
+    logJobMeta(logger, hParams.require_repo_working_tree_clean)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 
