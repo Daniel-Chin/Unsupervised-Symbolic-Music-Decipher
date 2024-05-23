@@ -84,7 +84,7 @@ class LitDecipher(L.LightningModule):
         def getPiano():
             checkpoint_path = hParams.getPianoAbsPaths()
             litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
-            litPiano.eval()
+            litPiano.train()
             return litPiano.piano
 
         self.piano = getPiano()
@@ -117,9 +117,11 @@ class LitDecipher(L.LightningModule):
         return x
 
     def training_step(self, batch: BatchType, batch_idx: int):
+        myMusicGen.train()
         return self.shared_step('train', batch, batch_idx)
     
     def validation_step(self, batch: BatchType, batch_idx: int):
+        myMusicGen.eval()
         return self.shared_step('val', batch, batch_idx)
     
     def shared_step(

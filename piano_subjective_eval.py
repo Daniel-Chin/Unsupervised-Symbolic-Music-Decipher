@@ -29,6 +29,7 @@ def subjectiveEval(
     subjective_dir = path.join(root_dir, 'subjective_eval')
     os.makedirs(subjective_dir)
     encodec = myMusicGen.encodec.to(DEVICE)
+    encodec.eval()
     subsets = ['train', *VAL_CASES]
     batch_size = min(8, dataModule.hP.batch_size)
     loaders = [

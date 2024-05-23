@@ -227,6 +227,7 @@ def prepareOneSet(
     only_plot_no_write_disk: bool = False,
 ):
     encodec = myMusicGen.encodec.to(DEVICE)
+    encodec.eval()
 
     if which_set == WhichSet.MONKEY:
         dest_set_dir = PIANO_MONKEY_DATASET_DIR

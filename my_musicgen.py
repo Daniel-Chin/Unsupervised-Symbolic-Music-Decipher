@@ -49,11 +49,9 @@ class MyMusicGen:
         encodec = self.musicGen.compression_model
         assert isinstance(encodec, EncodecModel)
         assert encodec.sample_rate == ENCODEC_SR
-        encodec.eval()
         freeze(encodec)
         self.encodec = encodec
         self.lm = self.musicGen.lm
-        self.lm.eval()
         freeze(self.lm)
         assert isinstance(self.lm.pattern_provider, DelayedPatternProvider)
         self.patternProvider = DelayedPatternProviderOnehot(
@@ -71,6 +69,16 @@ class MyMusicGen:
             assert isinstance(emb, torch.nn.Embedding)
             self.lm_emb_w[0, k, :, :] = emb.weight.T
         self.lm_emb_w = self.lm_emb_w.contiguous()
+
+    def train(self):
+        self.encodec.train()
+        self.lm.train()
+        return self
+    
+    def eval(self):
+        self.encodec.eval()
+        self.lm.eval()
+        return self
 
     @lru_cache()
     def blankCondition(self, batch_size: int):
