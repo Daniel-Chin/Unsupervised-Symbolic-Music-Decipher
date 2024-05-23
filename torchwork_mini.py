@@ -294,7 +294,7 @@ class SingleProcessNewThreadPreFetchDataLoaderIter:
             if batch is None:
                 # self.debug('batch is None')
                 break
-            time.sleep(0)   # yield control to worker. Query disk ASAP, then hardware blocking will yield control back to main thread.
+            time.sleep(0.0001)   # yield control to worker. Query disk ASAP, then hardware blocking will yield control back to main thread.
             yield batch
         # self.debug('join()...')
         self.thread.join()
