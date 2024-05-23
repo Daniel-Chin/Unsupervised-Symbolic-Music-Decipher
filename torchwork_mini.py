@@ -240,21 +240,23 @@ class SingleProcessNewThreadPreFetchDataLoader:
         return math.ceil(self.dataset_size / self.batch_size)
     
     def worker(self):
-        if self.shuffle:
-            indices = torch.randperm(self.dataset_size)
-        else:
-            indices = torch.arange(self.dataset_size)
-        cursor = 0
-        while cursor < self.dataset_size:
-            batch_indices = indices[cursor : cursor + self.batch_size]
-            # len(indices) <= self.batch_size
-            batch = self.collate_fn([
-                self.dataset[i] for i in batch_indices
-            ])
-            assert batch is not None
-            self.q.put(batch)
-            cursor += self.batch_size
-        self.q.put(None)
+        try:
+            if self.shuffle:
+                indices = torch.randperm(self.dataset_size)
+            else:
+                indices = torch.arange(self.dataset_size)
+            cursor = 0
+            while cursor < self.dataset_size:
+                batch_indices = indices[cursor : cursor + self.batch_size]
+                # len(indices) <= self.batch_size
+                batch = self.collate_fn([
+                    self.dataset[i] for i in batch_indices
+                ])
+                assert batch is not None
+                self.q.put(batch)
+                cursor += self.batch_size
+        finally:
+            self.q.put(None)
     
     def Generator(self):
         t = Thread(target=self.worker)
