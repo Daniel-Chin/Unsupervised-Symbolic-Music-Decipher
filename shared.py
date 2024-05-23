@@ -64,3 +64,6 @@ def plotScore(score: Tensor, ax: Axes):
         ), aspect='auto', interpolation='nearest', 
         origin='lower', 
     )
+
+def howMuchNan(x: Tensor, /):
+    return x.isnan().sum().item() / x.numel()
