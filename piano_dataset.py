@@ -1,5 +1,6 @@
 import json
 from os import path
+from threading import Lock
 
 import torch
 from torch import Tensor
@@ -17,8 +18,11 @@ class PianoDataset(Dataset):
         device: torch.device = CPU, 
     ):
         self.name = name
+        self.dir_path = dir_path
+        self.size = size
         self.has_encodec_tokens = need_encodec_tokens
         self.has_log_spectrogram = need_log_spectrogram
+        self.lock = Lock()
         def getDataIds():
             s: List[str] = []
             for dir_ in LA_DATASET_DIRS:
@@ -46,27 +50,21 @@ class PianoDataset(Dataset):
             self.log_spectrigram = torch.zeros((
                 len(self.data_ids), n_bins, N_FRAMES_PER_DATAPOINT, 
             ), dtype=torch.float16, device=device)
-        for i, datapoint_id in enumerate(tqdm(self.data_ids, f'Load dataset "{self.name}"')):
-            score: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_score.pt'))
-            self.score[i, :, :, :] = score
-            if need_encodec_tokens:
-                encodec_tokens: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_encodec_tokens.pt'))
-                self.encodec_tokens[i, :, :] = encodec_tokens
-            if need_log_spectrogram:
-                log_spectrogram: Tensor = torch.load(path.join(dir_path, f'{datapoint_id}_log_spectrogram.pt'))
-                self.log_spectrigram[i, :, :] = log_spectrogram
+
         ram = 0
         def ramOf(t: Tensor):
             return t.nelement() * t.element_size()
-        ram += len(self.score) * ramOf(self.score[0])
-        if need_encodec_tokens:
+        ram += ramOf(self.score)
+        if self.has_encodec_tokens:
             ram += ramOf(self.encodec_tokens)
-        if need_log_spectrogram:
+        if self.has_log_spectrogram:
             ram += ramOf(self.log_spectrigram)
         print(f'dataset RAM: {ram / 2**30 : .2f} GB', flush=True)
 
+        self._has_cached = set()
+        
     def __len__(self):
-        return len(self.data_ids)
+        return self.size
 
     def __getitem__(self, index: int):
         '''
@@ -75,10 +73,24 @@ class PianoDataset(Dataset):
         `log_spectrogram`: (n_bins, N_FRAMES_PER_DATAPOINT)
         `data_id`: str
         '''
-        # out = [ self.score[index, :, :, :] ]
-        # if self.has_encodec_tokens:
-        #     out.append(self.encodec_tokens[index, :, :])
-        # if 
+        with self.lock:
+            lets_fetch = index not in self._has_cached
+        if lets_fetch:
+            datapoint_id = self.data_ids[index]
+            prefix = path.join(self.dir_path, datapoint_id)
+            score: Tensor = torch.load(prefix + '_score.pt')
+            if self.has_encodec_tokens:
+                encodec_tokens: Tensor = torch.load(prefix + '_encodec_tokens.pt')
+            if self.has_log_spectrogram:
+                log_spectrogram: Tensor = torch.load(prefix + '_log_spectrogram.pt')
+            with self.lock:
+                if index not in self._has_cached:
+                    self.score[index, :, :, :] = score
+                    if self.has_encodec_tokens:
+                        self.encodec_tokens[index, :, :] = encodec_tokens
+                    if self.has_log_spectrogram:
+                        self.log_spectrigram[index, :, :] = log_spectrogram
+                    self._has_cached.add(index)
         return (
             self.score[index, :, :, :], 
             self.encodec_tokens[index, :, :] if self.has_encodec_tokens else None, 
