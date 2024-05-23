@@ -94,10 +94,8 @@ class LitDecipher(L.LightningModule):
         hParams = self.hP
 
         def getPiano():
-            h_params, checkpoint = hParams.getPianoAbsPaths()
-            litPiano = LitPiano.load_from_checkpoint(
-                checkpoint, hparams_file=h_params, 
-            )
+            _, checkpoint_path = hParams.getPianoAbsPaths()
+            litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
             litPiano.eval()
             return litPiano.piano
 
