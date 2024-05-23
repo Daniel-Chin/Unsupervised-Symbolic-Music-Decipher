@@ -37,6 +37,8 @@ class LitPiano(L.LightningModule):
             ), 
         )
 
+        self.piano = PianoModel(hParams)
+
         self.did_setup: bool = False
     
     def log_(self, *a, **kw):
@@ -47,13 +49,6 @@ class LitPiano(L.LightningModule):
         _ = stage
         assert not self.did_setup
         self.did_setup = True
-
-        hParams = self.hP
-        self.piano = PianoModel(hParams)
-
-        # just for ModelSummary
-        # self.convs = self.cnnPiano.convs
-        # self.outProjector = self.cnnPiano.outProjector
     
     def forward(
         self, x: Tensor, 

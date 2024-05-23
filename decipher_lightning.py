@@ -80,6 +80,16 @@ class LitDecipher(L.LightningModule):
             ), 
         )
 
+        def getPiano():
+            checkpoint_path = hParams.getPianoAbsPaths()
+            litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
+            litPiano.eval()
+            return litPiano.piano
+
+        self.piano = getPiano()
+        freeze(self.piano)
+        self.interpreter = Interpreter(hParams)
+
         self.did_setup: bool = False
 
     def log_(self, *a, **kw):
@@ -92,16 +102,6 @@ class LitDecipher(L.LightningModule):
         self.did_setup = True
 
         hParams = self.hP
-
-        def getPiano():
-            checkpoint_path = hParams.getPianoAbsPaths()
-            litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
-            litPiano.eval()
-            return litPiano.piano
-
-        self.piano = getPiano()
-        freeze(self.piano)
-        self.interpreter = Interpreter(hParams)
 
     def forward(self, x: Tensor):
         '''
