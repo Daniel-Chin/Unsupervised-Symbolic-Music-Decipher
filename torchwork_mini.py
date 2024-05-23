@@ -8,6 +8,7 @@ from queue import Queue, Empty
 from threading import Thread
 import math
 import typing
+import time
 
 import torch
 from torch import Tensor
@@ -293,6 +294,7 @@ class SingleProcessNewThreadPreFetchDataLoaderIter:
             if batch is None:
                 # self.debug('batch is None')
                 break
+            time.sleep(0)   # yield control to worker. Query disk ASAP, then hardware blocking will yield control back to main thread.
             yield batch
         # self.debug('join()...')
         self.thread.join()
