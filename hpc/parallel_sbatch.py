@@ -1,10 +1,14 @@
-from typing import List
+from typing import List, Optional
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
 
 @contextmanager
-def SbatchContext(rm_script_filename: str):
-    job_ids: List[str] = []
+def SbatchContext(rm_script_filename: str, out_slurm_ids: Optional[List[str]] = None):
+    if out_slurm_ids is None:
+        job_ids: List[str] = []
+    else:
+        assert not out_slurm_ids
+        job_ids = out_slurm_ids
 
     def callback(auto_sbatch_filename: str):
         with Popen(['sbatch', auto_sbatch_filename], stdout=PIPE) as p:
