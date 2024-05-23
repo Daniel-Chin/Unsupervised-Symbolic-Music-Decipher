@@ -109,6 +109,8 @@ class LitDecipher(L.LightningModule):
         out shape: (batch_size, ENCODEC_N_BOOKS, n_frames, ENCODEC_N_WORDS_PER_BOOK)
         '''
         x = self.interpreter.forward(x)
+        if DO_CHECK_NAN:
+            assert not x.isnan().any(), pdb.set_trace()
         x = x.contiguous()
         x = self.piano.forward(x)
         return x

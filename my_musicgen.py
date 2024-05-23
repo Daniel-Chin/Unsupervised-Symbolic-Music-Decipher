@@ -88,6 +88,8 @@ class MyMusicGen:
         '''
         `audio_tokens`: one-hot
         '''
+        if DO_CHECK_NAN:
+            assert not encodec_onehots.isnan().any(), pdb.set_trace()
         with self.musicGen.autocast:
             B, K, T, card = encodec_onehots.shape
             assert K == ENCODEC_N_BOOKS
@@ -121,12 +123,14 @@ class MyMusicGen:
     ) -> torch.Tensor:
         B, K, S, card = sequence_onehots.shape
         assert K == self.lm.num_codebooks, "Sequence shape must match the specified number of codebooks"
+        if DO_CHECK_NAN:
+            assert not sequence_onehots.isnan().any(), pdb.set_trace()
         emb = self.lm_emb_w @ sequence_onehots.permute(
             0, 1, 3, 2, 
             # (B, K, card, S)
         )
         # (B, K, d_model, S)
-        input_ = emb.sum(dim=3).permute(2, 1, 0)
+        input_ = emb.sum(dim=1).permute(0, 2, 1)
         # (B, S, d_model)
         assert condition_tensors is not None
         assert not conditions

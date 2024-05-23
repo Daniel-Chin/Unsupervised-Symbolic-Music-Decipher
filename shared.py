@@ -1,5 +1,6 @@
 import socket
 from functools import lru_cache
+import pdb
 
 from torch import Tensor
 import torchaudio.transforms
@@ -11,6 +12,8 @@ from paths import *
 from torchwork_mini import *
 from domestic_typing import *
 from music import PIANO_RANGE
+
+DO_CHECK_NAN = not bool(os.environ.get('SLURM_JOB_ID'))
 
 SEC_PER_DATAPOINT = 30
 ENCODEC_SR = 32000
