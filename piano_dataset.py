@@ -1,11 +1,10 @@
 import json
 from os import path
-from threading import Lock
+from multiprocessing import Lock
 
 import torch
 from torch import Tensor
 from torch.utils.data.dataset import Dataset
-from tqdm import tqdm
 
 from shared import *
 from music import PIANO_RANGE
