@@ -251,6 +251,7 @@ class SingleProcessNewThreadPreFetchDataLoader:
             batch = self.collate_fn([
                 self.dataset[i] for i in batch_indices
             ])
+            assert batch is not None
             self.q.put(batch)
             cursor += self.batch_size
         self.q.put(None)
