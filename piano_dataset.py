@@ -52,17 +52,20 @@ class PianoDataset(Dataset):
                 size, n_bins, N_FRAMES_PER_DATAPOINT, 
             ), dtype=torch.float16, device=device)
 
+        self._has_cached = np.zeros((size, ), dtype=np.bool_)
+        self.is_all_cached = False
+
         ram = 0
         def ramOf(t: Tensor):
             return t.nelement() * t.element_size()
+        ram += self.data_ids.nbytes
+        ram += self._has_cached.nbytes
         ram += ramOf(self.score)
         if self.has_encodec_tokens:
             ram += ramOf(self.encodec_tokens)
         if self.has_log_spectrogram:
             ram += ramOf(self.log_spectrigram)
         print(f'dataset RAM: {ram / 2**30 : .2f} GB', flush=True)
-
-        self._has_cached = np.zeros((size, ), dtype=np.bool_)
         
     def __len__(self):
         return self.size
@@ -76,23 +79,28 @@ class PianoDataset(Dataset):
         '''
         datapoint_id_b: np.bytes_ = self.data_ids[index]
         datapoint_id = datapoint_id_b.decode()
-        with self.lock:
-            lets_fetch = not self._has_cached[index]
-        if lets_fetch:
-            prefix = path.join(self.dir_path, datapoint_id)
-            score: Tensor = torch.load(prefix + '_score.pt')
-            if self.has_encodec_tokens:
-                encodec_tokens: Tensor = torch.load(prefix + '_encodec_tokens.pt')
-            if self.has_log_spectrogram:
-                log_spectrogram: Tensor = torch.load(prefix + '_log_spectrogram.pt')
+        if not self.is_all_cached:
             with self.lock:
-                if not self._has_cached[index]:
-                    self.score[index, :, :, :] = score
-                    if self.has_encodec_tokens:
-                        self.encodec_tokens[index, :, :] = encodec_tokens
-                    if self.has_log_spectrogram:
-                        self.log_spectrigram[index, :, :] = log_spectrogram
-                    self._has_cached[index] = True
+                lets_fetch = not self._has_cached[index]
+            if lets_fetch:
+                prefix = path.join(self.dir_path, datapoint_id)
+                score: Tensor = torch.load(prefix + '_score.pt')
+                if self.has_encodec_tokens:
+                    encodec_tokens: Tensor = torch.load(prefix + '_encodec_tokens.pt')
+                if self.has_log_spectrogram:
+                    log_spectrogram: Tensor = torch.load(prefix + '_log_spectrogram.pt')
+                with self.lock:
+                    if not self._has_cached[index]:
+                        self.score[index, :, :, :] = score
+                        if self.has_encodec_tokens:
+                            self.encodec_tokens[index, :, :] = encodec_tokens
+                        if self.has_log_spectrogram:
+                            self.log_spectrigram[index, :, :] = log_spectrogram
+                        self._has_cached[index] = True
+            else:
+                with self.lock:
+                    if self._has_cached.all():
+                        self.is_all_cached = True
         return (
             self.score[index, :, :, :], 
             self.encodec_tokens[index, :, :].to(torch.long) if self.has_encodec_tokens else None, 
