@@ -33,21 +33,23 @@ class PianoDataset(Dataset):
             assert size <= len(s)
             s = s[:size]
             return s
-        self.data_ids = getDataIds()
+        self.data_ids = np.array(getDataIds()).astype(np.string_)
+        # num_workers > 0, which forbids python list. Using numpy array instead.
+        # https://github.com/pytorch/pytorch/issues/13246#issuecomment-905703662
         self.score = torch.zeros((
-            len(self.data_ids), 
+            size, 
             2, 
             PIANO_RANGE[1] - PIANO_RANGE[0], 
             N_FRAMES_PER_DATAPOINT, 
         ), device=device)
         if need_encodec_tokens:
             self.encodec_tokens = torch.zeros((
-                len(self.data_ids), ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT, 
+                size, ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT, 
             ), dtype=torch.int16, device=device)
         if need_log_spectrogram:
             _, _, n_bins = fftTools()
             self.log_spectrigram = torch.zeros((
-                len(self.data_ids), n_bins, N_FRAMES_PER_DATAPOINT, 
+                size, n_bins, N_FRAMES_PER_DATAPOINT, 
             ), dtype=torch.float16, device=device)
 
         ram = 0
@@ -60,7 +62,7 @@ class PianoDataset(Dataset):
             ram += ramOf(self.log_spectrigram)
         print(f'dataset RAM: {ram / 2**30 : .2f} GB', flush=True)
 
-        self._has_cached = set()
+        self._has_cached = np.zeros((size, ), dtype=np.bool_)
         
     def __len__(self):
         return self.size
@@ -72,10 +74,11 @@ class PianoDataset(Dataset):
         `log_spectrogram`: (n_bins, N_FRAMES_PER_DATAPOINT)
         `data_id`: str
         '''
+        datapoint_id_b: np.bytes_ = self.data_ids[index]
+        datapoint_id = datapoint_id_b.decode()
         with self.lock:
-            lets_fetch = index not in self._has_cached
+            lets_fetch = not self._has_cached[index]
         if lets_fetch:
-            datapoint_id = self.data_ids[index]
             prefix = path.join(self.dir_path, datapoint_id)
             score: Tensor = torch.load(prefix + '_score.pt')
             if self.has_encodec_tokens:
@@ -83,18 +86,18 @@ class PianoDataset(Dataset):
             if self.has_log_spectrogram:
                 log_spectrogram: Tensor = torch.load(prefix + '_log_spectrogram.pt')
             with self.lock:
-                if index not in self._has_cached:
+                if not self._has_cached[index]:
                     self.score[index, :, :, :] = score
                     if self.has_encodec_tokens:
                         self.encodec_tokens[index, :, :] = encodec_tokens
                     if self.has_log_spectrogram:
                         self.log_spectrigram[index, :, :] = log_spectrogram
-                    self._has_cached.add(index)
+                    self._has_cached[index] = True
         return (
             self.score[index, :, :, :], 
             self.encodec_tokens[index, :, :].to(torch.long) if self.has_encodec_tokens else None, 
             self.log_spectrigram[index, :, :].to(torch.float32) if self.has_log_spectrogram else None, 
-            self.data_ids[index],
+            datapoint_id,
         )
 
 BatchType = Tuple[Tensor, Optional[Tensor], Optional[Tensor], Tuple[str]]
