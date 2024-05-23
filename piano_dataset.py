@@ -92,7 +92,7 @@ class PianoDataset(Dataset):
                     self._has_cached.add(index)
         return (
             self.score[index, :, :, :], 
-            self.encodec_tokens[index, :, :] if self.has_encodec_tokens else None, 
+            self.encodec_tokens[index, :, :].to(torch.int32) if self.has_encodec_tokens else None, 
             self.log_spectrigram[index, :, :].to(torch.float32) if self.has_log_spectrogram else None, 
             self.data_ids[index],
         )

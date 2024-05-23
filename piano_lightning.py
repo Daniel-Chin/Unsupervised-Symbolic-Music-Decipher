@@ -88,7 +88,7 @@ class LitPiano(L.LightningModule):
             assert encodec_tokens.shape == y_hat.shape[:-1], (encodec_tokens.shape, y_hat.shape)
             loss = F.cross_entropy(
                 y_hat.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
-                encodec_tokens       .view   (-1).to(torch.long), 
+                encodec_tokens.view(-1), 
             )
             self.log_(log_prefix + '_loss', loss)
 
