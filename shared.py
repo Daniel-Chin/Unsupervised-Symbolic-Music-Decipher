@@ -4,6 +4,7 @@ import pdb
 
 from torch import Tensor
 import torchaudio.transforms
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from matplotlib.axes import Axes
 
@@ -67,3 +68,21 @@ def plotScore(score: Tensor, ax: Axes):
 
 def howMuchNan(x: Tensor, /):
     return x.isnan().sum().item() / x.numel()
+
+def myChosenDataLoader(dataset: Dataset, batch_size: int, shuffle: bool):
+    kw = dict(
+        dataset=dataset, 
+        batch_size=batch_size, 
+        shuffle=shuffle, 
+        collate_fn=collateWithNone, 
+        prefetch_factor=2, 
+    )
+    # return SingleProcessNewThreadPreFetchDataLoader(
+    #     **kw, # type: ignore
+    # )
+    return DataLoader(
+        **kw, # type: ignore
+        # num_workers=2, 
+        num_workers=0, 
+        # persistent_workers=True,
+    )

@@ -50,21 +50,17 @@ class LitDecipherDataModule(L.LightningDataModule):
     def train_dataloader(self, batch_size: Optional[int] = None, shuffle: bool = True):
         hParams = self.hP
         bs = batch_size or hParams.batch_size
-        return SingleProcessNewThreadPreFetchDataLoader(
+        return myChosenDataLoader(
             self.train_dataset, batch_size=bs, 
             shuffle=shuffle, 
-            collate_fn=collateWithNone, 
-            prefetch_factor=2, 
         )
     
     def val_dataloader(self, batch_size: Optional[int] = None):
         hParams = self.hP
         bs = batch_size or hParams.batch_size
-        return SingleProcessNewThreadPreFetchDataLoader(
+        return myChosenDataLoader(
             self.val_dataset, batch_size=bs, 
             shuffle=False,
-            collate_fn=collateWithNone, 
-            prefetch_factor=2,
         )
 
 class LitDecipher(L.LightningModule):
