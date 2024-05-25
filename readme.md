@@ -10,3 +10,10 @@
 - Run `python3 ./midi_process_parallel.py` and wait for completion. 
 - Run `python3 ./prepare_datasets_parallel.py --stage cpu` and wait for completion. 
 - Run `python3 ./prepare_datasets_parallel.py --stage gpu` and wait for completion. 
+
+## Train
+From the outermost dir,  
+- Run `cd ./hpc`
+- Run `python3 ./sched_piano.py` to submit a slurm job. 
+  - It uses `train_piano_template.sbatch` which has some NYUSH HPC-specific setups. You may want to review it and make edits. 
+  - Under the hood it runs `../main_train_piano.py`. Feel free to run it directly. 
