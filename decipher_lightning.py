@@ -15,7 +15,6 @@ from shared import *
 from music import PIANO_RANGE
 from hparams import HParamsDecipher
 from piano_dataset import PianoDataset, BatchType
-from piano_model import PianoModel
 from interpreter import Interpreter
 from my_musicgen import myMusicGen, LMOutput
 from sample_with_ste_backward import sampleWithSTEBackward

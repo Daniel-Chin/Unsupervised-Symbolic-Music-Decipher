@@ -7,7 +7,7 @@ from hparams import (
     GRUHParam, PerformanceNetHParam, CNN_LSTM_HParam, 
 )
 from piano_lightning import train
-from piano_subjective_eval import subjectiveEval
+from piano_subjective_eval import pianoSubjectiveEval
 
 def main():
     initMainProcess()
@@ -102,7 +102,7 @@ def main():
     hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litPiano, dataModule = train(hParams, root_dir)
-    subjectiveEval(litPiano.to(DEVICE), dataModule, root_dir)
+    pianoSubjectiveEval(litPiano.to(DEVICE), dataModule, root_dir)
     print('OK')
 
 if __name__ == '__main__':

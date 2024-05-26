@@ -3,6 +3,7 @@ from os import path
 from shared import *
 from hparams import HParamsDecipher
 from decipher_lightning import train
+from decipher_subjective_eval import decipherSubjectiveEval
 
 def main():
     initMainProcess()
@@ -37,9 +38,7 @@ def main():
     hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litDecipher, dataModule = train(hParams, root_dir)
-    # subjective eval
-    # plot interpreter
-    # render songs
+    decipherSubjectiveEval(litDecipher, dataModule, root_dir)
     print('OK')
 
 if __name__ == '__main__':

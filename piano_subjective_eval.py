@@ -14,7 +14,7 @@ from piano_dataset import BatchType
 from piano_lightning import LitPiano, LitPianoDataModule, VAL_CASES
 
 @torch.no_grad()
-def subjectiveEval(
+def pianoSubjectiveEval(
     litPiano: LitPiano, dataModule: LitPianoDataModule, 
     root_dir: str, 
 ):
@@ -23,7 +23,7 @@ def subjectiveEval(
     # to speed up dataloader worker spawning
     from my_musicgen import myMusicGen
     
-    print('subjectiveEval()...', flush=True)
+    print('pianoSubjectiveEval()...', flush=True)
     hParams = litPiano.hP
     litPiano.eval()
     subjective_dir = path.join(root_dir, 'subjective_eval')
