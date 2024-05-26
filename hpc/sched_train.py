@@ -31,7 +31,7 @@ def main(stage: AVH_Stage):
         ).replace(
             '{PARTITION}', 'aquila,gpu' if on_low_not_high else 'sfscai', 
         ).replace(
-            '{constraint}', '3090' if on_low_not_high else 'a800', 
+            '{CONSTRAINT}', '3090' if on_low_not_high else 'a800', 
         ))
     slurm_ids = []
     with SbatchContext('./scancel_all.sh', slurm_ids) as sbatch:
