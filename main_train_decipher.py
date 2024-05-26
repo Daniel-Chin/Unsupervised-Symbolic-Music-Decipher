@@ -20,7 +20,7 @@ def main():
         # train_set_size = 16, 
         # val_set_size = 16,
 
-        lr = 1e-3, 
+        lr = 1e-4, 
         lr_decay = 1.0, 
         batch_size = 32, 
         # batch_size = 8, 
@@ -31,7 +31,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_decipher_low_right'
+    exp_name = currentTimeDirName() + '_decipher_1e-4'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
