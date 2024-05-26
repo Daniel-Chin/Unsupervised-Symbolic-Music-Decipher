@@ -12,10 +12,10 @@ def main():
         interpreter_sample_not_polyphonic = False,
 
         loss_weight_left = 1.0, 
-        loss_weight_right = 1.0, 
+        loss_weight_right = .1, 
 
-        train_set_size = 800, 
-        val_set_size = 200,
+        train_set_size = 8000, 
+        val_set_size = 2000,
         # train_set_size = 16, 
         # val_set_size = 16,
 
@@ -30,14 +30,16 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_decipher_first'
+    exp_name = currentTimeDirName() + '_decipher_low_right'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
     hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litDecipher, dataModule = train(hParams, root_dir)
-    # evaluateAudio?
+    # subjective eval
+    # plot interpreter
+    # render songs
     print('OK')
 
 if __name__ == '__main__':
