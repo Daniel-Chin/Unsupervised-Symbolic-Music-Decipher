@@ -3,6 +3,7 @@ from os import path
 import shutil
 
 import torch
+from torch import Tensor
 from torch.distributions.categorical import Categorical
 from tqdm import tqdm
 import pretty_midi
@@ -21,6 +22,7 @@ def decipherSubjectiveEval(
     # Both `litDecipher` and `dataModule` are already `setup()`-ed.  
 
     print('decipherSubjectiveEval()...', flush=True)
+    do_sample_not_polyphonic = litDecipher.hP.interpreter_sample_not_polyphonic
     litDecipher.eval()
     litDecipher = litDecipher.cpu()
     subjective_dir = path.join(root_dir, 'subjective_eval')
@@ -34,12 +36,14 @@ def decipherSubjectiveEval(
             f'{subset_name}_{i:{index_format}}_{task}.mid',
         )
 
-    simplex = litDecipher.interpreter.w.softmax(dim=0)
-    categorical = Categorical(simplex)
-    random_baseline = Categorical(torch.randn((
-        PIANO_RANGE[1] - PIANO_RANGE[0], 
-        PIANO_RANGE[1] - PIANO_RANGE[0], 
-    )).softmax(dim=0))
+    simplex_decipher = litDecipher.interpreter.w.softmax(dim=0)
+    simplex_random = torch.randn((
+        PIANO_RANGE[1] - PIANO_RANGE[0],
+        PIANO_RANGE[1] - PIANO_RANGE[0],
+    )).softmax(dim=0)
+    if do_sample_not_polyphonic:
+        c_decipher = Categorical(simplex_decipher)
+        c_random = Categorical(simplex_random)
     for subset_name, loader in dict(
         train = dataModule.train_dataloader(batch_size, shuffle=False), 
         val = dataModule.val_dataloader(batch_size, ),
@@ -58,23 +62,47 @@ def decipherSubjectiveEval(
             shutil.copyfile(src, filename(subset_name, i, 'reference'))
 
             midi = pretty_midi.PrettyMIDI(src)
-            piano, = midi.instruments
-            piano: pretty_midi.Instrument
-            for task, c in dict(
-                random = random_baseline,
-                deciphered = categorical,
-            ).items():
-                switcherboard = c.sample(torch.Size(( )))
-                assert switcherboard.shape == (PIANO_RANGE[1] - PIANO_RANGE[0], )
-                new_midi = pretty_midi.PrettyMIDI()
-                new_piano = pretty_midi.Instrument(0)
-                new_midi.instruments.append(new_piano)
-                for note in piano.notes:
-                    note: pretty_midi.Note
-                    new_piano.notes.append(pretty_midi.Note(
-                        note.velocity, 
-                        switcherboard[note.pitch - PIANO_RANGE[0]].item(), 
-                        note.start,
-                        note.end,
-                    ))
-                new_midi.write(filename(subset_name, i, task))
+            interpreteMidi(
+                midi, do_sample_not_polyphonic, 
+                c_decipher if do_sample_not_polyphonic else simplex_decipher, 
+            ).write(filename(subset_name, i, 'decipher'))
+            interpreteMidi(
+                midi, do_sample_not_polyphonic, 
+                c_random if do_sample_not_polyphonic else simplex_random, 
+            ).write(filename(subset_name, i, 'random'))
+
+def interpreteMidi(
+    src: pretty_midi.PrettyMIDI, 
+    do_sample_not_polyphonic: bool, 
+    interpreter: Tensor | Categorical,
+):
+    if do_sample_not_polyphonic:
+        assert isinstance(interpreter, Categorical)
+        switcherboard = interpreter.sample(torch.Size(( )))
+        assert switcherboard.shape == (PIANO_RANGE[1] - PIANO_RANGE[0], )
+    else:
+        assert isinstance(interpreter, Tensor)
+        simplex = interpreter
+    midi = pretty_midi.PrettyMIDI()
+    piano = pretty_midi.Instrument(0)
+    midi.instruments.append(piano)
+    src_piano, = src.instruments
+    src_piano: pretty_midi.Instrument
+    for note in src_piano.notes:
+        note: pretty_midi.Note
+        if do_sample_not_polyphonic:
+            piano.notes.append(pretty_midi.Note(
+                note.velocity, 
+                switcherboard[note.pitch - PIANO_RANGE[0]].item(), 
+                note.start,
+                note.end,
+            ))
+        else:
+            for i, p in enumerate(simplex):
+                piano.notes.append(pretty_midi.Note(
+                    note.velocity * p.item(), 
+                    i + PIANO_RANGE[0], 
+                    note.start,
+                    note.end,
+                ))
+    return midi
