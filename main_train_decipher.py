@@ -21,7 +21,7 @@ def main():
 
         lr = 1e-3, 
         lr_decay = 1.0, 
-        batch_size = 64, 
+        batch_size = 32, 
         # batch_size = 8, 
         max_epochs = 30, 
         # max_epochs = 3, 
