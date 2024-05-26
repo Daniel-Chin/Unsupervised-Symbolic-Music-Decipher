@@ -15,21 +15,21 @@ def main():
         loss_weight_left = 1.0, 
         loss_weight_right = .1, 
 
-        # train_set_size = 8000, 
-        # val_set_size = 2000,
-        train_set_size = 16, 
-        val_set_size = 16,
+        train_set_size = 8000, 
+        val_set_size = 2000,
+        # train_set_size = 16, 
+        # val_set_size = 16,
 
         lr = 1e-3, 
         lr_decay = 1.0, 
-        # batch_size = 32, 
-        batch_size = 8, 
-        # max_epochs = 30, 
-        max_epochs = 3, 
+        batch_size = 32, 
+        # batch_size = 8, 
+        max_epochs = 30, 
+        # max_epochs = 3, 
         overfit_first_batch = False, 
 
-        # require_repo_working_tree_clean = True, 
-        require_repo_working_tree_clean = False, 
+        require_repo_working_tree_clean = True, 
+        # require_repo_working_tree_clean = False, 
     )
     exp_name = currentTimeDirName() + '_decipher_low_right'
     if not hParams.require_repo_working_tree_clean:
