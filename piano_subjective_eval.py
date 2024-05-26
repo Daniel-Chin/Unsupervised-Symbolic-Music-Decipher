@@ -4,7 +4,6 @@ import shutil
 
 import torch
 import scipy.io.wavfile as wavfile
-from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
@@ -60,6 +59,7 @@ def pianoSubjectiveEval(
         for batch_i, batch in enumerate(loader):
             batch: BatchType
             score_cpu, encodec_tokens_cpu, _, data_ids = batch
+            assert encodec_tokens_cpu is not None
             score = score_cpu.to(DEVICE)
             encodec_tokens = encodec_tokens_cpu.to(DEVICE)
             batch_size = score.shape[0]

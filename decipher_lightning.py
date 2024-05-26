@@ -10,7 +10,8 @@ from lightning.pytorch.utilities import grad_norm
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
-from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 
 from shared import *
 from music import PIANO_RANGE
@@ -203,18 +204,21 @@ class LitDecipher(L.LightningModule):
     @torch.no_grad()
     def plotInterpreter(self):
         w = self.interpreter.w.cpu()
-        plt.imshow(
+        fig = Figure()
+        ax = fig.subplots(1)
+        assert isinstance(ax, Axes)
+        im = ax.imshow(
             w.numpy(), 
             aspect='auto', interpolation='nearest', 
             origin='lower', 
         )
-        plt.colorbar()
-        plt.xlabel(f'midi pitch - {PIANO_RANGE[0]}')
-        plt.ylabel(f'piano key - {PIANO_RANGE[0]}')
+        colorBar(fig, ax, im)
+        ax.set_xlabel(f'midi pitch - {PIANO_RANGE[0]}')
+        ax.set_ylabel(f'piano key - {PIANO_RANGE[0]}')
         step = self.hP.formatGlobalStep(self.global_step)
-        plt.title(f'{step = }')
-        plt.tight_layout()
-        plt.savefig(path.join(
+        ax.set_title(f'{step = }')
+        fig.tight_layout()
+        fig.savefig(path.join(
             self.interpreter_visualized_dir, 
             step + '.png', 
         ))
