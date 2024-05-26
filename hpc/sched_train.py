@@ -38,6 +38,8 @@ def main(stage: AVH_Stage):
         sbatch(auto_sb_filename)
     slurm_id, = slurm_ids
     print(f'{slurm_id = }')
+    print('To monitor logs:')
+    print(f'tail -f *{slurm_id}*')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
