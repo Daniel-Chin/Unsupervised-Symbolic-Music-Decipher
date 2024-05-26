@@ -21,7 +21,6 @@ def decipherSubjectiveEval(
     # Both `litDecipher` and `dataModule` are already `setup()`-ed.  
 
     print('decipherSubjectiveEval()...', flush=True)
-    hParams = litDecipher.hP
     litDecipher.eval()
     litDecipher = litDecipher.cpu()
     subjective_dir = path.join(root_dir, 'subjective_eval')
