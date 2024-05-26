@@ -10,6 +10,7 @@ from lightning.pytorch.utilities import grad_norm
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
+from matplotlib import pyplot as plt
 
 from shared import *
 from music import PIANO_RANGE
@@ -99,6 +100,13 @@ class LitDecipher(L.LightningModule):
 
         hParams = self.hP
 
+        assert self.logger is not None
+        assert self.logger.log_dir is not None
+        self.interpreter_visualized_dir = path.join(
+            self.logger.log_dir, 'interpreter_visualized', 
+        )
+        os.makedirs(self.interpreter_visualized_dir)
+
     def forward(self, x: Tensor):
         '''
         `x` shape: (batch_size, 2, n_pitches, n_frames)  
@@ -186,6 +194,30 @@ class LitDecipher(L.LightningModule):
         norms = grad_norm(self.interpreter, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
+
+        interval = os.environ.get('PLOT_INTERPRETER_EVERY_X_STEP')
+        assert interval is not None
+        if self.global_step % int(interval) == 0:
+            self.plotInterpreter()
+    
+    @torch.no_grad()
+    def plotInterpreter(self):
+        w = self.interpreter.w.cpu()
+        plt.imshow(
+            w.numpy(), 
+            aspect='auto', interpolation='nearest', 
+            origin='lower', 
+        )
+        plt.colorbar()
+        plt.xlabel(f'midi pitch - {PIANO_RANGE[0]}')
+        plt.ylabel(f'piano key - {PIANO_RANGE[0]}')
+        step = self.hP.formatGlobalStep(self.global_step)
+        plt.title(f'{step = }')
+        plt.tight_layout()
+        plt.savefig(path.join(
+            self.interpreter_visualized_dir, 
+            step + '.png', 
+        ))
 
 def train(hParams: HParamsDecipher, root_dir: str):
     log_name = '.'

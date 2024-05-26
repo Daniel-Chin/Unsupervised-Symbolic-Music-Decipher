@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, asdict
 from enum import Enum
+from functools import cached_property
+import math
 
 import dacite
 
@@ -70,6 +72,7 @@ class HParams:
     lr: float
     lr_decay: float
     batch_size: int
+    train_set_size: int
     max_epochs: int
     overfit_first_batch: bool
 
@@ -85,6 +88,17 @@ class HParams:
         print(' ', f'{total_decay = :.2e}')
         ending_lr = self.lr * total_decay
         print(' ', f'{ending_lr = :.2e}')
+    
+    @cached_property
+    def n_total_steps(self):
+        return math.ceil(self.train_set_size / self.batch_size) * self.max_epochs 
+    
+    @cached_property
+    def global_step_f_string(self):
+        return f'0{len(str(self.n_total_steps))}d'
+    
+    def formatGlobalStep(self, global_step: int):
+        return format(global_step, self.global_step_f_string)
 
 class PianoOutType(Enum):
     EncodecTokens = 'EncodecTokens'
@@ -99,7 +113,6 @@ class HParamsPiano(HParams):
 
     out_type: PianoOutType
     
-    train_set_size: int
     val_monkey_set_size: int
     val_oracle_set_size: int
     do_validate: bool
@@ -137,7 +150,6 @@ class HParamsDecipher(HParams):
     loss_weight_left: float
     loss_weight_right: float
     
-    train_set_size: int
     val_set_size: int
 
     def getPianoAbsPaths(self):
