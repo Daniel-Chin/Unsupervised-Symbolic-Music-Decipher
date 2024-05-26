@@ -5,11 +5,11 @@
 #SBATCH --time=32:00:00
 #SBATCH --mem=130GB
 #SBATCH --gres=gpu:1
-#SBATCH --job-name=train_piano
-#SBATCH --output=train_piano_%j.out
-#SBATCH --error=train_piano_%j.err
-#SBATCH --partition=aquila,gpu
-#SBATCH --constraint=3090
+#SBATCH --job-name=train_{STAGE}
+#SBATCH --output=train_{STAGE}_%j.out
+#SBATCH --error=train_{STAGE}_%j.err
+#SBATCH --partition={PARTITION}
+#SBATCH --constraint={CONSTRAINT}
 
 cd ..
 module purge
