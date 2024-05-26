@@ -10,7 +10,7 @@ def main():
     hParams = HParamsDecipher(
         using_piano='2024_m05_d23@22_07_23_p_tofu/version_0/checkpoints/epoch=169-step=212500.ckpt', 
 
-        interpreter_sample_not_polyphonic = False,
+        interpreter_sample_not_polyphonic = True,
 
         loss_weight_left = 1.0, 
         loss_weight_right = .1, 
@@ -20,7 +20,7 @@ def main():
         # train_set_size = 16, 
         # val_set_size = 16,
 
-        lr = 1e-4, 
+        lr = 1e-3, 
         lr_decay = 1.0, 
         batch_size = 32, 
         # batch_size = 8, 
@@ -31,7 +31,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_decipher_1e-4'
+    exp_name = currentTimeDirName() + '_decipher_sample'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
