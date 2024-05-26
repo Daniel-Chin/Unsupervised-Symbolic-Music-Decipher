@@ -7,7 +7,7 @@ from decipher_lightning import train
 def main():
     initMainProcess()
     hParams = HParamsDecipher(
-        using_piano='2024_m05_d23@22_07_23_p_tofu/version_0/checkpoints/epoch=2-step=3.ckpt', 
+        using_piano='2024_m05_d23@22_07_23_p_tofu/version_0/checkpoints/epoch=169-step=212500.ckpt', 
 
         interpreter_sample_not_polyphonic = False,
 
