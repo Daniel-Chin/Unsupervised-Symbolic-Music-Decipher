@@ -1,5 +1,4 @@
 # todo
-- log the entropy of musicgen prediction
 
 # 2024/4/4
 - 2024_m04_d04@04_58_03_p_fit_batch_dirty_working_tree

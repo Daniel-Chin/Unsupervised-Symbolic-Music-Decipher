@@ -170,12 +170,14 @@ class LitDecipher(L.LightningModule):
         logLoss(None, loss)
         return loss
     
-    @staticmethod
-    def lossRight(performed: Tensor, lmOutput: LMOutput):
+    def lossRight(self, performed: Tensor, lmOutput: LMOutput):
         mask = lmOutput.mask    # mask with False: invalid, True: valid.  
         valid_logits = lmOutput.logits[mask, :] # (B*K*T', ENCODEC_N_WORDS_PER_BOOK)
         valid_performed = performed[mask, :] # (B*K*T', ENCODEC_N_WORDS_PER_BOOK)
         c = Categorical(logits=valid_logits)
+        entropy: Tensor = c.entropy()
+        # measures MusicGen certainty. Low entropy = high certainty.
+        self.log_('music_gen_entropy', entropy)
         sampled = c.sample()    # grad is lost, and that's just right
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
