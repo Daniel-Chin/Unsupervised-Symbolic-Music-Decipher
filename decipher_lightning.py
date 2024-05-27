@@ -222,6 +222,11 @@ class LitDecipher(L.LightningModule):
             self.interpreter_visualized_dir, 
             step + '.png', 
         ))
+    
+    def on_train_batch_end(self, *_, **__):
+        with torch.no_grad():
+            w = self.interpreter.w.softmax(dim=0)
+            self.interpreter.w.copy_(w)
 
 def train(hParams: HParamsDecipher, root_dir: str):
     log_name = '.'
