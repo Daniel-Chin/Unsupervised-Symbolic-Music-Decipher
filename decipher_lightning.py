@@ -179,10 +179,7 @@ class LitDecipher(L.LightningModule):
         sampled = c.sample()    # grad is lost, and that's just right
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
-        return F.l1_loss(
-            valid_performed.softmax(dim=-1), 
-            onehots, 
-        )
+        return (onehots * valid_performed.softmax(dim=-1)).sum(dim=-1).mean(dim=0)
 
     def configure_optimizers(self):
         hParams = self.hP
