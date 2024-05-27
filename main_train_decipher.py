@@ -10,9 +10,9 @@ def main():
     hParams = HParamsDecipher(
         using_piano='2024_m05_d23@22_07_23_p_tofu/version_0/checkpoints/epoch=169-step=212500.ckpt', 
 
-        interpreter_sample_not_polyphonic = False,
+        interpreter_sample_not_polyphonic = True,
 
-        loss_weight_left = 0.0, 
+        loss_weight_left = 1.0, 
         loss_weight_right = 1.0, 
 
         train_set_size = 8000, 
@@ -31,7 +31,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_poly_right_only'
+    exp_name = currentTimeDirName() + '_d_crown'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
