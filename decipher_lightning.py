@@ -177,7 +177,7 @@ class LitDecipher(L.LightningModule):
         c = Categorical(logits=valid_logits)
         entropy: Tensor = c.entropy()
         # measures MusicGen certainty. Low entropy = high certainty.
-        self.log_('music_gen_entropy', entropy)
+        self.log_('music_gen_entropy', entropy.mean(dim=0))
         sampled = c.sample()    # grad is lost, and that's just right
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
