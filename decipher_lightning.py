@@ -198,6 +198,7 @@ class LitDecipher(L.LightningModule):
         norms = grad_norm(self.interpreter, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
+        self.log_('interpreter_mean', self.interpreter.w.mean())
 
         interval = os.environ.get('PLOT_INTERPRETER_EVERY_X_STEP')
         assert interval is not None
@@ -206,12 +207,12 @@ class LitDecipher(L.LightningModule):
     
     @torch.no_grad()
     def plotInterpreter(self):
-        w = self.interpreter.w.cpu()
+        simplex = self.interpreter.w.softmax(dim=0).cpu()
         fig = Figure()
         ax = fig.subplots(1)
         assert isinstance(ax, Axes)
         im = ax.imshow(
-            w.numpy(), 
+            simplex.numpy(), 
             aspect='auto', interpolation='nearest', 
             origin='lower', 
         )
@@ -225,11 +226,6 @@ class LitDecipher(L.LightningModule):
             self.interpreter_visualized_dir, 
             step + '.png', 
         ))
-    
-    def on_train_batch_end(self, *_, **__):
-        with torch.no_grad():
-            w = self.interpreter.w.softmax(dim=0)
-            self.interpreter.w.copy_(w)
 
 def train(hParams: HParamsDecipher, root_dir: str):
     log_name = '.'
