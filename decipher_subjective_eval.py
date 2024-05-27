@@ -98,7 +98,7 @@ def interpreteMidi(
                 note.end,
             ))
         else:
-            for i, p in enumerate(simplex):
+            for i, p in enumerate(simplex[note.pitch, :]):
                 piano.notes.append(pretty_midi.Note(
                     note.velocity * p.item(), 
                     i + PIANO_RANGE[0], 
