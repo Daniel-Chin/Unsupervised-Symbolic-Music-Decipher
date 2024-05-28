@@ -1,4 +1,5 @@
 import dataclasses
+from functools import cached_property
 
 import torch
 from torch import Tensor
@@ -21,6 +22,16 @@ from interpreter import Interpreter
 from my_musicgen import myMusicGen, LMOutput
 from sample_with_ste_backward import sampleWithSTEBackward
 from piano_lightning import LitPiano
+
+@dataclasses.dataclass(frozen=True)
+class LMOutputDistribution:
+    lmOutput: LMOutput
+
+    @cached_property
+    def categorical(self):
+        mask = self.lmOutput.mask    # mask with False: invalid, True: valid.  
+        valid_logits = self.lmOutput.logits[mask, :] # (B*K*T', ENCODEC_N_WORDS_PER_BOOK)
+        return Categorical(logits=valid_logits)
 
 class LitDecipherDataModule(L.LightningDataModule):
     def __init__(self, hParams: HParamsDecipher) -> None:
@@ -148,7 +159,12 @@ class LitDecipher(L.LightningModule):
         ).unsqueeze(1).view(
             batch_size, n_books, n_frames, n_words_per_book,
         )
-        prediction = myMusicGen.lmPredict(sampled_encodec_onehots)
+        prediction = LMOutputDistribution(
+            myMusicGen.lmPredict(sampled_encodec_onehots), 
+        )
+        entropy: Tensor = prediction.categorical.entropy()
+        # measures MusicGen certainty. Low entropy = high certainty.
+        self.log_('music_gen_entropy', entropy.mean(dim=0))
 
         loss = torch.zeros(( ), device=self.device)
         def logLoss(name: Optional[str], loss: Tensor):
@@ -156,7 +172,7 @@ class LitDecipher(L.LightningModule):
             self.log_(f'{step_name}_loss' + suffix, loss)
         if hParams.loss_weight_left != 0.0:
             loss_left, ce_per_codebook = myMusicGen.lmLoss(
-                prediction, 
+                prediction.lmOutput, 
                 sampled_encodec_onehots.argmax(dim=-1), 
             )
             logLoss('left', loss_left)
@@ -170,14 +186,10 @@ class LitDecipher(L.LightningModule):
         logLoss(None, loss)
         return loss
     
-    def lossRight(self, performed: Tensor, lmOutput: LMOutput):
-        mask = lmOutput.mask    # mask with False: invalid, True: valid.  
-        valid_logits = lmOutput.logits[mask, :] # (B*K*T', ENCODEC_N_WORDS_PER_BOOK)
+    def lossRight(self, performed: Tensor, lmOutputDistribution: LMOutputDistribution):
+        mask = lmOutputDistribution.lmOutput.mask    # mask with False: invalid, True: valid.  
         valid_performed = performed[mask, :] # (B*K*T', ENCODEC_N_WORDS_PER_BOOK)
-        c = Categorical(logits=valid_logits)
-        entropy: Tensor = c.entropy()
-        # measures MusicGen certainty. Low entropy = high certainty.
-        self.log_('music_gen_entropy', entropy.mean(dim=0))
+        c = lmOutputDistribution.categorical
         sampled = c.sample()    # grad is lost, and that's just right
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
