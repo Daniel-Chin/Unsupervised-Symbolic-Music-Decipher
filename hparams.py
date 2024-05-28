@@ -146,6 +146,7 @@ class HParamsDecipher(HParams):
     using_piano: str
 
     interpreter_sample_not_polyphonic: bool
+    init_oracle_w_offset: Optional[int]
 
     loss_weight_left: float
     loss_weight_right: float

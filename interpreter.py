@@ -13,10 +13,17 @@ class Interpreter(torch.nn.Module):
 
         self.hP = hParams
         PIANO_N_KEYS = PIANO_RANGE[1] - PIANO_RANGE[0]
-        self.w = torch.nn.Parameter(torch.randn((
-            PIANO_N_KEYS, # n of piano keys
-            PIANO_N_KEYS, # n of midi pitches
-        ), requires_grad=True))
+        if hParams.init_oracle_w_offset is None:
+            w = torch.randn((
+                PIANO_N_KEYS, # n of piano keys
+                PIANO_N_KEYS, # n of midi pitches
+            ))
+        else:
+            o = hParams.init_oracle_w_offset
+            w = torch.diag_embed(
+                torch.ones((PIANO_N_KEYS, )), offset=o, 
+            )[:PIANO_N_KEYS, :PIANO_N_KEYS] * 6.7   # logits yielding prob=90%
+        self.w = torch.nn.Parameter(w, requires_grad=True)
     
     def forward(self, x: torch.Tensor):
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
