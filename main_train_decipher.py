@@ -10,7 +10,7 @@ def main():
     hParams = HParamsDecipher(
         using_piano='2024_m05_d23@22_07_23_p_tofu/version_0/checkpoints/epoch=169-step=212500.ckpt', 
 
-        interpreter_sample_not_polyphonic = True,
+        interpreter_sample_not_polyphonic = False,
         init_oracle_w_offset = 0, 
 
         loss_weight_left = 1.0, 
@@ -32,7 +32,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_oracle_l'
+    exp_name = currentTimeDirName() + '_d_oracle_poly_l'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
