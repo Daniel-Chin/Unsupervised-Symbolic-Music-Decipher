@@ -76,6 +76,8 @@ class HParams:
     max_epochs: int
     overfit_first_batch: bool
 
+    continue_from: Optional[str]
+
     require_repo_working_tree_clean: bool
 
     def summary(self):
@@ -99,6 +101,11 @@ class HParams:
     
     def formatGlobalStep(self, global_step: int):
         return format(global_step, self.global_step_f_string)
+    
+    def getContinueFromAbsPath(self):
+        if self.continue_from is None:
+            return None
+        return path.join(EXPERIMENTS_DIR, self.continue_from)
 
 class PianoOutType(Enum):
     EncodecTokens = 'EncodecTokens'

@@ -202,7 +202,10 @@ def train(hParams: HParamsPiano, root_dir: str):
         overfit_batches=1 if hParams.overfit_first_batch else 0.0, 
     )
     dataModule = LitPianoDataModule(hParams)
-    trainer.fit(litPiano, dataModule)
+    trainer.fit(
+        litPiano, dataModule, 
+        ckpt_path=hParams.getContinueFromAbsPath(), 
+    )
     # torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
     # torch.cuda.memory._record_memory_history(enabled=None) # type: ignore
 

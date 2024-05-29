@@ -260,7 +260,10 @@ def train(hParams: HParamsDecipher, root_dir: str):
         overfit_batches=1 if hParams.overfit_first_batch else 0.0, 
     )
     dataModule = LitDecipherDataModule(hParams)
-    trainer.fit(litDecipher, dataModule)
+    trainer.fit(
+        litDecipher, dataModule,
+        ckpt_path=hParams.getContinueFromAbsPath(), 
+    )
     # torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
     # torch.cuda.memory._record_memory_history(enabled=None) # type: ignore
 

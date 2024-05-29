@@ -29,6 +29,8 @@ def main():
         # max_epochs = 3, 
         overfit_first_batch = False, 
 
+        continue_from = None, 
+        
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )

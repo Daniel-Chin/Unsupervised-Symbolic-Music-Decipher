@@ -94,8 +94,10 @@ def main():
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
+
+        continue_from = '2024_m05_d28@04_57_57_p_tofu/version_0/checkpoints/epoch=265-step=332500.ckpt',
     )
-    exp_name = currentTimeDirName() + '_p_tofu'
+    exp_name = currentTimeDirName() + '_p_tofu_cont'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
