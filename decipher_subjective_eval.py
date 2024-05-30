@@ -100,7 +100,7 @@ def interpreteMidi(
         else:
             for i, p in enumerate(simplex[note.pitch, :]):
                 piano.notes.append(pretty_midi.Note(
-                    note.velocity * p.sqrt().item(), 
+                    round(note.velocity * p.sqrt().item()), 
                     i + PIANO_RANGE[0], 
                     note.start,
                     note.end,
