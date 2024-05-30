@@ -1,5 +1,6 @@
 import socket
 from functools import lru_cache
+from dataclasses import dataclass
 import pdb
 
 from torch import Tensor
@@ -7,6 +8,7 @@ import torchaudio.transforms
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from matplotlib.axes import Axes
+import pretty_midi
 
 import init as _
 from paths import *
@@ -27,6 +29,16 @@ ENCODEC_RECEPTIVE_RADIUS = 0.1   # sec
 LA_DATASET_DIRS = [*'0123456789abcdef']
 
 TWO_PI = np.pi * 2
+
+@dataclass(frozen=True)
+class PcmFormat:
+    name: str
+    np_dtype: np.dtype
+
+DEFAULT_PCM_FORMAT = PcmFormat(
+    's16le',
+    np.dtype(np.int16).newbyteorder('<'), 
+)   # these two have to agree
 
 def initMainProcess():
     print('hostname:', socket.gethostname())
@@ -87,3 +99,25 @@ def myChosenDataLoader(dataset: Dataset, batch_size: int, shuffle: bool):
         num_workers=0, 
         # persistent_workers=True,
     )
+
+def sortByNoteOn(piano: pretty_midi.Instrument):
+    # Note pretty_midi write + load doesn't preserve note order.  
+    piano.notes.sort(key=lambda x: x.start)
+
+def bytesToAudioWave(
+    b: bytes, /, in_n_channels: int = 1, 
+    in_format: PcmFormat = DEFAULT_PCM_FORMAT, 
+    out_type: np.dtype = np.dtype(np.float32), 
+):
+    '''
+    Always return mono.  
+    '''
+    dtype = in_format.np_dtype
+    wave_int = np.frombuffer(b, dtype=dtype)
+    format_factor: int = 2 ** (dtype.itemsize * 8 - 1)  # needs type hint because type checker doesn't know dtype.itemsize > 0
+    wave_float = wave_int.astype(out_type) / format_factor
+    if in_n_channels == 1:
+        wave_mono = wave_float
+    else:
+        wave_mono = wave_float.reshape(-1, in_n_channels).mean(axis=1)
+    return wave_mono

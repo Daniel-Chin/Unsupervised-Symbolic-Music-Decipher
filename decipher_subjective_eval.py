@@ -11,7 +11,7 @@ import pretty_midi
 from shared import *
 from piano_dataset import BatchType
 from decipher_lightning import LitDecipher, LitDecipherDataModule
-from midi_multiplex import MidiMultiplex
+from midi_reasonablizer import MidiReasonablizer
 
 N_EVALS = 16
 
@@ -43,8 +43,8 @@ def decipherSubjectiveEval(
         PIANO_RANGE[1] - PIANO_RANGE[0],
     )).softmax(dim=0)
     if do_sample_not_polyphonic:
-        c_decipher = Categorical(simplex_decipher)
-        c_random = Categorical(simplex_random)
+        c_decipher = Categorical(simplex_decipher.T)
+        c_random = Categorical(simplex_random.T)
     for subset_name, loader in dict(
         train = dataModule.train_dataloader(batch_size, shuffle=False), 
         val = dataModule.val_dataloader(batch_size, ),
@@ -84,31 +84,29 @@ def interpreteMidi(
     else:
         assert isinstance(interpreter, Tensor)
         simplex = interpreter
-    if do_sample_not_polyphonic:
-        midi = pretty_midi.PrettyMIDI()
-        piano = pretty_midi.Instrument(0)
-        midi.instruments.append(piano)
-    else:
-        midiMultiplex = MidiMultiplex()
-        midi = midiMultiplex.midi
+    midi = pretty_midi.PrettyMIDI()
+    piano = pretty_midi.Instrument(0)
+    midi.instruments.append(piano)
+    if not do_sample_not_polyphonic:
+        midiReasonablizer = MidiReasonablizer(piano)
     src_piano, = src.instruments
     src_piano: pretty_midi.Instrument
+    sortByNoteOn(src_piano)
     for note in src_piano.notes:
         note: pretty_midi.Note
-        key_i = note.pitch - PIANO_RANGE[0]
         if do_sample_not_polyphonic:
             piano.notes.append(pretty_midi.Note(
                 note.velocity, 
-                switcherboard[key_i].item() + PIANO_RANGE[0], 
+                switcherboard[note.pitch - PIANO_RANGE[0]].item() + PIANO_RANGE[0], 
                 note.start,
                 note.end,
             ))
         else:
             energy = note.velocity ** 2
-            for i, l in enumerate(simplex[key_i, :]):
+            for i, l in enumerate(simplex[:, note.pitch - PIANO_RANGE[0]]):
                 loading = l.item()
                 if loading >= 1e-6:
-                    midiMultiplex.add(pretty_midi.Note(
+                    midiReasonablizer.add(pretty_midi.Note(
                         round((loading * energy) ** 0.5), 
                         i + PIANO_RANGE[0], 
                         note.start,
