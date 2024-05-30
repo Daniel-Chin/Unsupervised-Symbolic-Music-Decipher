@@ -30,6 +30,7 @@ def main():
         overfit_first_batch = False, 
 
         continue_from = None, 
+        # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
         
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
