@@ -249,7 +249,7 @@ if __name__ == '__main__':
     # verifyAllHasOneInstrument()
 
     # test()
-    # main([*LA_DATASET_DIRS], 4)
+    # main([*LA_DATASET_DIRS], 8)
     # noteStats(30)
 
     parser = argparse.ArgumentParser()

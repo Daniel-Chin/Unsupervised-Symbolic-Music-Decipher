@@ -1,14 +1,11 @@
 import json
 import random
 import argparse
-from io import BytesIO
 from enum import Enum
 
 import torch
 from torch import Tensor
 import pretty_midi
-import audioread
-from audioread.rawread import RawAudioFile
 from tqdm import tqdm
 import scipy.io.wavfile as wavfile
 from matplotlib import pyplot as plt
@@ -17,7 +14,7 @@ import librosa
 
 from shared import *
 from music import PIANO_RANGE
-from midi_synth_wav import midiSynthWav
+from midi_synth_wav import midiSynthWave
 from my_musicgen import myMusicGen, EncodecModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
@@ -70,6 +67,7 @@ def legalizeMidi(src_path: str):
     srcMidi = pretty_midi.PrettyMIDI(src_path)
     srcPiano, = srcMidi.instruments
     srcPiano: pretty_midi.Instrument
+    sortByNoteOn(srcPiano)
     total_len = srcMidi.get_end_time()
     if total_len <= SONG_LEN:
         raise MidiTooShort(src_path)
@@ -94,14 +92,13 @@ def legalizeMidi(src_path: str):
 def prepareOneDatapoint(
     encodec: EncodecModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
-    verbose: bool, do_fluidsynth_write_pcm: bool, 
+    verbose: bool, is_fluidsynth_nyush: bool, 
 ):
     def printProfiling(*a, **kw):
         if verbose:
             print(*a, **kw, flush=True)
     
-    # wav_path = path.join(dest_dir, f'{idx}_synthed.wav')
-    wav_path = path.join(dest_dir, f'temp.wav')
+    synth_temp_path = path.join(dest_dir, f'temp')
     midi_path = path.join(dest_dir, f'{idx}.mid')
 
     if midi_source is None:
@@ -117,34 +114,18 @@ def prepareOneDatapoint(
     midi.write(midi_path)
     
     printProfiling('Synthesizing audio')
-    midiSynthWav(midi_path, wav_path, verbose, do_fluidsynth_write_pcm)
+    wave_np = midiSynthWave(midi_path, synth_temp_path, verbose, is_fluidsynth_nyush)
+    wave = torch.tensor(wave_np, device=DEVICE)
+
+    if idx == 0:
+        printProfiling('Writing wav')
+        wavfile.write(path.join(dest_dir, f'{idx}.wav'), ENCODEC_SR, wave_np)
     
     # printProfiling('Loading midi')
     # midi = pretty_midi.PrettyMIDI(midi_path)
     # piano, = midi.instruments
     # piano: pretty_midi.Instrument
     # n_notes = len(piano.notes)
-    
-    printProfiling('Loading audio')
-    buf = BytesIO()
-    with audioread.audio_open(wav_path) as f:
-        f: RawAudioFile
-        assert f.samplerate == ENCODEC_SR
-        n_channels = f.channels
-        for chunk in f.read_data():
-            buf.write(chunk)
-    buf.seek(0)
-    dtype = np.dtype(np.int16).newbyteorder('<')
-    wave_int = torch.tensor(np.frombuffer(buf.read(), dtype=dtype)).to(DEVICE)
-    format_factor: int = 2 ** (dtype.itemsize * 8 - 1)  # needs type hint because type checker doesn't know dtype.itemsize > 0
-    wave_float = wave_int.float() / format_factor
-    wave_mono = wave_float.view((-1, n_channels)).mean(dim=1)
-    n_samples = int(np.ceil(SONG_LEN * ENCODEC_SR))
-    wave_trunc = wave_mono[:n_samples]
-    wave_pad = torch.nn.functional.pad(
-        wave_trunc, (0, n_samples - len(wave_trunc)),
-    )
-    wave = wave_pad
 
     with torch.no_grad():
         printProfiling('Encodec.encode')
@@ -223,7 +204,7 @@ def prepareOneSet(
     select_dir: str, 
     n_datapoints: int, 
     verbose: bool, 
-    do_fluidsynth_write_pcm: bool, 
+    is_fluidsynth_nyush: bool, 
     only_plot_no_write_disk: bool = False,
 ):
     encodec = myMusicGen.encodec.to(DEVICE)
@@ -258,7 +239,7 @@ def prepareOneSet(
                 try:
                     score, encodec_tokens, log_spectrogram = prepareOneDatapoint(
                         encodec, datapoint_i, dest_dir, 
-                        midi_src, verbose, do_fluidsynth_write_pcm, 
+                        midi_src, verbose, is_fluidsynth_nyush, 
                     )
                 except BadMidi:
                     if verbose:
@@ -308,7 +289,7 @@ def laptop():
                 select_dir, 
                 n_datapoints, 
                 verbose=False, 
-                do_fluidsynth_write_pcm=False, 
+                is_fluidsynth_nyush=False, 
                 # only_plot_no_write_disk=True,
             )
 
@@ -332,7 +313,7 @@ if __name__ == '__main__':
         '--verbose', action='store_true',
     )
     parser.add_argument(
-        '--do_fluidsynth_write_pcm', action='store_true',
+        '--is_fluidsynth_nyush', action='store_true',
     )
     args = parser.parse_args()
     prepareOneSet(
@@ -340,6 +321,6 @@ if __name__ == '__main__':
         args.select_dir, 
         args.n_datapoints, 
         args.verbose, 
-        args.do_fluidsynth_write_pcm, 
+        args.is_fluidsynth_nyush, 
     )
     print('OK')

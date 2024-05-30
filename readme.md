@@ -4,6 +4,12 @@
 - Copy "./example.env" to "active.env".  
 - Download the [LA Midi Dataset](https://huggingface.co/datasets/projectlosangeles/Los-Angeles-MIDI-Dataset) and set `LA_MIDI_PATH` in "./active.env" to the midi dir (ending with `.../Los-Angeles-MIDI-Dataset-Ver-4-0-CC-BY-NC-SA/MIDIs`)  
 - Install `fluidsynth`.  
+- Is your `fluidsynth` configured interestingly like NYUSH? 
+  - The NYUSH HPC `fluidsynth` is peculiar in the following known ways:
+    - The output is always s16le PCM. 
+    - Output file has missing/incorrect metadata. 
+      - It is stereo, not mono. The SR is not always 44100. 
+  - Given your `fluidsynth`, either keep or remove the `is_fluidsynth_nyush` flag in "./hpc/prepare_datasets_template.sbatch".  
 - Obtain "MuseScore_Basic.sf2" and put it in "./assets".  
   - Instructions are in "./assets/acknowledge.md".  
 - Run `cd ./hpc`
