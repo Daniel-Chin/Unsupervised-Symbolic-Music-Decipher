@@ -14,7 +14,7 @@ import librosa
 
 from shared import *
 from music import PIANO_RANGE
-from midi_synth_wav import midiSynthWave
+from midi_synth_wav import midiSynthWave, SynthAnomalyChecker
 from my_musicgen import myMusicGen, EncodecModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
@@ -92,6 +92,7 @@ def legalizeMidi(src_path: str):
 def prepareOneDatapoint(
     encodec: EncodecModel, 
     idx: int, dest_dir: str, midi_source: Optional[str], 
+    checker: SynthAnomalyChecker,
     verbose: bool, is_fluidsynth_nyush: bool, 
 ):
     def printProfiling(*a, **kw):
@@ -114,7 +115,7 @@ def prepareOneDatapoint(
     midi.write(midi_path)
     
     printProfiling('Synthesizing audio')
-    wave_np = midiSynthWave(midi_path, synth_temp_path, verbose, is_fluidsynth_nyush)
+    wave_np = midiSynthWave(midi_path, synth_temp_path, checker, verbose, is_fluidsynth_nyush)
     wave = torch.tensor(wave_np, device=DEVICE)
 
     if idx == 0:
@@ -203,6 +204,7 @@ def prepareOneSet(
     which_set: WhichSet,
     select_dir: str, 
     n_datapoints: int, 
+    synthAnomalyChecker: SynthAnomalyChecker,
     verbose: bool, 
     is_fluidsynth_nyush: bool, 
     only_plot_no_write_disk: bool = False,
@@ -239,7 +241,8 @@ def prepareOneSet(
                 try:
                     score, encodec_tokens, log_spectrogram = prepareOneDatapoint(
                         encodec, datapoint_i, dest_dir, 
-                        midi_src, verbose, is_fluidsynth_nyush, 
+                        midi_src, synthAnomalyChecker, 
+                        verbose, is_fluidsynth_nyush, 
                     )
                 except BadMidi:
                     if verbose:
@@ -283,15 +286,17 @@ def laptop():
     ]
 
     for which_set, n_datapoints in TO_PREPARE:
-        for select_dir in tqdm(LA_DATASET_DIRS, desc=which_set.value):
-            prepareOneSet(
-                which_set, 
-                select_dir, 
-                n_datapoints, 
-                verbose=False, 
-                is_fluidsynth_nyush=False, 
-                # only_plot_no_write_disk=True,
-            )
+        with SynthAnomalyChecker().context() as checker:
+            for select_dir in tqdm(LA_DATASET_DIRS, desc=which_set.value):
+                prepareOneSet(
+                    which_set, 
+                    select_dir, 
+                    n_datapoints, 
+                    checker, 
+                    verbose=False, 
+                    is_fluidsynth_nyush=False, 
+                    # only_plot_no_write_disk=True,
+                )
 
 if __name__ == '__main__':
     initMainProcess()
@@ -316,11 +321,13 @@ if __name__ == '__main__':
         '--is_fluidsynth_nyush', action='store_true',
     )
     args = parser.parse_args()
-    prepareOneSet(
-        args.which_set, 
-        args.select_dir, 
-        args.n_datapoints, 
-        args.verbose, 
-        args.is_fluidsynth_nyush, 
-    )
+    with SynthAnomalyChecker().context() as checker:
+        prepareOneSet(
+            args.which_set, 
+            args.select_dir, 
+            args.n_datapoints, 
+            checker, 
+            args.verbose, 
+            args.is_fluidsynth_nyush, 
+        )
     print('OK')

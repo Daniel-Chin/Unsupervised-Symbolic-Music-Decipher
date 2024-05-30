@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import os
 from os import path
@@ -5,9 +7,11 @@ from subprocess import Popen, DEVNULL, PIPE
 from io import BytesIO
 import audioread
 from audioread.rawread import RawAudioFile
-from scipy.signal import resample
+from contextlib import contextmanager
 
 import numpy as np
+from scipy.signal import resample
+from matplotlib import pyplot as plt
 
 from shared import *
 
@@ -15,6 +19,7 @@ NYUSH_FLUIDSYNTH_FORMAT = DEFAULT_PCM_FORMAT
 
 def midiSynthWave(
     midi_path: str, temp_synth_path: str, 
+    synthAnomalyChecker: SynthAnomalyChecker, 
     verbose: bool = False, 
     is_fluidsynth_nyush: bool = False,
 ):
@@ -59,11 +64,8 @@ def midiSynthWave(
         buf.seek(0)
         wave = bytesToAudioWave(buf.read(), n_channels)
     
-    theoretical_len = int(np.ceil(SEC_PER_DATAPOINT * ENCODEC_SR))
-    leeway = len(wave) - theoretical_len
-    # <10ms of fluidsynth lengthening effect, usually 6ms
-    assert abs(leeway / ENCODEC_SR) < 0.010, leeway / ENCODEC_SR
-    wave_trimmed = wave[leeway // 2 :][: theoretical_len]
+    synthAnomalyChecker.look(wave, midi_path)
+    wave_trimmed = wave[:N_SAMPLES_PER_DATAPOINT]
     return wave_trimmed
 
 def customResample(pcm_path: str) -> np.ndarray:
@@ -89,3 +91,46 @@ def customResample(pcm_path: str) -> np.ndarray:
 #     n_samples = declared_sr * duration
 #     inferred_sr = n_samples / SEC_PER_DATAPOINT
 #     assert abs(math.log(NYUSH_FLUIDSYNTH_SR / inferred_sr)) < math.log(1.1), inferred_sr
+
+ALLOWED_TAIL = 0.9  # sec
+ALLOWED_TAIL_N_SAMPLES = round(ALLOWED_TAIL * ENCODEC_SR)
+class SynthAnomalyChecker:
+    def __init__(self) -> None:
+        self.n_good = 0
+        self.n_bad = 0
+        self.ready = False
+
+    def look(
+        self, wave: np.ndarray, 
+        midi_path: str, 
+    ) -> None:
+        assert self.ready, 'Use me as a python context'
+        extra_time = (len(wave) - N_SAMPLES_PER_DATAPOINT) / ENCODEC_SR
+        forbidden_tail = wave[N_SAMPLES_PER_DATAPOINT + ALLOWED_TAIL_N_SAMPLES:]
+        if len(forbidden_tail):
+            if np.sum(np.abs(forbidden_tail) > 1e5) < 0.1 * ENCODEC_SR:
+                self.n_good += 1
+            else:
+                self.n_bad += 1
+                plt.plot(np.abs(forbidden_tail) > 1e5)
+                plt.show()
+            if self.n_good + self.n_bad >= 30:
+                self.checkRatio()
+    
+    def checkRatio(self) -> None:
+        ratio = self.n_bad / (self.n_good + self.n_bad)
+        assert ratio <= 0.01, (self.n_good, self.n_bad)
+    
+    @contextmanager
+    def context(self):
+        self.ready = True
+        try:
+            yield self
+        finally:
+            self.close()
+    
+    def close(self):
+        # print(*self.data, sep='\n')
+        # plt.hist(self.data, bins=50)
+        # plt.show()
+        self.checkRatio()
