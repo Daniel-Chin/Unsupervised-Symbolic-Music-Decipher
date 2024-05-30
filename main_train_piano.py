@@ -95,7 +95,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
 
-        continue_from = '2024_m05_d28@04_57_57_p_tofu/version_0/checkpoints/epoch=265-step=332500.ckpt',
+        continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
     exp_name = currentTimeDirName() + '_p_tofu_cont'
