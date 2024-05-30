@@ -90,15 +90,16 @@ def interpreteMidi(
     src_piano: pretty_midi.Instrument
     for note in src_piano.notes:
         note: pretty_midi.Note
+        key_i = note.pitch - PIANO_RANGE[0]
         if do_sample_not_polyphonic:
             piano.notes.append(pretty_midi.Note(
                 note.velocity, 
-                switcherboard[note.pitch - PIANO_RANGE[0]].item(), 
+                switcherboard[key_i].item() + PIANO_RANGE[0], 
                 note.start,
                 note.end,
             ))
         else:
-            for i, p in enumerate(simplex[note.pitch, :]):
+            for i, p in enumerate(simplex[key_i, :]):
                 piano.notes.append(pretty_midi.Note(
                     round(note.velocity * p.sqrt().item()), 
                     i + PIANO_RANGE[0], 
