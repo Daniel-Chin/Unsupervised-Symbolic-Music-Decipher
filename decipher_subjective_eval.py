@@ -104,10 +104,12 @@ def interpreteMidi(
                 note.end,
             ))
         else:
-            for i, loading in enumerate(simplex[key_i, :]):
+            energy = note.velocity ** 2
+            for i, l in enumerate(simplex[key_i, :]):
+                loading = l.item()
                 if loading >= 1e-6:
                     midiMultiplex.add(pretty_midi.Note(
-                        round(note.velocity * loading.sqrt().item()), 
+                        round((loading * energy) ** 0.5), 
                         i + PIANO_RANGE[0], 
                         note.start,
                         note.end,
