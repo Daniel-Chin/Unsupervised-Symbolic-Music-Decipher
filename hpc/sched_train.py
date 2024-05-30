@@ -10,13 +10,6 @@ from parallel_sbatch import SbatchContext
 def main(stage: AVH_Stage):
     stage_ = stage.value.lower()
     job_id = uuid.uuid4()
-    compute_node = socket.gethostname().split('.', 1)[0]
-    if compute_node.startswith('hpclogin'):
-        on_low_not_high = False
-    elif compute_node.startswith('login'):
-        on_low_not_high = True
-    else:
-        raise ValueError(f'{compute_node = }')
     py_filename = f'auto_train_{stage_}_{job_id}.py'
     shutil.copyfile(f'../main_train_{stage_}.py', path.join('..', py_filename))
     with open('./train_template.sbatch', 'r', encoding='utf-8') as f:

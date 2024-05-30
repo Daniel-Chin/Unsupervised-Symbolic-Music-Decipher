@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from meta_shared import *
 from parallel_sbatch import SbatchContext
 
 DIRS = '0123456789abcdef'
@@ -23,9 +24,9 @@ def main():
                     ).replace(
                         '{LOG_ID}', job_identifier, 
                     ).replace(
-                        '{PARTITION}', 'aquila,gpu', 
+                        '{PARTITION}', 'aquila,gpu' if on_low_not_high else 'sfscai', 
                     ).replace(
-                        '{CONSTRAINT}', '3090', 
+                        '{CONSTRAINT}', '3090' if on_low_not_high else 'a800', 
                     ).replace(
                         '{WHICH_SET}', which_set, 
                     ).replace(
