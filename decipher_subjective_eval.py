@@ -11,6 +11,7 @@ import pretty_midi
 from shared import *
 from piano_dataset import BatchType
 from decipher_lightning import LitDecipher, LitDecipherDataModule
+from midi_multiplex import MidiMultiplex
 
 N_EVALS = 16
 
@@ -83,9 +84,13 @@ def interpreteMidi(
     else:
         assert isinstance(interpreter, Tensor)
         simplex = interpreter
-    midi = pretty_midi.PrettyMIDI()
-    piano = pretty_midi.Instrument(0)
-    midi.instruments.append(piano)
+    if do_sample_not_polyphonic:
+        midi = pretty_midi.PrettyMIDI()
+        piano = pretty_midi.Instrument(0)
+        midi.instruments.append(piano)
+    else:
+        midiMultiplex = MidiMultiplex()
+        midi = midiMultiplex.midi
     src_piano, = src.instruments
     src_piano: pretty_midi.Instrument
     for note in src_piano.notes:
@@ -99,11 +104,12 @@ def interpreteMidi(
                 note.end,
             ))
         else:
-            for i, p in enumerate(simplex[key_i, :]):
-                piano.notes.append(pretty_midi.Note(
-                    round(note.velocity * p.sqrt().item()), 
-                    i + PIANO_RANGE[0], 
-                    note.start,
-                    note.end,
-                ))
+            for i, loading in enumerate(simplex[key_i, :]):
+                if loading >= 1e-6:
+                    midiMultiplex.add(pretty_midi.Note(
+                        round(note.velocity * loading.sqrt().item()), 
+                        i + PIANO_RANGE[0], 
+                        note.start,
+                        note.end,
+                    ))
     return midi
