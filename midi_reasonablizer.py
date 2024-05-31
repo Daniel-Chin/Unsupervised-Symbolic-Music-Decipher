@@ -1,6 +1,9 @@
 import typing as tp
+import math
 
 import pretty_midi
+
+DECAY = 1.0
 
 class MidiReasonablizer:
     def __init__(self, piano: tp.Optional[pretty_midi.Instrument]) -> None:
@@ -24,6 +27,11 @@ class MidiReasonablizer:
         if abs(last.end - note.start) < 1e-6:
             last.velocity = max(last.velocity, note.velocity)
             last.end = max(last.end, note.end)
+            return False
+        dt = note.start - last.start
+        last_energy = last.velocity ** 2 * math.exp(-dt * DECAY)
+        this_energy = note.velocity ** 2
+        if this_energy < last_energy:
             return False
         last.end = note.start
         return True
