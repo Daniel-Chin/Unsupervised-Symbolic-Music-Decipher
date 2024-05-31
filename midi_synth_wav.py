@@ -52,14 +52,17 @@ def midiSynthWave(
         raise Exception('max retries exceeded, fluidsynth did not write file')
     
     if is_fluidsynth_nyush:
-        wave = customResample(synth_out_path)
+        # wave = customResample(synth_out_path)
+        with open(synth_out_path, 'rb') as f:
+            data = f.read()
+        wave = bytesToAudioWave(data, in_n_channels=2, in_format=NYUSH_FLUIDSYNTH_FORMAT)
     else:
         buf = BytesIO()
-        with audioread.audio_open(synth_out_path) as f:
-            f: RawAudioFile
-            assert f.samplerate == ENCODEC_SR
-            n_channels = f.channels
-            for chunk in f.read_data():
+        with audioread.audio_open(synth_out_path) as aF:
+            aF: RawAudioFile
+            assert aF.samplerate == ENCODEC_SR
+            n_channels = aF.channels
+            for chunk in aF.read_data():
                 buf.write(chunk)
         buf.seek(0)
         wave = bytesToAudioWave(buf.read(), n_channels)

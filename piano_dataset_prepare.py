@@ -118,7 +118,7 @@ def prepareOneDatapoint(
     wave_np = midiSynthWave(midi_path, synth_temp_path, checker, verbose, is_fluidsynth_nyush)
     wave = torch.tensor(wave_np, device=DEVICE)
 
-    if idx == 0:
+    if idx < 8:
         printProfiling('Writing wav')
         wavfile.write(path.join(dest_dir, f'{idx}.wav'), ENCODEC_SR, wave_np)
     
