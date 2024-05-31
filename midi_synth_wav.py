@@ -107,15 +107,17 @@ class SynthAnomalyChecker:
         assert self.ready, 'Use me as a python context'
         extra_time = (len(wave) - N_SAMPLES_PER_DATAPOINT) / ENCODEC_SR
         forbidden_tail = wave[N_SAMPLES_PER_DATAPOINT + ALLOWED_TAIL_N_SAMPLES:]
-        if len(forbidden_tail):
-            if np.sum(np.abs(forbidden_tail) > 1e5) < 0.1 * ENCODEC_SR:
-                self.n_good += 1
-            else:
-                self.n_bad += 1
-                plt.plot(np.abs(forbidden_tail) > 1e5)
-                plt.show()
-            if self.n_good + self.n_bad >= 30:
-                self.checkRatio()
+        if len(forbidden_tail) == 0:
+            self.n_good += 1
+            return
+        if np.sum(np.abs(forbidden_tail) > 1e5) < 0.1 * ENCODEC_SR:
+            self.n_good += 1
+        else:
+            self.n_bad += 1
+            plt.plot(np.abs(forbidden_tail) > 1e5)
+            plt.show()
+        if self.n_good + self.n_bad >= 30:
+            self.checkRatio()
     
     def checkRatio(self) -> None:
         ratio = self.n_bad / (self.n_good + self.n_bad)
