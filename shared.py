@@ -14,7 +14,7 @@ import init as _
 from paths import *
 from torchwork_mini import *
 from domestic_typing import *
-from music import PIANO_RANGE
+from music import *
 
 DO_CHECK_NAN = not bool(os.environ.get('SLURM_JOB_ID'))
 
@@ -122,3 +122,37 @@ def bytesToAudioWave(
     else:
         wave_mono = wave_float.reshape(-1, in_n_channels).mean(axis=1)
     return wave_mono
+
+def printMidi(piano: pretty_midi.Instrument):
+    WIDTH = 116
+    INTERVAL = 0.05  # sec
+    def velocityAsChar(x: int, /):
+        s = str(int(x / 128 * 10))
+        assert len(s) == 1
+        return s
+
+    sortByNoteOn(piano)
+    print('=====================')
+    rows = [[' '] * WIDTH for _ in range(*PIANO_RANGE)]
+    for note in piano.notes:
+        note: pretty_midi.Note
+        start = int(note.start / INTERVAL)
+        end = int(note.end / INTERVAL)
+        if start >= WIDTH:
+            break
+        row = rows[note.pitch - PIANO_RANGE[0]]
+        if row[start] in (' ', '-'):
+            row[start] = velocityAsChar(note.velocity)
+        else:
+            row[start] = '?'
+        for i in range(start + 1, end):
+            try:
+                row[i] = '-'
+            except IndexError:
+                break
+    for p, row in reversed([*enumerate(rows)]):
+        try:
+            heading = pitch2name(p + PIANO_RANGE[0])
+        except NonDiatone:
+            heading = '  '
+        print(heading, ':', *row, sep='')

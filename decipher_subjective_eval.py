@@ -9,9 +9,11 @@ from tqdm import tqdm
 import pretty_midi
 
 from shared import *
+from music import pitch2name
 from piano_dataset import BatchType
-from decipher_lightning import LitDecipher, LitDecipherDataModule
+from decipher_lightning import LitDecipher, LitDecipherDataModule, train
 from midi_reasonablizer import MidiReasonablizer
+from hparams import HParamsDecipher
 
 N_EVALS = 16
 
@@ -92,6 +94,8 @@ def interpreteMidi(
     src_piano, = src.instruments
     src_piano: pretty_midi.Instrument
     sortByNoteOn(src_piano)
+    # print('Original:')
+    # printMidi(src_piano)
     for note in src_piano.notes:
         note: pretty_midi.Note
         if do_sample_not_polyphonic:
@@ -105,11 +109,47 @@ def interpreteMidi(
             energy = note.velocity ** 2
             for i, l in enumerate(simplex[:, note.pitch - PIANO_RANGE[0]]):
                 loading = l.item()
-                if loading >= 1e-6:
+                if loading >= 1e-2:
                     midiReasonablizer.add(pretty_midi.Note(
                         round((loading * energy) ** 0.5), 
                         i + PIANO_RANGE[0], 
                         note.start,
                         note.end,
                     ))
+        # print('added note', pitch2name(note.pitch), note.start, '-', note.end)
+        # printMidi(piano)
+        # input('Enter...')
     return midi
+
+def test():
+    initMainProcess()
+    hParams = HParamsDecipher(
+        using_piano='2024_m05_d30@05_36_51_p_tofu_cont/version_0/checkpoints/epoch=299-step=375000.ckpt', 
+
+        interpreter_sample_not_polyphonic = False,
+        init_oracle_w_offset = 0, 
+
+        loss_weight_left = 0.0, 
+        loss_weight_right = 1.0, 
+
+        train_set_size = 2, 
+        val_set_size = 2,
+
+        lr = 1e-3, 
+        lr_decay = 1.0, 
+        batch_size = 2, 
+        max_epochs = 0, 
+        overfit_first_batch = False, 
+
+        continue_from = None, 
+        
+        require_repo_working_tree_clean = False, 
+    )
+    exp_name = currentTimeDirName() + '_d_test_reasonablizer'
+    root_dir = path.join(EXPERIMENTS_DIR, exp_name)
+    litDecipher, dataModule = train(hParams, root_dir)
+    decipherSubjectiveEval(litDecipher, dataModule, root_dir)
+    print('OK')
+
+if __name__ == '__main__':
+    test()

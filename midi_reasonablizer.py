@@ -3,6 +3,8 @@ import math
 
 import pretty_midi
 
+from shared import *
+
 DECAY = 1.0
 
 class MidiReasonablizer:
@@ -24,7 +26,7 @@ class MidiReasonablizer:
         assert last.start <= note.start
         if last.end < note.start:
             return True
-        if abs(last.end - note.start) < 1e-6:
+        if abs(last.start - note.start) < 1e-6:
             last.velocity = max(last.velocity, note.velocity)
             last.end = max(last.end, note.end)
             return False
