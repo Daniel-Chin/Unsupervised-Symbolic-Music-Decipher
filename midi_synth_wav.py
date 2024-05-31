@@ -147,4 +147,7 @@ class SynthAnomalyChecker:
         # print(*self.data, sep='\n')
         # plt.hist(self.data, bins=50)
         # plt.show()
+        print(f'{self.n_good      / self.total() = }')
+        print(f'{self.n_kinda_bad / self.total() = }')
+        print(f'{self.n_bad       / self.total() = }')
         self.checkRatio()
