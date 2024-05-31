@@ -61,10 +61,6 @@ def main():
                     (1, 512), 
                     (1, 512), 
                 ], 
-                [
-                    (1, 512), 
-                    (1, 512), 
-                ], 
             ], 
             lstm_hidden_size = 512,
             lstm_n_layers = 2,
@@ -98,7 +94,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_futo'
+    exp_name = currentTimeDirName() + '_p_futo_shallow'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
