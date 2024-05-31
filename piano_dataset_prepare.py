@@ -180,7 +180,7 @@ def prepareOneDatapoint(
             0, -1.0 * duration, t_slice.stop - t_slice.start,
         ).exp()
     encodec_tokens = codes[0, :, :].to(torch.int16).cpu()
-    assert encodec_tokens.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT)
+    assert encodec_tokens.shape == (ENCODEC_N_BOOKS, N_FRAMES_PER_DATAPOINT), encodec_tokens.shape
 
     printProfiling('Writing datapoint')
     torch.save(score, path.join(

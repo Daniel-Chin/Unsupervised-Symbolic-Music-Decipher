@@ -69,7 +69,8 @@ def midiSynthWave(
     
     synthAnomalyChecker.look(wave, midi_path)
     wave_trimmed = wave[:N_SAMPLES_PER_DATAPOINT]
-    return wave_trimmed
+    wave_padded = np.pad(wave_trimmed, (0, N_SAMPLES_PER_DATAPOINT - len(wave_trimmed)))
+    return wave_padded
 
 def customResample(pcm_path: str) -> np.ndarray:
     # It was such a hassle to configure ffmpeg... Let's code from scratch.  
@@ -100,6 +101,7 @@ ALLOWED_TAIL_N_SAMPLES = round(ALLOWED_TAIL * ENCODEC_SR)
 class SynthAnomalyChecker:
     def __init__(self) -> None:
         self.n_good = 0
+        self.n_kinda_bad = 0
         self.n_bad = 0
         self.ready = False
 
@@ -109,6 +111,9 @@ class SynthAnomalyChecker:
     ) -> None:
         assert self.ready, 'Use me as a python context'
         extra_time = (len(wave) - N_SAMPLES_PER_DATAPOINT) / ENCODEC_SR
+        if extra_time < -1.0:
+            self.n_kinda_bad += 1
+            return
         forbidden_tail = wave[N_SAMPLES_PER_DATAPOINT + ALLOWED_TAIL_N_SAMPLES:]
         if len(forbidden_tail) == 0:
             self.n_good += 1
@@ -119,12 +124,16 @@ class SynthAnomalyChecker:
             self.n_bad += 1
             plt.plot(np.abs(forbidden_tail) > 1e5)
             plt.show()
-        if self.n_good + self.n_bad >= 30:
+        if self.total() >= 30:
             self.checkRatio()
     
+    def total(self):
+        return self.n_good + self.n_kinda_bad + self.n_bad
+    
     def checkRatio(self) -> None:
-        ratio = self.n_bad / (self.n_good + self.n_bad)
-        assert ratio <= 0.01, (self.n_good, self.n_bad)
+        t = (self.n_good, self.n_kinda_bad, self.n_bad)
+        assert self.n_bad / self.total() <= 0.01, t
+        assert self.n_kinda_bad / self.total() <= 0.1, t
     
     @contextmanager
     def context(self):
