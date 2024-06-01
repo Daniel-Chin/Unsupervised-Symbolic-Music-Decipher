@@ -49,10 +49,6 @@ def main():
         arch_hparam = CNN_LSTM_HParam(
             entrance_n_channel = 512, 
             blocks = [
-                [
-                    (1, 512), 
-                    (1, 512), 
-                ], 
             ], 
             lstm_hidden_size = 512,
             lstm_n_layers = 2,
@@ -76,7 +72,7 @@ def main():
         lr_decay = 0.995, 
         batch_size = 64,
         # batch_size = 8,
-        max_epochs = 300,
+        max_epochs = 80,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
@@ -86,7 +82,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_futo_lstm_shallow'
+    exp_name = currentTimeDirName() + '_p_most_shallow'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
