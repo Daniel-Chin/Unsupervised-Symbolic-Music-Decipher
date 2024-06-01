@@ -12,16 +12,16 @@ from piano_subjective_eval import pianoSubjectiveEval
 def main():
     initMainProcess()
     hParams = HParamsPiano(
-        arch_type = PianoArchType.CNN, 
-        arch_hparam = CNNHParam(512, [
-            [
-                (1, 512), 
-                (1, 512), 
-            ], 
-            [
-                (1, 512), 
-            ], 
-        ]), 
+        # arch_type = PianoArchType.CNN, 
+        # arch_hparam = CNNHParam(512, [
+        #     [
+        #         (1, 512), 
+        #         (1, 512), 
+        #     ], 
+        #     [
+        #         (1, 512), 
+        #     ], 
+        # ]), 
 
         # arch_type = PianoArchType.Transformer,
         # arch_hparam = TransformerHParam(
@@ -45,24 +45,24 @@ def main():
         #     end_channels = 3201, 
         # ),
 
-        # arch_type = PianoArchType.CNN_LSTM, 
-        # arch_hparam = CNN_LSTM_HParam(
-        #     entrance_n_channel = 512, 
-        #     blocks = [
-        #         [
-        #             (1, 512), 
-        #             (1, 512), 
-        #         ], 
-        #         [
-        #             (1, 512), 
-        #             (1, 512), 
-        #         ], 
-        #     ], 
-        #     lstm_hidden_size = 512,
-        #     lstm_n_layers = 2,
-        #     last_conv_kernel_radius = 3, 
-        #     last_conv_n_channel = 512,
-        # ), 
+        arch_type = PianoArchType.CNN_LSTM, 
+        arch_hparam = CNN_LSTM_HParam(
+            entrance_n_channel = 512, 
+            blocks = [
+                [
+                    (1, 512), 
+                    (1, 512), 
+                ], 
+                [
+                    (1, 512), 
+                    (1, 512), 
+                ], 
+            ], 
+            lstm_hidden_size = 512,
+            lstm_n_layers = 2,
+            last_conv_kernel_radius = 3, 
+            last_conv_n_channel = 512,
+        ), 
 
         dropout = 0.0, 
 
@@ -90,7 +90,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_futo_cnn'
+    exp_name = currentTimeDirName() + '_p_futo_lstm'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
