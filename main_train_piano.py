@@ -15,7 +15,11 @@ def main():
         arch_type = PianoArchType.CNN, 
         arch_hparam = CNNHParam(512, [
             [
-                (3, 512), 
+                (1, 512), 
+                (1, 512), 
+            ], 
+            [
+                (1, 512), 
             ], 
         ]), 
 
@@ -86,7 +90,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_futo_cnn_shallow'
+    exp_name = currentTimeDirName() + '_p_futo_cnn'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
