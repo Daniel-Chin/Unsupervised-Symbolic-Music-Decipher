@@ -20,7 +20,6 @@ N_EVALS = 16
 @torch.no_grad()
 def decipherSubjectiveEval(
     litDecipher: LitDecipher, dataModule: LitDecipherDataModule, 
-    root_dir: str, 
 ):
     # Both `litDecipher` and `dataModule` are already `setup()`-ed.  
 
@@ -28,7 +27,7 @@ def decipherSubjectiveEval(
     do_sample_not_polyphonic = litDecipher.hP.interpreter_sample_not_polyphonic
     litDecipher.eval()
     litDecipher = litDecipher.cpu()
-    subjective_dir = path.join(root_dir, 'subjective_eval')
+    subjective_dir = path.join(getLogDir(litDecipher.logger), 'subjective_eval')
     os.makedirs(subjective_dir)
     batch_size = min(8, dataModule.hP.batch_size)
     n_digits = len(str(N_EVALS))
@@ -148,7 +147,7 @@ def test():
     exp_name = currentTimeDirName() + '_d_test_reasonablizer'
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litDecipher, dataModule = train(hParams, root_dir)
-    decipherSubjectiveEval(litDecipher, dataModule, root_dir)
+    decipherSubjectiveEval(litDecipher, dataModule)
     print('OK')
 
 if __name__ == '__main__':

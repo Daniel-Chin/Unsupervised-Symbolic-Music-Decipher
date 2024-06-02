@@ -14,7 +14,8 @@ import torch
 from torch import Tensor
 from torch.utils.data import default_collate, Dataset
 import git
-from lightning.pytorch.loggers import Logger
+from lightning.pytorch.loggers import Logger as PLogger
+from lightning.fabric.loggers import Logger as FLogger
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.image import AxesImage
@@ -27,7 +28,7 @@ from domestic_typing import *
 __all__ = [
     'HAS_CUDA', 'CUDA', 'CPU', 'DEVICE', 'GPU_NAME', 
     'getParams', 'getGradNorm', 'getCommitHash', 
-    'logJobMeta', 'currentTimeDirName', 
+    'getLogDir', 'logJobMeta', 'currentTimeDirName', 
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
     'colorBar', 'SingleProcessNewThreadPreFetchDataLoader', 
@@ -71,17 +72,21 @@ def getCommitHash(do_assert_working_tree_clean: bool = False):
     return next(repo.iter_commits()).hexsha
 
 def logJobMeta(
-    logger: Logger, 
+    log_dir: str, 
     do_assert_working_tree_clean: bool = False, 
 ):
     d = dict(
         commit_hash = getCommitHash(do_assert_working_tree_clean), 
         slurm_job_id = os.environ.get('SLURM_JOB_ID'),
     )
-    assert logger.log_dir is not None
-    os.makedirs(logger.log_dir, exist_ok=True)
-    with open(path.join(logger.log_dir, 'job_meta.json'), 'w', encoding='utf-8') as f:
+    os.makedirs(log_dir, exist_ok=True)
+    with open(path.join(log_dir, 'job_meta.json'), 'w', encoding='utf-8') as f:
         json.dump(d, f, indent=2)
+
+def getLogDir(logger: Optional[PLogger | FLogger]):
+    assert logger is not None
+    assert logger.log_dir is not None
+    return logger.log_dir
 
 def currentTimeDirName():
     # file system friendly

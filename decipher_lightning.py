@@ -112,10 +112,8 @@ class LitDecipher(L.LightningModule):
 
         hParams = self.hP
 
-        assert self.logger is not None
-        assert self.logger.log_dir is not None
         self.interpreter_visualized_dir = path.join(
-            self.logger.log_dir, 'interpreter_visualized', 
+            getLogDir(self.logger), 'interpreter_visualized', 
         )
         os.makedirs(self.interpreter_visualized_dir)
 
@@ -244,7 +242,7 @@ def train(hParams: HParamsDecipher, root_dir: str):
     litDecipher = LitDecipher(**dataclasses.asdict(hParams))
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
-    logJobMeta(logger, hParams.require_repo_working_tree_clean)
+    logJobMeta(getLogDir(logger), hParams.require_repo_working_tree_clean)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 

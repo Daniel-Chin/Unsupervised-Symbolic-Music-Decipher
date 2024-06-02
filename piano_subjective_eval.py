@@ -15,7 +15,6 @@ from piano_lightning import LitPiano, LitPianoDataModule, VAL_CASES
 @torch.no_grad()
 def pianoSubjectiveEval(
     litPiano: LitPiano, dataModule: LitPianoDataModule, 
-    root_dir: str, 
 ):
     # Both `litPiano` and `dataModule` are already `setup()`-ed.  
 
@@ -25,7 +24,7 @@ def pianoSubjectiveEval(
     print('pianoSubjectiveEval()...', flush=True)
     hParams = litPiano.hP
     litPiano.eval()
-    subjective_dir = path.join(root_dir, 'subjective_eval')
+    subjective_dir = path.join(getLogDir(litPiano.logger), 'subjective_eval')
     os.makedirs(subjective_dir)
     encodec = myMusicGen.encodec.to(DEVICE)
     encodec.eval()

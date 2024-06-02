@@ -186,7 +186,7 @@ def train(hParams: HParamsPiano, root_dir: str):
     litPiano = LitPiano(**dataclasses.asdict(hParams))
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
-    logJobMeta(logger, hParams.require_repo_working_tree_clean)
+    logJobMeta(getLogDir(logger), hParams.require_repo_working_tree_clean)
     # torch.cuda.memory._record_memory_history(max_entries=100000)
     trainer = L.Trainer(
         devices=[DEVICE.index], max_epochs=hParams.max_epochs, 

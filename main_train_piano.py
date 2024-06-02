@@ -89,7 +89,7 @@ def main():
     hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
     litPiano, dataModule = train(hParams, root_dir)
-    pianoSubjectiveEval(litPiano.to(DEVICE), dataModule, root_dir)
+    pianoSubjectiveEval(litPiano.to(DEVICE), dataModule)
     print('OK')
 
 if __name__ == '__main__':
