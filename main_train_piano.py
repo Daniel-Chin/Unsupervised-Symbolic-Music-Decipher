@@ -69,10 +69,10 @@ def main():
         do_validate = True,
 
         lr = 1e-3,
-        lr_decay = 1.0, 
+        lr_decay = .99, 
         batch_size = 64,
         # batch_size = 8,
-        max_epochs = 50,
+        max_epochs = 90,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
@@ -82,7 +82,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_tea'
+    exp_name = currentTimeDirName() + '_p_tea_decay_0.99'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
