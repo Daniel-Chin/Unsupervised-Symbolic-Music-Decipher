@@ -56,7 +56,7 @@ def main():
             last_conv_n_channel = 512,
         ), 
 
-        dropout = 0.2, 
+        dropout = 0.0, 
 
         out_type = PianoOutType.EncodecTokens,
 
@@ -72,7 +72,7 @@ def main():
         lr_decay = 1.0, 
         batch_size = 64,
         # batch_size = 8,
-        max_epochs = 80,
+        max_epochs = 50,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
@@ -82,7 +82,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_lstm_dropout'
+    exp_name = currentTimeDirName() + '_p_tea'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
