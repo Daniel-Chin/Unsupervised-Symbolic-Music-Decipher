@@ -230,6 +230,7 @@ class LitDecipher(L.LightningModule):
         assert isinstance(ax, Axes)
         im = ax.imshow(
             simplex.numpy(), 
+            vmin=0.0, vmax=1.0,
             aspect='auto', interpolation='nearest', 
             origin='lower', 
         )
