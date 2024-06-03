@@ -8,10 +8,10 @@ from decipher_subjective_eval import decipherSubjectiveEval
 def main():
     initMainProcess()
     hParams = HParamsDecipher(
-        using_piano='2024_m05_d30@05_36_51_p_tofu_cont/version_0/checkpoints/epoch=299-step=375000.ckpt', 
+        using_piano='2024_m06_d02@19_16_27_p_tea/version_0/checkpoints/epoch=49-step=62500.ckpt', 
 
         interpreter_sample_not_polyphonic = False,
-        init_oracle_w_offset = 0, 
+        init_oracle_w_offset = None, 
 
         loss_weight_left = 0.0, 
         loss_weight_right = 1.0, 
@@ -35,7 +35,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_'
+    exp_name = currentTimeDirName() + '_d_poly_r'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
