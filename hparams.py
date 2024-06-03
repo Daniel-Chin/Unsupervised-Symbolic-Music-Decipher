@@ -157,6 +157,7 @@ class HParamsDecipher(HParams):
 
     loss_weight_left: float
     loss_weight_right: float
+    loss_weight_anti_collapse: float
     
     val_set_size: int
 

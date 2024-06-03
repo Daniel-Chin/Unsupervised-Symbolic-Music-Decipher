@@ -181,6 +181,10 @@ class LitDecipher(L.LightningModule):
             loss_right = self.lossRight(encodec_tokens_logits, prediction)
             logLoss('right', loss_right)
             loss += hParams.loss_weight_right * loss_right
+        if hParams.loss_weight_anti_collapse != 0.0:
+            loss_anti_collapse = self.lossAntiCollapse(self.interpreter.w)
+            logLoss('anti_collapse', loss_anti_collapse)
+            loss += hParams.loss_weight_anti_collapse * loss_anti_collapse
         logLoss(None, loss)
         return loss
     
@@ -192,6 +196,10 @@ class LitDecipher(L.LightningModule):
         # `sampled` shape: (B*K*T', )
         onehots = (sampled == c.enumerate_support()).float().T
         return (onehots * valid_performed.softmax(dim=-1)).sum(dim=-1).mean(dim=0)
+    
+    def lossAntiCollapse(self, w: Tensor):
+        a = w.softmax(dim=0).sum(dim=1)
+        return F.mse_loss(a, torch.ones_like(a))
 
     def configure_optimizers(self):
         hParams = self.hP
