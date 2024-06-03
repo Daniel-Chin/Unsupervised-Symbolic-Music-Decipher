@@ -15,7 +15,7 @@ def main():
 
         loss_weight_left = 1.0, 
         loss_weight_right = 0.0, 
-        loss_weight_anti_collapse = 1.0, 
+        loss_weight_anti_collapse = 0.0, 
 
         train_set_size = 8000, 
         val_set_size = 2000,
@@ -36,7 +36,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_poly_ac_l'
+    exp_name = currentTimeDirName() + '_d_sample_l'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
