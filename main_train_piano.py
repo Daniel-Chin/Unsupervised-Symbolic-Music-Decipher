@@ -60,9 +60,9 @@ def main():
 
         out_type = PianoOutType.EncodecTokens,
 
-        train_set_size = 80000, 
-        val_monkey_set_size = 20000, 
-        val_oracle_set_size = 128, 
+        train_set_size = 90000, 
+        val_monkey_set_size = 512, 
+        val_oracle_set_size = 512, 
         # train_set_size = 16, 
         # val_monkey_set_size = 16, 
         # val_oracle_set_size = 16, 
@@ -72,7 +72,7 @@ def main():
         lr_decay = .99, 
         batch_size = 64,
         # batch_size = 8,
-        max_epochs = 90,
+        max_epochs = 150,
         # max_epochs = 3,
         overfit_first_batch = False, 
 
@@ -82,7 +82,7 @@ def main():
         continue_from = None, 
         # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
-    exp_name = currentTimeDirName() + '_p_tea_decay_0.99_l_1'
+    exp_name = currentTimeDirName() + '_p_slow'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
