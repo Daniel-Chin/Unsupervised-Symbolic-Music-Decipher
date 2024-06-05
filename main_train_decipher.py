@@ -10,7 +10,7 @@ def main():
     hParams = HParamsDecipher(
         # strategy = DecipherStrategy.NoteIsPianoKey,
         # strategy_hparam = NoteIsPianoKeyHParam(
-        #     using_piano='2024_m06_d03@14_52_28_p_tea/version_0/checkpoints/epoch=49-step=70350.ckpt', 
+        #     using_piano='2024_m06_d03@14_52_12_p_slow/version_0/checkpoints/epoch=149-step=211050.ckpt', 
         #     interpreter_sample_not_polyphonic = False,
         #     init_oracle_w_offset = None, 
         #     loss_weight_anti_collapse = 0.0, 
