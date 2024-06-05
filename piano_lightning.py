@@ -37,7 +37,7 @@ class LitPiano(L.LightningModule):
             ), 
         )
 
-        self.piano = PianoModel(hParams)
+        self.piano = PianoModel(hParams.arch_hparam, hParams.out_type, hParams.dropout)
 
         self.did_setup: bool = False
     
