@@ -231,8 +231,14 @@ class LitDecipher(L.LightningModule):
 
     def configure_optimizers(self):
         hParams = self.hP
+        if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
+            params = self.interpreter.parameters()
+        elif isinstance(hParams.strategy_hparam, FreeHParam):
+            params = self.performer.parameters()
+        else:
+            raise TypeError(type(hParams.strategy_hparam))
         optim = torch.optim.Adam(
-            self.interpreter.parameters(), lr=hParams.lr, 
+            params, lr=hParams.lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
             optim, gamma=hParams.lr_decay, 
