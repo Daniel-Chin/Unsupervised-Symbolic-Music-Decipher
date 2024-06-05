@@ -30,10 +30,10 @@ def main():
             dropout = 0.0, 
         ),
 
-        # music_gen_version = 'small',
-        # batch_size = 32, 
-        music_gen_version = 'medium',
-        batch_size = 16, 
+        music_gen_version = 'small',
+        batch_size = 32, 
+        # music_gen_version = 'medium',
+        # batch_size = 16, 
         # batch_size = 8, 
 
         loss_weight_left = 1.0, 
@@ -56,7 +56,7 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_m_free_l'
+    exp_name = currentTimeDirName() + '_d_s_free_l'
     if not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
