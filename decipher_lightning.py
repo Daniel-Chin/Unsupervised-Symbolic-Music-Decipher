@@ -187,7 +187,7 @@ class LitDecipher(L.LightningModule):
         )
         entropy: Tensor = prediction.categorical.entropy()
         # measures MusicGen certainty. Low entropy = high certainty.
-        self.log_('music_gen_entropy', entropy.mean(dim=0))
+        self.log_('fav/music_gen_entropy', entropy.mean(dim=0))
 
         loss = torch.zeros(( ), device=self.device)
         def logLoss(name: Optional[str], loss: Tensor):
@@ -200,20 +200,20 @@ class LitDecipher(L.LightningModule):
                 prediction.lmOutput, 
                 sampled_encodec_onehots.argmax(dim=-1), 
             )
-            logLoss('left', loss_left)
+            logLoss('fav/left', loss_left)
             loss += hParams.loss_weight_left  * loss_left
             for k, ce_k in enumerate(ce_per_codebook):
                 logLoss(f'left_codebook_{k}', ce_k)
         if hParams.loss_weight_right != 0.0:
             loss_right = self.lossRight(encodec_tokens_logits, prediction)
-            logLoss('right', loss_right)
+            logLoss('fav/right', loss_right)
             loss += hParams.loss_weight_right * loss_right
         if isinstance(strategy_hP, NoteIsPianoKeyHParam):
             if strategy_hP.loss_weight_anti_collapse != 0.0:
                 loss_anti_collapse = self.lossAntiCollapse(self.interpreter.w)
-                logLoss('anti_collapse', loss_anti_collapse)
+                logLoss('fav/anti_collapse', loss_anti_collapse)
                 loss += strategy_hP.loss_weight_anti_collapse * loss_anti_collapse
-        logLoss(None, loss)
+        logLoss('fav/', loss)
         return loss
     
     def lossRight(self, performed: Tensor, lmOutputDistribution: LMOutputDistribution):
@@ -243,7 +243,7 @@ class LitDecipher(L.LightningModule):
         norms = grad_norm(self.interpreter, norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
-        self.log_('interpreter_mean', self.interpreter.w.mean())
+        self.log_('fav/interpreter_mean', self.interpreter.w.mean())
 
         if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
             if self.global_step % int(self.plot_interpreter_every_x_step) == 0:

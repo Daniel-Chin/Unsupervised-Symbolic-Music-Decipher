@@ -85,7 +85,7 @@ class LitPiano(L.LightningModule):
                 y_hat.reshape(-1, ENCODEC_N_WORDS_PER_BOOK), 
                 encodec_tokens.view(-1), 
             )
-            self.log_(log_prefix + '_loss', loss)
+            self.log_('fav/' + log_prefix + '_loss', loss)
 
             for book_i, accuracy in enumerate(
                 (y_hat.argmax(dim=-1) == encodec_tokens).float().mean(dim=2).mean(dim=0), 
