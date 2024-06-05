@@ -252,9 +252,9 @@ class LitDecipher(L.LightningModule):
         norms = grad_norm(self.theTrainableModule(), norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
-        self.log_('fav/interpreter_mean', self.interpreter.w.mean())
 
         if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
+            self.log_('fav/interpreter_mean', self.interpreter.w.mean())
             if self.global_step % int(self.plot_interpreter_every_x_step) == 0:
                 self.plotInterpreter()
     
