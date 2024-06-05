@@ -15,7 +15,7 @@ from torch import Tensor
 from torch.utils.data import default_collate, Dataset
 import git
 from lightning.pytorch.loggers import Logger as PLogger
-from lightning.fabric.loggers import Logger as FLogger
+from lightning.fabric.loggers.logger import Logger as FLogger
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.image import AxesImage
