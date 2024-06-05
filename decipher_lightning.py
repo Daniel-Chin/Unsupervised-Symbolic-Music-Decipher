@@ -19,7 +19,7 @@ from music import PIANO_RANGE
 from hparams import HParamsDecipher
 from piano_dataset import PianoDataset, BatchType
 from interpreter import Interpreter
-from my_musicgen import myMusicGen, LMOutput
+from my_musicgen import MyMusicGen, LMOutput
 from sample_with_ste_backward import sampleWithSTEBackward
 from piano_lightning import LitPiano
 
@@ -130,11 +130,11 @@ class LitDecipher(L.LightningModule):
         return x
 
     def training_step(self, batch: BatchType, batch_idx: int):
-        myMusicGen.train()
+        MyMusicGen.singleton(self.hP.music_gen_version).train()
         return self.shared_step('train', batch, batch_idx)
     
     def validation_step(self, batch: BatchType, batch_idx: int):
-        myMusicGen.eval()
+        MyMusicGen.singleton(self.hP.music_gen_version).eval()
         return self.shared_step('val', batch, batch_idx)
     
     def shared_step(
@@ -158,7 +158,7 @@ class LitDecipher(L.LightningModule):
             batch_size, n_books, n_frames, n_words_per_book,
         )
         prediction = LMOutputDistribution(
-            myMusicGen.lmPredict(sampled_encodec_onehots), 
+            MyMusicGen.singleton(self.hP.music_gen_version).lmPredict(sampled_encodec_onehots), 
         )
         entropy: Tensor = prediction.categorical.entropy()
         # measures MusicGen certainty. Low entropy = high certainty.
@@ -169,7 +169,9 @@ class LitDecipher(L.LightningModule):
             suffix = '' if name is None else '_' + name
             self.log_(f'{step_name}_loss' + suffix, loss)
         if hParams.loss_weight_left != 0.0:
-            loss_left, ce_per_codebook = myMusicGen.lmLoss(
+            loss_left, ce_per_codebook = MyMusicGen.singleton(
+                self.hP.music_gen_version, 
+            ).lmLoss(
                 prediction.lmOutput, 
                 sampled_encodec_onehots.argmax(dim=-1), 
             )

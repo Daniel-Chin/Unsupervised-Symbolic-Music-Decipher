@@ -10,6 +10,7 @@ def main():
     hParams = HParamsDecipher(
         using_piano='2024_m06_d03@14_52_28_p_tea/version_0/checkpoints/epoch=49-step=70350.ckpt', 
 
+        music_gen_version = 'medium',
         interpreter_sample_not_polyphonic = False,
         init_oracle_w_offset = None, 
 

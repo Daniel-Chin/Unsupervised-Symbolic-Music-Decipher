@@ -56,6 +56,7 @@ def main():
             last_conv_n_channel = 512,
         ), 
 
+        music_gen_version = 'small',
         dropout = 0.0, 
 
         out_type = PianoOutType.EncodecTokens,

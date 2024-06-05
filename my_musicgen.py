@@ -13,6 +13,7 @@ from audiocraft.modules.codebooks_patterns import Pattern, DelayedPatternProvide
 from audiocraft.solvers.musicgen import MusicGenSolver
 
 from shared import *
+from hparams import AVHHParams
 
 class PatternOnehot(Pattern):
     def build_pattern_sequence_onehot(self, z: Tensor):
@@ -172,14 +173,17 @@ class MyMusicGen:
             # Look, they could have made it static! 
             logits=logits, targets=targets, mask=mask, 
         )
+    
+    @staticmethod
+    @lru_cache()
+    def singleton(version: str):
+        return MyMusicGen(version)
 
 # @lru_cache(1)
 # def getSolver():
 #     return MusicGenSolver(omegaconf.DictConfig(dict(
 #         # generate = None, 
 #     )))
-
-myMusicGen = MyMusicGen('medium')
 
 if __name__ == '__main__':
     def testPattern():

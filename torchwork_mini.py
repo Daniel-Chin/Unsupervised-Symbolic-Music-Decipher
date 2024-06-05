@@ -1,6 +1,6 @@
 import os
 from os import path
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from datetime import datetime
 from itertools import count
 import json
@@ -9,6 +9,7 @@ from threading import Thread
 import math
 import typing
 import time
+from dataclasses import dataclass, asdict
 
 import torch
 from torch import Tensor
@@ -32,6 +33,7 @@ __all__ = [
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
     'colorBar', 'SingleProcessNewThreadPreFetchDataLoader', 
+    'BaseHParams', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -319,6 +321,41 @@ class SingleProcessNewThreadPreFetchDataLoaderIter:
     
     def debug(self, *a, **kw):
         print('\n', self.name, *a, **kw)
+
+@dataclass(frozen=True)
+class BaseHParams:
+    lr: float
+    lr_decay: float
+    batch_size: int
+    train_set_size: int
+    max_epochs: int
+    overfit_first_batch: bool
+
+    continue_from: Optional[str]
+
+    require_repo_working_tree_clean: bool
+
+    def summary(self):
+        print('HParams:')
+        for k, v in asdict(self).items():
+            print(' ', k, '=', v)
+        print(' ')
+
+        total_decay = self.lr_decay ** self.max_epochs
+        print(' ', f'{total_decay = :.2e}')
+        ending_lr = self.lr * total_decay
+        print(' ', f'{ending_lr = :.2e}')
+    
+    @cached_property
+    def n_total_steps(self):
+        return math.ceil(self.train_set_size / self.batch_size) * self.max_epochs 
+    
+    @cached_property
+    def global_step_f_string(self):
+        return f'0{len(str(self.n_total_steps))}d'
+    
+    def formatGlobalStep(self, global_step: int):
+        return format(global_step, self.global_step_f_string)
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()

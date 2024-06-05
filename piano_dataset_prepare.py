@@ -15,7 +15,7 @@ import librosa
 from shared import *
 from music import PIANO_RANGE
 from midi_synth_wav import midiSynthWave, SynthAnomalyChecker
-from my_musicgen import myMusicGen, EncodecModel
+from my_musicgen import MyMusicGen, EncodecModel
 
 (DENSITY_MU, DENSITY_SIGMA) = (2.520, 0.672)
 (DURATION_MU, DURATION_SIGMA) = (-1.754, 1.077)
@@ -209,7 +209,7 @@ def prepareOneSet(
     is_fluidsynth_nyush: bool, 
     only_plot_no_write_disk: bool = False,
 ):
-    encodec = myMusicGen.encodec.to(DEVICE)
+    encodec = MyMusicGen.singleton('small').encodec.to(DEVICE)
     encodec.eval()
 
     if which_set == WhichSet.MONKEY:

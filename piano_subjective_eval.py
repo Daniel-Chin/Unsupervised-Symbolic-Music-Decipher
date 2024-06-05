@@ -19,14 +19,14 @@ def pianoSubjectiveEval(
     # Both `litPiano` and `dataModule` are already `setup()`-ed.  
 
     # to speed up dataloader worker spawning
-    from my_musicgen import myMusicGen
+    from my_musicgen import MyMusicGen
     
     print('pianoSubjectiveEval()...', flush=True)
     hParams = litPiano.hP
     litPiano.eval()
     subjective_dir = path.join(getLogDir(litPiano.logger), 'subjective_eval')
     os.makedirs(subjective_dir)
-    encodec = myMusicGen.encodec.to(DEVICE)
+    encodec = MyMusicGen.singleton('small').encodec.to(DEVICE)
     encodec.eval()
     subsets = ['train', *VAL_CASES]
     batch_size = min(8, dataModule.hP.batch_size)
