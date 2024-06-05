@@ -5,15 +5,18 @@ import shutil
 import torch
 from torch import Tensor
 from torch.distributions.categorical import Categorical
+import scipy.io.wavfile as wavfile
 from tqdm import tqdm
 import pretty_midi
 
+from piano_lightning import LitPiano
 from shared import *
 from music import pitch2name
 from piano_dataset import BatchType
 from decipher_lightning import LitDecipher, LitDecipherDataModule, train
 from midi_reasonablizer import MidiReasonablizer
 from hparams import HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, FreeHParam
+from my_musicgen import MyMusicGen
 
 N_EVALS = 16
 
@@ -27,6 +30,9 @@ def decipherSubjectiveEval(
     strategy_hP = litDecipher.hP.strategy_hparam
     if isinstance(strategy_hP, NoteIsPianoKeyHParam):
         do_sample_not_polyphonic = strategy_hP.interpreter_sample_not_polyphonic
+    elif isinstance(strategy_hP, FreeHParam):
+        encodec = MyMusicGen.singleton(litDecipher.hP.music_gen_version).encodec.to(DEVICE)
+        encodec.eval()
     litDecipher.eval()
     litDecipher = litDecipher.cpu()
     subjective_dir = path.join(getLogDir(litDecipher.logger), 'subjective_eval')
@@ -34,10 +40,10 @@ def decipherSubjectiveEval(
     batch_size = min(8, dataModule.hP.batch_size)
     n_digits = len(str(N_EVALS))
     index_format = f'0{n_digits}'
-    def filename(subset_name:str, i: int, task: str):
+    def filename(subset_name:str, i: int, task: str, ext: str):
         return path.join(
             subjective_dir, 
-            f'{subset_name}_{i:{index_format}}_{task}.mid',
+            f'{subset_name}_{i:{index_format}}_{task}.{ext}',
         )
 
     if isinstance(strategy_hP, NoteIsPianoKeyHParam):
@@ -54,28 +60,43 @@ def decipherSubjectiveEval(
         val = dataModule.val_dataloader(batch_size, ),
     ).items():
         data_ids_acc = []
+        performed_waves: List[np.ndarray] = []
         for batch in loader:
             batch: BatchType
-            _, _, _, data_ids = batch
+            score, _, _, data_ids = batch
             data_ids_acc.extend(data_ids)
+            if isinstance(strategy_hP, FreeHParam):
+                performed = litDecipher.forward(score).argmax(dim=-1)
+                wave_gpu = encodec.decode(performed).squeeze(1)
+                assert wave_gpu.shape == (batch_size, wave_gpu.shape[1]), wave_gpu.shape
+                wave_cpu = wave_gpu.cpu().numpy()
+                performed_waves.extend(wave_cpu)
+
             if len(data_ids_acc) >= N_EVALS:
                 data_ids_acc = data_ids_acc[:N_EVALS]
                 break
 
-        for i, data_id in enumerate(tqdm(data_ids_acc, desc=subset_name)):
+        for i, (data_id, wave) in enumerate(tqdm(zip(
+            data_ids_acc, performed_waves, 
+        ), desc=subset_name)):
             src = path.join(PIANO_ORACLE_DATASET_DIR, data_id + '.mid')
-            shutil.copyfile(src, filename(subset_name, i, 'reference'))
+            shutil.copyfile(src, filename(subset_name, i, 'reference', 'mid'))
 
             if isinstance(strategy_hP, NoteIsPianoKeyHParam):
                 midi = pretty_midi.PrettyMIDI(src)
                 interpreteMidi(
                     midi, do_sample_not_polyphonic, 
                     c_decipher if do_sample_not_polyphonic else simplex_decipher, 
-                ).write(filename(subset_name, i, 'decipher'))
+                ).write(filename(subset_name, i, 'decipher', 'mid'))
                 interpreteMidi(
                     midi, do_sample_not_polyphonic, 
                     c_random if do_sample_not_polyphonic else simplex_random, 
-                ).write(filename(subset_name, i, 'random'))
+                ).write(filename(subset_name, i, 'random', 'mid'))
+            elif isinstance(strategy_hP, FreeHParam):
+                wavfile.write(
+                    filename(subset_name, i, 'performed', 'wav'), ENCODEC_SR, 
+                    wave,
+                )
 
 def interpreteMidi(
     src: pretty_midi.PrettyMIDI, 
@@ -124,7 +145,7 @@ def interpreteMidi(
         # input('Enter...')
     return midi
 
-def test():
+def testReasonablizer():
     initMainProcess()
     hParams = HParamsDecipher(
         strategy = DecipherStrategy.NoteIsPianoKey,
@@ -160,4 +181,4 @@ def test():
     print('OK')
 
 if __name__ == '__main__':
-    test()
+    testReasonablizer()
