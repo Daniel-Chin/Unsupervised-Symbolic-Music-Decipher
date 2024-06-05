@@ -54,14 +54,14 @@ class PianoModel(torch.nn.Module):
         x = self.mainModel.forward(x)
         if self.need_out_projector:
             x = self.outProjector.forward(x)
-        if self.hP.out_type == PianoOutType.EncodecTokens:
+        if self.out_type == PianoOutType.EncodecTokens:
             x = x.view(batch_size, n_frames, ENCODEC_N_BOOKS, ENCODEC_N_WORDS_PER_BOOK)
             x = x.permute(0, 2, 1, 3)
-        if self.hP.out_type == PianoOutType.LogSpectrogram:
+        if self.out_type == PianoOutType.LogSpectrogram:
             _, _, n_bins = fftTools()
             x = x.view(batch_size, n_frames, n_bins)
             x = x.permute(0, 2, 1)
-        if self.hP.out_type == PianoOutType.Score:
+        if self.out_type == PianoOutType.Score:
             x = x.view(batch_size, n_frames, 2, PIANO_RANGE[1] - PIANO_RANGE[0])
             x = x.permute(0, 2, 3, 1)
         return x
