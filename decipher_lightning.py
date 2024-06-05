@@ -190,9 +190,10 @@ class LitDecipher(L.LightningModule):
         self.log_('fav/music_gen_entropy', entropy.mean(dim=0))
 
         loss = torch.zeros(( ), device=self.device)
-        def logLoss(name: Optional[str], loss: Tensor):
+        def logLoss(name: Optional[str], loss: Tensor, is_fav: bool = False):
             suffix = '' if name is None else '_' + name
-            self.log_(f'{step_name}_loss' + suffix, loss)
+            prefix = 'fav/' if is_fav else ''
+            self.log_(prefix + f'{step_name}_loss' + suffix, loss)
         if hParams.loss_weight_left != 0.0:
             loss_left, ce_per_codebook = MyMusicGen.singleton(
                 self.hP.music_gen_version, 
@@ -200,20 +201,20 @@ class LitDecipher(L.LightningModule):
                 prediction.lmOutput, 
                 sampled_encodec_onehots.argmax(dim=-1), 
             )
-            logLoss('fav/left', loss_left)
+            logLoss('left', loss_left, is_fav=True)
             loss += hParams.loss_weight_left  * loss_left
             for k, ce_k in enumerate(ce_per_codebook):
                 logLoss(f'left_codebook_{k}', ce_k)
         if hParams.loss_weight_right != 0.0:
             loss_right = self.lossRight(encodec_tokens_logits, prediction)
-            logLoss('fav/right', loss_right)
+            logLoss('right', loss_right, is_fav=True)
             loss += hParams.loss_weight_right * loss_right
         if isinstance(strategy_hP, NoteIsPianoKeyHParam):
             if strategy_hP.loss_weight_anti_collapse != 0.0:
                 loss_anti_collapse = self.lossAntiCollapse(self.interpreter.w)
-                logLoss('fav/anti_collapse', loss_anti_collapse)
+                logLoss('anti_collapse', loss_anti_collapse, is_fav=True)
                 loss += strategy_hP.loss_weight_anti_collapse * loss_anti_collapse
-        logLoss('fav/', loss)
+        logLoss(None, loss, is_fav=True)
         return loss
     
     def lossRight(self, performed: Tensor, lmOutputDistribution: LMOutputDistribution):
