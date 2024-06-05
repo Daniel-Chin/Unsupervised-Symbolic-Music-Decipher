@@ -179,7 +179,7 @@ class MyMusicGen:
 #         # generate = None, 
 #     )))
 
-myMusicGen = MyMusicGen()
+myMusicGen = MyMusicGen('medium')
 
 if __name__ == '__main__':
     def testPattern():
