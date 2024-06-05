@@ -229,16 +229,19 @@ class LitDecipher(L.LightningModule):
         a = w.softmax(dim=0).sum(dim=1)
         return F.mse_loss(a, torch.ones_like(a))
 
-    def configure_optimizers(self):
+    def theTrainableModule(self):
         hParams = self.hP
         if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
-            params = self.interpreter.parameters()
+            return self.interpreter
         elif isinstance(hParams.strategy_hparam, FreeHParam):
-            params = self.performer.parameters()
+            return self.performer
         else:
             raise TypeError(type(hParams.strategy_hparam))
+    
+    def configure_optimizers(self):
+        hParams = self.hP
         optim = torch.optim.Adam(
-            params, lr=hParams.lr, 
+            self.theTrainableModule().parameters(), lr=hParams.lr, 
         )
         sched = torch.optim.lr_scheduler.ExponentialLR(
             optim, gamma=hParams.lr_decay, 
@@ -246,7 +249,7 @@ class LitDecipher(L.LightningModule):
         return [optim], [sched]
 
     def on_before_optimizer_step(self, _: torch.optim.Optimizer):
-        norms = grad_norm(self.interpreter, norm_type=2)
+        norms = grad_norm(self.theTrainableModule(), norm_type=2)
         key = 'grad_2.0_norm_total'
         self.log_(key, norms[key])
         self.log_('fav/interpreter_mean', self.interpreter.w.mean())
