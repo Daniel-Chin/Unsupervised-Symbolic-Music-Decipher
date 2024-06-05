@@ -30,7 +30,11 @@ def main():
             dropout = 0.0, 
         ),
 
+        # music_gen_version = 'small',
+        # batch_size = 32, 
         music_gen_version = 'medium',
+        batch_size = 16, 
+        # batch_size = 8, 
 
         loss_weight_left = 0.0, 
         loss_weight_right = 1.0, 
@@ -42,8 +46,6 @@ def main():
 
         lr = 1e-3, 
         lr_decay = 1.0, 
-        batch_size = 32, 
-        # batch_size = 8, 
         max_epochs = 30, 
         # max_epochs = 2, 
         overfit_first_batch = False, 
