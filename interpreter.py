@@ -3,7 +3,7 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from shared import *
-from hparams import HParamsDecipher
+from hparams import HParamsDecipher, NoteIsPianoKeyHParam
 from music import PIANO_RANGE
 from sample_with_ste_backward import sampleWithSTEBackward
 
@@ -12,14 +12,18 @@ class Interpreter(torch.nn.Module):
         super().__init__()
 
         self.hP = hParams
+        strategy_hP = hParams.strategy_hparam
+        assert isinstance(strategy_hP, NoteIsPianoKeyHParam)
+        self.strategy_hP: NoteIsPianoKeyHParam = strategy_hP
+
         PIANO_N_KEYS = PIANO_RANGE[1] - PIANO_RANGE[0]
-        if hParams.init_oracle_w_offset is None:
+        if strategy_hP.init_oracle_w_offset is None:
             w = torch.randn((
                 PIANO_N_KEYS, # n of piano keys
                 PIANO_N_KEYS, # n of midi pitches
             ))
         else:
-            o = hParams.init_oracle_w_offset
+            o = strategy_hP.init_oracle_w_offset
             w = torch.diag_embed(
                 torch.ones((PIANO_N_KEYS, )), offset=o, 
             )[:PIANO_N_KEYS, :PIANO_N_KEYS] * 6.7   # logits yielding prob=90%
@@ -33,7 +37,7 @@ class Interpreter(torch.nn.Module):
         x = x.permute(0, 1, 3, 2)
         # (batch_size, n_pianoroll_channels, n_frames, n_pitches)
         simplex = self.w.softmax(dim=0)
-        if self.hP.interpreter_sample_not_polyphonic:
+        if self.strategy_hP.interpreter_sample_not_polyphonic:
             w = sampleWithSTEBackward(simplex.T, n=batch_size)
             # (n_pitches, batch_size, n_keys)
             w = w.unsqueeze(3).unsqueeze(4).permute(1, 3, 4, 2, 0)

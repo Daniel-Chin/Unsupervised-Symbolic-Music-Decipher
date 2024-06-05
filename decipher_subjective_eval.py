@@ -13,7 +13,7 @@ from music import pitch2name
 from piano_dataset import BatchType
 from decipher_lightning import LitDecipher, LitDecipherDataModule, train
 from midi_reasonablizer import MidiReasonablizer
-from hparams import HParamsDecipher
+from hparams import HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, FreeHParam
 
 N_EVALS = 16
 
@@ -24,7 +24,9 @@ def decipherSubjectiveEval(
     # Both `litDecipher` and `dataModule` are already `setup()`-ed.  
 
     print('decipherSubjectiveEval()...', flush=True)
-    do_sample_not_polyphonic = litDecipher.hP.interpreter_sample_not_polyphonic
+    strategy_hP = litDecipher.hP.strategy_hparam
+    if isinstance(strategy_hP, NoteIsPianoKeyHParam):
+        do_sample_not_polyphonic = strategy_hP.interpreter_sample_not_polyphonic
     litDecipher.eval()
     litDecipher = litDecipher.cpu()
     subjective_dir = path.join(getLogDir(litDecipher.logger), 'subjective_eval')
@@ -38,14 +40,15 @@ def decipherSubjectiveEval(
             f'{subset_name}_{i:{index_format}}_{task}.mid',
         )
 
-    simplex_decipher = litDecipher.interpreter.w.softmax(dim=0)
-    simplex_random = torch.randn((
-        PIANO_RANGE[1] - PIANO_RANGE[0],
-        PIANO_RANGE[1] - PIANO_RANGE[0],
-    )).softmax(dim=0)
-    if do_sample_not_polyphonic:
-        c_decipher = Categorical(simplex_decipher.T)
-        c_random = Categorical(simplex_random.T)
+    if isinstance(strategy_hP, NoteIsPianoKeyHParam):
+        simplex_decipher = litDecipher.interpreter.w.softmax(dim=0)
+        simplex_random = torch.randn((
+            PIANO_RANGE[1] - PIANO_RANGE[0],
+            PIANO_RANGE[1] - PIANO_RANGE[0],
+        )).softmax(dim=0)
+        if do_sample_not_polyphonic:
+            c_decipher = Categorical(simplex_decipher.T)
+            c_random = Categorical(simplex_random.T)
     for subset_name, loader in dict(
         train = dataModule.train_dataloader(batch_size, shuffle=False), 
         val = dataModule.val_dataloader(batch_size, ),
@@ -63,15 +66,16 @@ def decipherSubjectiveEval(
             src = path.join(PIANO_ORACLE_DATASET_DIR, data_id + '.mid')
             shutil.copyfile(src, filename(subset_name, i, 'reference'))
 
-            midi = pretty_midi.PrettyMIDI(src)
-            interpreteMidi(
-                midi, do_sample_not_polyphonic, 
-                c_decipher if do_sample_not_polyphonic else simplex_decipher, 
-            ).write(filename(subset_name, i, 'decipher'))
-            interpreteMidi(
-                midi, do_sample_not_polyphonic, 
-                c_random if do_sample_not_polyphonic else simplex_random, 
-            ).write(filename(subset_name, i, 'random'))
+            if isinstance(strategy_hP, NoteIsPianoKeyHParam):
+                midi = pretty_midi.PrettyMIDI(src)
+                interpreteMidi(
+                    midi, do_sample_not_polyphonic, 
+                    c_decipher if do_sample_not_polyphonic else simplex_decipher, 
+                ).write(filename(subset_name, i, 'decipher'))
+                interpreteMidi(
+                    midi, do_sample_not_polyphonic, 
+                    c_random if do_sample_not_polyphonic else simplex_random, 
+                ).write(filename(subset_name, i, 'random'))
 
 def interpreteMidi(
     src: pretty_midi.PrettyMIDI, 
@@ -123,10 +127,15 @@ def interpreteMidi(
 def test():
     initMainProcess()
     hParams = HParamsDecipher(
-        using_piano='2024_m05_d30@05_36_51_p_tofu_cont/version_0/checkpoints/epoch=299-step=375000.ckpt', 
+        strategy = DecipherStrategy.NoteIsPianoKey,
+        strategy_hparam = NoteIsPianoKeyHParam(
+            using_piano='2024_m06_d03@14_52_28_p_tea/version_0/checkpoints/epoch=49-step=70350.ckpt', 
+            interpreter_sample_not_polyphonic = False,
+            init_oracle_w_offset = None, 
+            loss_weight_anti_collapse = 0.0, 
+        ), 
 
-        interpreter_sample_not_polyphonic = False,
-        init_oracle_w_offset = 0, 
+        music_gen_version = 'small',
 
         loss_weight_left = 0.0, 
         loss_weight_right = 1.0, 

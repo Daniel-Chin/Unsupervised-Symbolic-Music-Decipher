@@ -8,7 +8,7 @@ from performance_net import PerformanceNet
 
 from shared import *
 from hparams import (
-    HParamsPiano, PianoOutType, PianoArchType, 
+    PianoArchHParam, PianoOutType, 
     CNNHParam, CNNResidualBlockHParam, TransformerHParam, 
     GRUHParam, PerformanceNetHParam, CNN_LSTM_HParam,
 )
@@ -19,40 +19,30 @@ class PianoInnerModel(torch.nn.Module):
         raise NotImplementedError()
 
 class PianoModel(torch.nn.Module):
-    def __init__(self, hParams: HParamsPiano):
+    def __init__(self, arch_hP: PianoArchHParam, out_type: PianoOutType, dropout: float):
         super().__init__()
 
-        self.hP = hParams
-        if hParams.arch_type == PianoArchType.CNN:
-            cnn_hp = hParams.arch_hparam
-            assert isinstance(cnn_hp, CNNHParam)
-            self.mainModel = CNNInnerModel(hParams, cnn_hp)
+        self.out_type = out_type
+        if isinstance(arch_hP, CNNHParam):
+            self.mainModel = CNNInnerModel(arch_hP, dropout)
             self.need_out_projector = True
-        elif hParams.arch_type == PianoArchType.Transformer:
-            tf_hp = hParams.arch_hparam
-            assert isinstance(tf_hp, TransformerHParam)
-            self.mainModel = TransformerInnerModel(hParams, tf_hp)
+        elif isinstance(arch_hP, TransformerHParam):
+            self.mainModel = TransformerInnerModel(arch_hP, dropout)
             self.need_out_projector = True
-        elif hParams.arch_type == PianoArchType.GRU:
-            gru_hp = hParams.arch_hparam
-            assert isinstance(gru_hp, GRUHParam)
-            self.mainModel = GRUInnerModel(hParams, gru_hp)
+        elif isinstance(arch_hP, GRUHParam):
+            self.mainModel = GRUInnerModel(arch_hP, dropout)
             self.need_out_projector = True
-        elif hParams.arch_type == PianoArchType.PerformanceNet:
-            pn_hp = hParams.arch_hparam
-            assert isinstance(pn_hp, PerformanceNetHParam)
-            self.mainModel = PerformanceNetModel(hParams, pn_hp)
+        elif isinstance(arch_hP, PerformanceNetHParam):
+            self.mainModel = PerformanceNetModel(arch_hP, dropout)
             self.need_out_projector = False
-        elif hParams.arch_type == PianoArchType.CNN_LSTM:
-            cnn_lstm_hp = hParams.arch_hparam
-            assert isinstance(cnn_lstm_hp, CNN_LSTM_HParam)
-            self.mainModel = CNN_LSTM_InnerModel(hParams, cnn_lstm_hp)
+        elif isinstance(arch_hP, CNN_LSTM_HParam):
+            self.mainModel = CNN_LSTM_InnerModel(arch_hP, dropout)
             self.need_out_projector = True
         else:
-            raise ValueError(f'unknown arch type: {hParams.arch_type}')
+            raise ValueError(f'unknown arch type: {type(arch_hP)}')
         if self.need_out_projector:
             self.outProjector = torch.nn.Linear(
-                self.mainModel.dimOutput(), math.prod(hParams.outShape()),
+                self.mainModel.dimOutput(), math.prod(out_type.shape),
             )
     
     def forward(self, x: Tensor) -> Tensor:
@@ -121,20 +111,19 @@ class CNNResidualBlock(torch.nn.Module):
         return x + self.sequential(x)
 
 class CNNInnerModel(PianoInnerModel):
-    def __init__(self, hParams: HParamsPiano, cnn_hp: CNNHParam):
+    def __init__(self, cnn_hp: CNNHParam, dropout: float):
         super().__init__()
 
-        self.hP = hParams
         
         self.entrance = ConvBlock(
             2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_hp.entrance_n_channel, 
-            0, hParams.dropout, 
+            0, dropout, 
         )
         current_n_channel = cnn_hp.entrance_n_channel
         self.resBlocks = torch.nn.Sequential()
         for i, block_hp in enumerate(cnn_hp.blocks):
             resBlock = CNNResidualBlock(
-                block_hp, current_n_channel, hParams.dropout, 
+                block_hp, current_n_channel, dropout, 
                 name=f'res_{i}', 
             )
             self.resBlocks.append(resBlock)
@@ -162,10 +151,9 @@ class CNNInnerModel(PianoInnerModel):
         return x
 
 class TransformerInnerModel(PianoInnerModel):
-    def __init__(self, hParams: HParamsPiano, tf_hp: TransformerHParam):
+    def __init__(self, tf_hp: TransformerHParam, dropout: float):
         super().__init__()
 
-        self.hP = hParams
         self.tf_hp = tf_hp
         
         self.inProjector = torch.nn.Linear(
@@ -173,7 +161,7 @@ class TransformerInnerModel(PianoInnerModel):
         )
         encoder_layer = torch.nn.TransformerEncoderLayer(
             tf_hp.d_model, tf_hp.n_heads, tf_hp.d_feedforward, 
-            hParams.dropout, batch_first=True, 
+            dropout, batch_first=True, 
         )
         self.tf = torch.nn.TransformerEncoder(
             encoder_layer, tf_hp.n_layers, 
@@ -215,10 +203,9 @@ class TransformerInnerModel(PianoInnerModel):
         return x.log()
 
 class GRUInnerModel(PianoInnerModel):
-    def __init__(self, hParams: HParamsPiano, gru_hp: GRUHParam):
+    def __init__(self, gru_hp: GRUHParam, dropout: float):
         super().__init__()
 
-        self.hP = hParams
         self.gru_hp = gru_hp
         
         self.inProjector = torch.nn.Linear(
@@ -226,7 +213,7 @@ class GRUInnerModel(PianoInnerModel):
         )
         self.gru = torch.nn.GRU(
             gru_hp.n_hidden, gru_hp.n_hidden, gru_hp.n_layers, 
-            batch_first=True, dropout=hParams.dropout, bidirectional=True, 
+            batch_first=True, dropout=dropout, bidirectional=True, 
         )
 
     def dimOutput(self) -> int:
@@ -244,10 +231,9 @@ class GRUInnerModel(PianoInnerModel):
         return x
 
 class PerformanceNetModel(torch.nn.Module):
-    def __init__(self, hParams: HParamsPiano, pn_hp: PerformanceNetHParam):
+    def __init__(self, pn_hp: PerformanceNetHParam, dropout: float):
         super().__init__()
 
-        self.hP = hParams
         self.pn_hp = pn_hp
         
         self.inProjector = torch.nn.Linear(
@@ -274,20 +260,18 @@ class PerformanceNetModel(torch.nn.Module):
         return x
 
 class CNN_LSTM_InnerModel(PianoInnerModel):
-    def __init__(self, hParams: HParamsPiano, cnn_lstm_hp: CNN_LSTM_HParam):
+    def __init__(self, cnn_lstm_hp: CNN_LSTM_HParam, dropout: float):
         super().__init__()
-
-        self.hP = hParams
         
         self.entrance = ConvBlock(
             2 * (PIANO_RANGE[1] - PIANO_RANGE[0]), cnn_lstm_hp.entrance_n_channel, 
-            0, hParams.dropout, 
+            0, dropout, 
         )
         current_n_channel = cnn_lstm_hp.entrance_n_channel
         self.resBlocks = torch.nn.Sequential()
         for i, block_hp in enumerate(cnn_lstm_hp.blocks):
             resBlock = CNNResidualBlock(
-                block_hp, current_n_channel, hParams.dropout, 
+                block_hp, current_n_channel, dropout, 
                 name=f'res_{i}', 
             )
             self.resBlocks.append(resBlock)
@@ -296,7 +280,7 @@ class CNN_LSTM_InnerModel(PianoInnerModel):
             current_n_channel, 
             cnn_lstm_hp.lstm_hidden_size, 
             cnn_lstm_hp.lstm_n_layers,
-            batch_first=True, dropout=hParams.dropout,
+            batch_first=True, dropout=dropout,
             bidirectional=False,
         )
         current_n_channel = cnn_lstm_hp.lstm_hidden_size
@@ -304,7 +288,7 @@ class CNN_LSTM_InnerModel(PianoInnerModel):
             current_n_channel, 
             cnn_lstm_hp.last_conv_n_channel, 
             cnn_lstm_hp.last_conv_kernel_radius, 
-            hParams.dropout, 
+            dropout, 
         )
         current_n_channel = cnn_lstm_hp.last_conv_n_channel
         self.dim_output = current_n_channel

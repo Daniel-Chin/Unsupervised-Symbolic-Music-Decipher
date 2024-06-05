@@ -16,8 +16,9 @@ from matplotlib.axes import Axes
 
 from shared import *
 from music import PIANO_RANGE
-from hparams import HParamsDecipher
+from hparams import HParamsDecipher, NoteIsPianoKeyHParam, FreeHParam, PianoOutType
 from piano_dataset import PianoDataset, BatchType
+from piano_model import PianoModel
 from interpreter import Interpreter
 from my_musicgen import MyMusicGen, LMOutput
 from sample_with_ste_backward import sampleWithSTEBackward
@@ -89,15 +90,23 @@ class LitDecipher(L.LightningModule):
             ), 
         )
 
-        def getPiano():
-            checkpoint_path = hParams.getPianoAbsPaths()
-            litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
-            litPiano.train()
-            return litPiano.piano
+        if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
+            def getPiano():
+                checkpoint_path = hParams.getPianoAbsPaths()
+                litPiano = LitPiano.load_from_checkpoint(checkpoint_path)
+                litPiano.train()
+                return litPiano.piano
 
-        self.piano = getPiano()
-        freeze(self.piano)
-        self.interpreter = Interpreter(hParams)
+            self.piano = getPiano()
+            freeze(self.piano)
+            self.interpreter = Interpreter(hParams)
+        elif isinstance(hParams.strategy_hparam, FreeHParam):
+            self.performer = PianoModel(
+                hParams.strategy_hparam.arch, PianoOutType.EncodecTokens, 
+                hParams.strategy_hparam.dropout, 
+            )
+        else:
+            raise TypeError(type(hParams.strategy_hparam))
 
         self.did_setup: bool = False
 
@@ -112,22 +121,37 @@ class LitDecipher(L.LightningModule):
 
         hParams = self.hP
 
-        self.interpreter_visualized_dir = path.join(
-            getLogDir(self.logger), 'interpreter_visualized', 
-        )
-        os.makedirs(self.interpreter_visualized_dir)
+        if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
+            self.interpreter_visualized_dir = path.join(
+                getLogDir(self.logger), 'interpreter_visualized', 
+            )
+            os.makedirs(self.interpreter_visualized_dir)
+            plot_interpreter_every_x_step = os.environ.get('PLOT_INTERPRETER_EVERY_X_STEP')
+            assert plot_interpreter_every_x_step is not None
+            self.plot_interpreter_every_x_step = plot_interpreter_every_x_step
+        elif isinstance(hParams.strategy_hparam, FreeHParam):
+            pass
+        else:
+            raise TypeError(type(hParams.strategy_hparam))
 
     def forward(self, x: Tensor):
         '''
         `x` shape: (batch_size, 2, n_pitches, n_frames)  
         out shape: (batch_size, ENCODEC_N_BOOKS, n_frames, ENCODEC_N_WORDS_PER_BOOK)
         '''
-        x = self.interpreter.forward(x)
-        if DO_CHECK_NAN:
-            assert not x.isnan().any(), pdb.set_trace()
-        x = x.contiguous()
-        x = self.piano.forward(x)
-        return x
+        hParams = self.hP
+        if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
+            x = self.interpreter.forward(x)
+            if DO_CHECK_NAN:
+                assert not x.isnan().any(), pdb.set_trace()
+            x = x.contiguous()
+            x = self.piano.forward(x)
+            return x
+        elif isinstance(hParams.strategy_hparam, FreeHParam):
+            x = self.performer.forward(x)
+            return x
+        else:
+            raise TypeError(type(hParams.strategy_hparam))
 
     def training_step(self, batch: BatchType, batch_idx: int):
         MyMusicGen.singleton(self.hP.music_gen_version).train()
@@ -141,6 +165,7 @@ class LitDecipher(L.LightningModule):
         self, step_name: str, batch: BatchType, batch_idx: int, 
     ):
         hParams = self.hP
+        strategy_hP = hParams.strategy_hparam
         _ = batch_idx
         x, _, _, _ = batch
 
@@ -183,10 +208,11 @@ class LitDecipher(L.LightningModule):
             loss_right = self.lossRight(encodec_tokens_logits, prediction)
             logLoss('right', loss_right)
             loss += hParams.loss_weight_right * loss_right
-        if hParams.loss_weight_anti_collapse != 0.0:
-            loss_anti_collapse = self.lossAntiCollapse(self.interpreter.w)
-            logLoss('anti_collapse', loss_anti_collapse)
-            loss += hParams.loss_weight_anti_collapse * loss_anti_collapse
+        if isinstance(strategy_hP, NoteIsPianoKeyHParam):
+            if strategy_hP.loss_weight_anti_collapse != 0.0:
+                loss_anti_collapse = self.lossAntiCollapse(self.interpreter.w)
+                logLoss('anti_collapse', loss_anti_collapse)
+                loss += strategy_hP.loss_weight_anti_collapse * loss_anti_collapse
         logLoss(None, loss)
         return loss
     
@@ -219,10 +245,9 @@ class LitDecipher(L.LightningModule):
         self.log_(key, norms[key])
         self.log_('interpreter_mean', self.interpreter.w.mean())
 
-        interval = os.environ.get('PLOT_INTERPRETER_EVERY_X_STEP')
-        assert interval is not None
-        if self.global_step % int(interval) == 0:
-            self.plotInterpreter()
+        if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
+            if self.global_step % int(self.plot_interpreter_every_x_step) == 0:
+                self.plotInterpreter()
     
     @torch.no_grad()
     def plotInterpreter(self):

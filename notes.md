@@ -10,3 +10,6 @@
 # 4/13
 - 2024_m04_d11@19_00_40_p_overfit_long
   - overfitting to the 1st batch works.  
+
+# 6/5
+I think a 88x88 interpreter may be low-dim and suffer from local minima. Let's try the "free strategy", where the decipher plays arbitrary encodec tokens according to the score. 
