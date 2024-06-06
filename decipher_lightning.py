@@ -76,12 +76,12 @@ class LitDecipherDataModule(L.LightningDataModule):
             shuffle=False,
         )
 
-class LitDecipher(L.LightningModule):
+class LitDecipher(TorchworkModule):
     def __init__(self, **kw) -> None:
-        super().__init__()
-        self.save_hyperparameters()
         hParams = HParamsDecipher.fromDict(kw)
-        self.hP = hParams
+        super().__init__(hParams)
+        self.hP: HParamsDecipher
+
         example_batch_size = 3
         self.example_input_array = torch.randn(
             (
@@ -108,17 +108,12 @@ class LitDecipher(L.LightningModule):
         else:
             raise TypeError(type(hParams.strategy_hparam))
 
-        self.did_setup: bool = False
-
     def log_(self, *a, **kw):
         hParams = self.hP
         return super().log(*a, batch_size=hParams.batch_size, **kw)
 
     def setup(self, stage: str):
-        _ = stage
-        assert not self.did_setup
-        self.did_setup = True
-
+        super().setup(stage)
         hParams = self.hP
 
         if isinstance(hParams.strategy_hparam, NoteIsPianoKeyHParam):
@@ -283,14 +278,11 @@ class LitDecipher(L.LightningModule):
         ))
 
 def train(hParams_or_continue_from: HParamsDecipher | str, root_dir: str):
-    if isinstance(hParams_or_continue_from, str):
-        continue_from = hParams_or_continue_from
-        litDecipher = LitDecipher.load_from_checkpoint(continue_from)
-        hParams = litDecipher.hP
-    elif isinstance(hParams_or_continue_from, HParamsDecipher):
-        continue_from = None
-        hParams = hParams_or_continue_from
-        litDecipher = LitDecipher(**dataclasses.asdict(hParams))
+    litDecipher, continue_from = LitDecipher.new(
+        hParams_or_continue_from, HParamsDecipher, 
+    )
+    assert isinstance(litDecipher, LitDecipher)
+    hParams = litDecipher.hP
     hParams.summary()
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))

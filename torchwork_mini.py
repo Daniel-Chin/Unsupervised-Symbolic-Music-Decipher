@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from os import path
 from functools import lru_cache, cached_property
@@ -7,10 +9,11 @@ import json
 from queue import Queue, Empty
 from threading import Thread
 import math
-import typing
+import typing as tp
 import time
 from dataclasses import dataclass, asdict
 
+import lightning
 import torch
 from torch import Tensor
 from torch.utils.data import default_collate, Dataset
@@ -34,7 +37,7 @@ __all__ = [
     'positionalEncoding', 'positionalEncodingAt',
     'tensorCacheAndClone', 'freeze', 'collateWithNone', 
     'colorBar', 'SingleProcessNewThreadPreFetchDataLoader', 
-    'BaseHParams', 
+    'BaseHParams', 'TorchworkModule', 
 ]
 
 HAS_CUDA = torch.cuda.is_available()
@@ -210,13 +213,13 @@ def colorBar(fig: Figure, ax: Axes, im: AxesImage):
     fig.colorbar(im, cax=cax, orientation='vertical')
 
 class GeneratorWithLen:
-    def __init__(self, g: typing.Generator, size: int):
+    def __init__(self, g: tp.Generator, size: int):
         self.g = g
         self.size = size
     
     @staticmethod
     def decorate(size: int):
-        def decorator(G: Callable[[], typing.Generator]):
+        def decorator(G: Callable[[], tp.Generator]):
             def decorated(*a, **kw):
                 return __class__(G(*a, **kw), size)
             return decorated
@@ -359,6 +362,32 @@ class BaseHParams:
     
     def formatGlobalStep(self, global_step: int):
         return format(global_step, self.global_step_f_string)
+
+class TorchworkModule(lightning.LightningModule):
+    def __init__(self, hParams: BaseHParams) -> None:
+        super().__init__()
+        self.save_hyperparameters()
+        self.hP = hParams
+        self.did_setup: bool = False
+
+    def setup(self, stage: str):
+        _ = stage
+        assert not self.did_setup
+        self.did_setup = True
+
+    @classmethod
+    def new(
+        cls: tp.Type[TorchworkModule], hParams_or_continue_from, 
+        HParamsType: tp.Type[BaseHParams], 
+    ):
+        if isinstance(hParams_or_continue_from, str):
+            continue_from = hParams_or_continue_from
+            module = cls.load_from_checkpoint(continue_from)
+        elif isinstance(hParams_or_continue_from, HParamsType):
+            continue_from = None
+            hParams = hParams_or_continue_from
+            module = cls(**asdict(hParams))
+        return module, continue_from
 
 if __name__ == '__main__':
     __inspectPositionalEncoding()

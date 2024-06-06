@@ -23,12 +23,12 @@ MONKEY_VAL = 'VAL_MONKEY'
 ORACLE_VAL = 'VAL_ORACLE'
 VAL_CASES = [MONKEY_VAL, ORACLE_VAL]
 
-class LitPiano(L.LightningModule):
+class LitPiano(TorchworkModule):
     def __init__(self, **kw) -> None:
-        super().__init__()
-        self.save_hyperparameters()
         hParams = HParamsPiano.fromDict(kw)
-        self.hP = hParams
+        super().__init__(hParams)
+        self.hP: HParamsPiano
+        
         example_batch_size = 3
         self.example_input_array = torch.randn(
             (
@@ -38,17 +38,10 @@ class LitPiano(L.LightningModule):
         )
 
         self.piano = PianoModel(hParams.arch_hparam, hParams.out_type, hParams.dropout)
-
-        self.did_setup: bool = False
     
     def log_(self, *a, **kw):
         hParams = self.hP
         return super().log(*a, batch_size=hParams.batch_size, **kw)
-    
-    def setup(self, stage: str):
-        _ = stage
-        assert not self.did_setup
-        self.did_setup = True
     
     def forward(
         self, x: Tensor, 
@@ -181,14 +174,11 @@ class LitPianoDataModule(L.LightningDataModule):
         ]
 
 def train(hParams_or_continue_from: HParamsPiano | str, root_dir: str):
-    if isinstance(hParams_or_continue_from, str):
-        continue_from = hParams_or_continue_from
-        litPiano = LitPiano.load_from_checkpoint(continue_from)
-        hParams = litPiano.hP
-    elif isinstance(hParams_or_continue_from, HParamsPiano):
-        continue_from = None
-        hParams = hParams_or_continue_from
-        litPiano = LitPiano(**dataclasses.asdict(hParams))
+    litPiano, continue_from = LitPiano.new(
+        hParams_or_continue_from, HParamsPiano, 
+    )
+    assert isinstance(litPiano, LitPiano)
+    hParams = litPiano.hP
     hParams.summary()
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
