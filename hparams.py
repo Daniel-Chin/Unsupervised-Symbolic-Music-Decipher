@@ -13,11 +13,6 @@ from music import PIANO_RANGE
 class AVHHParams(BaseHParams):
     music_gen_version: str
 
-    def getContinueFromAbsPath(self):
-        if self.continue_from is None:
-            return None
-        return path.join(EXPERIMENTS_DIR, self.continue_from)
-
 class PianoArchType(Enum):
     CNN = 'CNN'
     Transformer = 'Transformer'

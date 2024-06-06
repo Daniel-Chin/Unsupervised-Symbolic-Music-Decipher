@@ -23,6 +23,7 @@ from matplotlib.image import AxesImage
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import uuid
+import dacite
 
 from domestic_typing import *
 
@@ -331,8 +332,6 @@ class BaseHParams:
     max_epochs: int
     overfit_first_batch: bool
 
-    continue_from: Optional[str]
-
     require_repo_working_tree_clean: bool
 
     def summary(self):
@@ -345,6 +344,10 @@ class BaseHParams:
         print(' ', f'{total_decay = :.2e}')
         ending_lr = self.lr * total_decay
         print(' ', f'{ending_lr = :.2e}')
+
+    @staticmethod
+    def fromDict(d: Dict, /):
+        return dacite.from_dict(__class__, d)
     
     @cached_property
     def n_total_steps(self):

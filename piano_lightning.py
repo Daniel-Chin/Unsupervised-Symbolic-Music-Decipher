@@ -180,10 +180,18 @@ class LitPianoDataModule(L.LightningDataModule):
             for x in VAL_CASES
         ]
 
-def train(hParams: HParamsPiano, root_dir: str):
+def train(hParams_or_continue_from: HParamsPiano | str, root_dir: str):
+    if isinstance(hParams_or_continue_from, str):
+        continue_from = hParams_or_continue_from
+        litPiano = LitPiano.load_from_checkpoint(continue_from)
+        hParams = litPiano.hP
+    elif isinstance(hParams_or_continue_from, HParamsPiano):
+        continue_from = None
+        hParams = hParams_or_continue_from
+        litPiano = LitPiano(**dataclasses.asdict(hParams))
+    hParams.summary()
     log_name = '.'
     os.makedirs(path.join(root_dir, log_name))
-    litPiano = LitPiano(**dataclasses.asdict(hParams))
     profiler = SimpleProfiler(filename='profile')
     logger = TensorBoardLogger(root_dir, log_name)
     logJobMeta(getLogDir(logger), hParams.require_repo_working_tree_clean)
@@ -193,7 +201,7 @@ def train(hParams: HParamsPiano, root_dir: str):
         gradient_clip_val=5.0, 
         default_root_dir=root_dir,
         logger=logger, 
-        profiler=profiler, 
+        # profiler=profiler, 
         callbacks=[
             # DeviceStatsMonitor(), 
             ModelSummary(max_depth=3), 
@@ -204,7 +212,7 @@ def train(hParams: HParamsPiano, root_dir: str):
     dataModule = LitPianoDataModule(hParams)
     trainer.fit(
         litPiano, dataModule, 
-        ckpt_path=hParams.getContinueFromAbsPath(), 
+        ckpt_path=continue_from, 
     )
     # torch.cuda.memory._dump_snapshot(path.join(root_dir, 'VRAM.pickle'))
     # torch.cuda.memory._record_memory_history(enabled=None) # type: ignore

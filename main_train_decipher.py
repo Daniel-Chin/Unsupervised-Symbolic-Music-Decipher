@@ -7,6 +7,7 @@ from decipher_subjective_eval import decipherSubjectiveEval
 
 def main():
     initMainProcess()
+    continue_from = None
     hParams = HParamsDecipher(
         # strategy = DecipherStrategy.NoteIsPianoKey,
         # strategy_hparam = NoteIsPianoKeyHParam(
@@ -49,20 +50,21 @@ def main():
         max_epochs = 30, 
         # max_epochs = 2, 
         overfit_first_batch = False, 
-
-        continue_from = None, 
-        # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
         
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    exp_name = currentTimeDirName() + '_d_s_free_l'
-    if not hParams.require_repo_working_tree_clean:
+    hParams = None
+    continue_from = path.join(
+        EXPERIMENTS_DIR, 
+        "2024_m06_d06@05_46_23_d_s_free_r/version_0/checkpoints/epoch=29-step=7500.ckpt", 
+    )
+    exp_name = currentTimeDirName() + '_d_s_free_l_cont'
+    if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
-    hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
-    litDecipher, dataModule = train(hParams, root_dir)
+    litDecipher, dataModule = train(hParams or continue_from, root_dir)
     decipherSubjectiveEval(litDecipher, dataModule)
     print('OK')
 

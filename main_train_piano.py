@@ -11,6 +11,7 @@ from piano_subjective_eval import pianoSubjectiveEval
 
 def main():
     initMainProcess()
+    continue_from = None
     hParams = HParamsPiano(
         # arch_type = PianoArchType.CNN, 
         # arch_hparam = CNNHParam(512, [
@@ -79,17 +80,18 @@ def main():
 
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
-
-        continue_from = None, 
-        # WARNING: using `continue_from` has a bug: the validation set is newly split, so data leak.
     )
+    # hParams = None
+    # continue_from = path.join(
+    #     EXPERIMENTS_DIR, 
+    #     "???", 
+    # )
     exp_name = currentTimeDirName() + '_p_slow'
-    if not hParams.require_repo_working_tree_clean:
+    if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
-    hParams.summary()
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
-    litPiano, dataModule = train(hParams, root_dir)
+    litPiano, dataModule = train(hParams or continue_from, root_dir)
     pianoSubjectiveEval(litPiano.to(DEVICE), dataModule)
     print('OK')
 
