@@ -13,3 +13,8 @@
 
 # 6/5
 I think a 88x88 interpreter may be low-dim and suffer from local minima. Let's try the "free strategy", where the decipher plays arbitrary encodec tokens according to the score. 
+
+# 6/6
+Gus: 变与不变， vocabulary within/across song/section. 
+LAUI: 1. conference mentioned in email. 2. Science Advance. 
+LM mapping: creativity & cognition. 
