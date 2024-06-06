@@ -66,7 +66,7 @@ def decipherSubjectiveEval(
             score, _, _, data_ids = batch
             data_ids_acc.extend(data_ids)
             if isinstance(strategy_hP, FreeHParam):
-                performed = litDecipher.forward(score).argmax(dim=-1)
+                performed = litDecipher.forward(score.to(DEVICE)).argmax(dim=-1)
                 wave_gpu = encodec.decode(performed).squeeze(1)
                 assert wave_gpu.shape == (batch_size, wave_gpu.shape[1]), wave_gpu.shape
                 wave_cpu = wave_gpu.cpu().numpy()
