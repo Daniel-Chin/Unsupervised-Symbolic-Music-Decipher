@@ -169,8 +169,6 @@ def testReasonablizer():
         batch_size = 2, 
         max_epochs = 0, 
         overfit_first_batch = False, 
-
-        continue_from = None, 
         
         require_repo_working_tree_clean = False, 
     )
