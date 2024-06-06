@@ -34,7 +34,6 @@ def decipherSubjectiveEval(
         encodec = MyMusicGen.singleton(litDecipher.hP.music_gen_version).encodec.to(DEVICE)
         encodec.eval()
     litDecipher.eval()
-    litDecipher = litDecipher.cpu()
     subjective_dir = path.join(getLogDir(litDecipher.logger), 'subjective_eval')
     os.makedirs(subjective_dir)
     batch_size = min(8, dataModule.hP.batch_size)
@@ -47,6 +46,7 @@ def decipherSubjectiveEval(
         )
 
     if isinstance(strategy_hP, NoteIsPianoKeyHParam):
+        litDecipher = litDecipher.cpu()
         simplex_decipher = litDecipher.interpreter.w.softmax(dim=0)
         simplex_random = torch.randn((
             PIANO_RANGE[1] - PIANO_RANGE[0],
@@ -55,6 +55,10 @@ def decipherSubjectiveEval(
         if do_sample_not_polyphonic:
             c_decipher = Categorical(simplex_decipher.T)
             c_random = Categorical(simplex_random.T)
+    elif isinstance(strategy_hP, FreeHParam):
+        litDecipher = litDecipher.to(DEVICE)
+    else:
+        raise TypeError(type(strategy_hP))
     for subset_name, loader in dict(
         train = dataModule.train_dataloader(batch_size, shuffle=False), 
         val = dataModule.val_dataloader(batch_size, ),
