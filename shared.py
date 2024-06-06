@@ -6,6 +6,7 @@ import pdb
 from torch import Tensor
 import torchaudio.transforms
 from torch.utils.data import Dataset, DataLoader
+import lightning
 import numpy as np
 from matplotlib.axes import Axes
 import pretty_midi
@@ -45,6 +46,7 @@ def initMainProcess():
     print('hostname:', socket.gethostname())
     print(f'{GPU_NAME = }')
     print(f'{DEVICE.index = }')
+    lightning.seed_everything(16)
 
 @lru_cache(maxsize=1)
 def fftTools():
