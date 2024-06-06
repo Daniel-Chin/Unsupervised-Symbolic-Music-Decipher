@@ -366,7 +366,7 @@ class BaseHParams:
 class TorchworkModule(lightning.LightningModule):
     def __init__(self, hParams: BaseHParams) -> None:
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(asdict(hParams))
         self.hP = hParams
         self.did_setup: bool = False
 
