@@ -41,7 +41,12 @@ class LitPiano(TorchworkModule):
     
     def log_(self, *a, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.batch_size, **kw)
+        return super().log(
+            *a, 
+            batch_size=hParams.batch_size, 
+            add_dataloader_idx=False,
+            **kw,
+        )
     
     def forward(
         self, x: Tensor, 
