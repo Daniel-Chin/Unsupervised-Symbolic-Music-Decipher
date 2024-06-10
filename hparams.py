@@ -105,6 +105,10 @@ class HParamsPiano(AVHHParams):
 
     @staticmethod
     def fromDict(d: Dict, /):
+        # backward-compatible defaults
+        if 'random_seed' not in d:
+            d['random_seed'] = 16
+
         t = arch_types[d['arch_type']]
         def f(x):
             return dacite.from_dict(t, x)
