@@ -45,7 +45,7 @@ def main():
         # train_set_size = 8, 
         # val_set_size = 8,
 
-        lr = 1e-3, 
+        lr = 1e-2, 
         lr_decay = 1.0, 
         max_epochs = 30, 
         # max_epochs = 2, 
@@ -59,7 +59,7 @@ def main():
     #     EXPERIMENTS_DIR, 
     #     "2024_m06_d06@05_47_08_d_s_free_l/version_0/checkpoints/epoch=29-step=7500.ckpt", 
     # )
-    exp_name = currentTimeDirName() + '_d_m_sample_ac_1.0'
+    exp_name = currentTimeDirName() + '_d_lr'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
