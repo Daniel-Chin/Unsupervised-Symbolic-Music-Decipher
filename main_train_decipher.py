@@ -14,7 +14,7 @@ def main():
             using_piano='2024_m06_d06@03_15_20_p_slow/version_0/checkpoints/epoch=149-step=211050.ckpt', 
             interpreter_sample_not_polyphonic = True,
             init_oracle_w_offset = None, 
-            loss_weight_anti_collapse = 10.0, 
+            loss_weight_anti_collapse = 0.0, 
         ), 
 
         # strategy = DecipherStrategy.Free,
@@ -49,19 +49,19 @@ def main():
 
         lr = 1e-2, 
         lr_decay = 1.0, 
-        max_epochs = 30, 
+        max_epochs = 100, 
         # max_epochs = 2, 
         overfit_first_batch = False, 
         
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    hParams = None
-    continue_from = path.join(
-        EXPERIMENTS_DIR, 
-        "2024_m06_d06@17_07_04_d_m_sample_ac_1.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
-    )
-    exp_name = currentTimeDirName() + '_d_m_sample_ac_1.0_cont'
+    # hParams = None
+    # continue_from = path.join(
+    #     EXPERIMENTS_DIR, 
+    #     "2024_m06_d06@17_07_04_d_m_sample_ac_1.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
+    # )
+    exp_name = currentTimeDirName() + '_d_pi'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
