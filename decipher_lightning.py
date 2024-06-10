@@ -251,7 +251,7 @@ class LitDecipher(TorchworkModule):
 
         if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
             self.log_('fav/interpreter_mean', self.interpreter.w.mean())
-            if self.global_step % int(self.plot_interpreter_every_x_step) == 0:
+            if self.global_step % int(self.plot_interpreter_every_x_step) < 4:
                 self.plotInterpreter()
     
     @torch.no_grad()
