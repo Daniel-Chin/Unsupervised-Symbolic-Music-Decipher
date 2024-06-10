@@ -35,6 +35,8 @@ def main():
         # batch_size = 32, 
         music_gen_version = 'medium',
         batch_size = 16, 
+
+        # music_gen_version = 'small',
         # batch_size = 8, 
 
         loss_weight_left = 1.0, 
