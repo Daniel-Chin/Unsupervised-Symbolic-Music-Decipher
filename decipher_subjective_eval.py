@@ -86,6 +86,7 @@ def decipherSubjectiveEval(
             src = path.join(PIANO_ORACLE_DATASET_DIR, data_id + '.mid')
             shutil.copyfile(src, filename(subset_name, i, 'reference', 'mid'))
 
+            print('debug', isinstance(strategy_hP, NoteIsPianoKeyHParam))
             if isinstance(strategy_hP, NoteIsPianoKeyHParam):
                 midi = pretty_midi.PrettyMIDI(src)
                 interpreteMidi(
