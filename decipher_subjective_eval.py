@@ -80,13 +80,14 @@ def decipherSubjectiveEval(
                 data_ids_acc = data_ids_acc[:N_EVALS]
                 break
 
+        print(f'{len(data_ids_acc), len(performed_waves) = }')
         for i, (data_id, wave) in enumerate(tqdm(zip(
             data_ids_acc, performed_waves, 
         ), desc=subset_name)):
             src = path.join(PIANO_ORACLE_DATASET_DIR, data_id + '.mid')
             shutil.copyfile(src, filename(subset_name, i, 'reference', 'mid'))
 
-            print('debug', isinstance(strategy_hP, NoteIsPianoKeyHParam))
+            print(f'{isinstance(strategy_hP, NoteIsPianoKeyHParam)}')
             if isinstance(strategy_hP, NoteIsPianoKeyHParam):
                 midi = pretty_midi.PrettyMIDI(src)
                 interpreteMidi(
