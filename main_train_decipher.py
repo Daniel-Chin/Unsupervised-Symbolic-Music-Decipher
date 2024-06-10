@@ -54,12 +54,12 @@ def main():
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
     )
-    # hParams = None
-    # continue_from = path.join(
-    #     EXPERIMENTS_DIR, 
-    #     "2024_m06_d06@05_47_08_d_s_free_l/version_0/checkpoints/epoch=29-step=7500.ckpt", 
-    # )
-    exp_name = currentTimeDirName() + '_d_lr_ac_10'
+    hParams = None
+    continue_from = path.join(
+        EXPERIMENTS_DIR, 
+        "2024_m06_d06@17_07_00_d_m_sample_ac_0.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
+    )
+    exp_name = currentTimeDirName() + '_d_m_sample_ac_0.0_cont'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
