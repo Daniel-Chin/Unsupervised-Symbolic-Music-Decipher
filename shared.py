@@ -46,7 +46,6 @@ def initMainProcess():
     print('hostname:', socket.gethostname())
     print(f'{GPU_NAME = }')
     print(f'{DEVICE.index = }')
-    lightning.seed_everything(16)
 
 @lru_cache(maxsize=1)
 def fftTools():

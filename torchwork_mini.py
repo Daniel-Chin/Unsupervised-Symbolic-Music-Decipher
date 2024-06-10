@@ -336,6 +336,7 @@ class BaseHParams:
     overfit_first_batch: bool
 
     require_repo_working_tree_clean: bool
+    random_seed: int
 
     def summary(self):
         print('HParams:')
@@ -380,13 +381,18 @@ class TorchworkModule(lightning.LightningModule):
         cls: tp.Type[TorchworkModule], hParams_or_continue_from, 
         HParamsType: tp.Type[BaseHParams], 
     ):
+        '''
+        Seeds everything. Call before initing datasets.  
+        '''
         if isinstance(hParams_or_continue_from, str):
             continue_from = hParams_or_continue_from
             module = cls.load_from_checkpoint(continue_from)
+            hParams = module.hP
         elif isinstance(hParams_or_continue_from, HParamsType):
             continue_from = None
             hParams = hParams_or_continue_from
             module = cls(**asdict(hParams))
+        lightning.seed_everything(hParams.random_seed)
         return module, continue_from
 
 if __name__ == '__main__':
