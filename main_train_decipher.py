@@ -57,7 +57,7 @@ def main():
         
         require_repo_working_tree_clean = True, 
         # require_repo_working_tree_clean = False, 
-        random_seed = 16, 
+        random_seed = 69, 
     )
     # hParams = None
     # continue_from = path.join(
