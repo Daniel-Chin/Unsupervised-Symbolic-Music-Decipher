@@ -388,11 +388,12 @@ class TorchworkModule(lightning.LightningModule):
             continue_from = hParams_or_continue_from
             module = cls.load_from_checkpoint(continue_from)
             hParams = module.hP
+            # doesn't make sense to seed. The behavior will be different from uninterrupted runtime anyway.
         elif isinstance(hParams_or_continue_from, HParamsType):
             continue_from = None
             hParams = hParams_or_continue_from
+            lightning.seed_everything(hParams.random_seed)
             module = cls(**asdict(hParams))
-        lightning.seed_everything(hParams.random_seed)
         return module, continue_from
 
 if __name__ == '__main__':
