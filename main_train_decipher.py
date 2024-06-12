@@ -36,7 +36,7 @@ def main():
         # music_gen_version = 'medium',
         # batch_size = 16, 
         music_gen_version = 'large',
-        batch_size = 16, 
+        batch_size = 8, 
 
         # music_gen_version = 'small',
         # batch_size = 8, 
@@ -51,7 +51,7 @@ def main():
 
         lr = 1e-2, 
         lr_decay = 1.0, 
-        max_epochs = 100, 
+        max_epochs = 30, 
         # max_epochs = 2, 
         overfit_first_batch = False, 
         
