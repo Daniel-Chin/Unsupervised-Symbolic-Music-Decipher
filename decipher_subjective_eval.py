@@ -159,6 +159,7 @@ def testReasonablizer():
         ), 
 
         music_gen_version = 'small',
+        batch_size = 2, 
 
         loss_weight_left = 0.0, 
         loss_weight_right = 1.0, 
@@ -168,11 +169,11 @@ def testReasonablizer():
 
         lr = 1e-3, 
         lr_decay = 1.0, 
-        batch_size = 2, 
         max_epochs = 0, 
         overfit_first_batch = False, 
         
         require_repo_working_tree_clean = False, 
+        random_seed = 16, 
     )
     exp_name = currentTimeDirName() + '_d_test_reasonablizer'
     root_dir = path.join(EXPERIMENTS_DIR, exp_name)
