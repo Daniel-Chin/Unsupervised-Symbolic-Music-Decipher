@@ -4,7 +4,6 @@ import shutil
 
 import torch
 from torch import Tensor
-from torch.distributions.categorical import Categorical
 import scipy.io.wavfile as wavfile
 from tqdm import tqdm
 import pretty_midi
@@ -17,6 +16,7 @@ from decipher_lightning import LitDecipher, LitDecipherDataModule, train
 from midi_reasonablizer import MidiReasonablizer
 from hparams import HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, FreeHParam
 from my_musicgen import MyMusicGen
+from sample_permutation import samplePermutation
 
 N_EVALS = 16
 
@@ -52,9 +52,6 @@ def decipherSubjectiveEval(
             PIANO_RANGE[1] - PIANO_RANGE[0],
             PIANO_RANGE[1] - PIANO_RANGE[0],
         )).softmax(dim=0)
-        if do_sample_not_polyphonic:
-            c_decipher = Categorical(simplex_decipher.T)
-            c_random = Categorical(simplex_random.T)
     elif isinstance(strategy_hP, FreeHParam):
         litDecipher = litDecipher.to(DEVICE)
     else:
@@ -87,12 +84,10 @@ def decipherSubjectiveEval(
             if isinstance(strategy_hP, NoteIsPianoKeyHParam):
                 midi = pretty_midi.PrettyMIDI(src)
                 interpreteMidi(
-                    midi, do_sample_not_polyphonic, 
-                    c_decipher if do_sample_not_polyphonic else simplex_decipher, 
+                    midi, do_sample_not_polyphonic, simplex_decipher, 
                 ).write(filename(subset_name, i, 'decipher', 'mid'))
                 interpreteMidi(
-                    midi, do_sample_not_polyphonic, 
-                    c_random if do_sample_not_polyphonic else simplex_random, 
+                    midi, do_sample_not_polyphonic, simplex_random, 
                 ).write(filename(subset_name, i, 'random', 'mid'))
             elif isinstance(strategy_hP, FreeHParam):
                 wavfile.write(
@@ -103,15 +98,11 @@ def decipherSubjectiveEval(
 def interpreteMidi(
     src: pretty_midi.PrettyMIDI, 
     do_sample_not_polyphonic: bool, 
-    interpreter: Tensor | Categorical,
+    simplex: Tensor,
 ):
     if do_sample_not_polyphonic:
-        assert isinstance(interpreter, Categorical)
-        switcherboard = interpreter.sample(torch.Size(( )))
-        assert switcherboard.shape == (PIANO_RANGE[1] - PIANO_RANGE[0], )
-    else:
-        assert isinstance(interpreter, Tensor)
-        simplex = interpreter
+        sampled = samplePermutation(simplex, n=1).squeeze(1)
+        switcherboard = sampled.argmax(dim=0)
     midi = pretty_midi.PrettyMIDI()
     piano = pretty_midi.Instrument(0)
     midi.instruments.append(piano)
