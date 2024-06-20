@@ -1,3 +1,9 @@
+# points
+- Does musicGen L > M > S? 
+- Why does upper right behave differently?
+  - Fast to emerge a diagonal
+  - Doesn't commit after long training
+
 # todo
 
 # 2024/4/4
