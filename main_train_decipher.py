@@ -33,10 +33,10 @@ def main():
 
         # music_gen_version = 'small',
         # batch_size = 32, 
-        music_gen_version = 'medium',
-        batch_size = 16, 
-        # music_gen_version = 'large',
-        # batch_size = 8, 
+        # music_gen_version = 'medium',
+        # batch_size = 16, 
+        music_gen_version = 'large',
+        batch_size = 8, 
 
         # music_gen_version = 'small',
         # batch_size = 8, 
@@ -64,7 +64,7 @@ def main():
     #     EXPERIMENTS_DIR, 
     #     "2024_m06_d06@17_07_04_d_m_sample_ac_1.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
     # )
-    exp_name = currentTimeDirName() + '_d_revive_r_ac_10'
+    exp_name = currentTimeDirName() + '_d_r'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
