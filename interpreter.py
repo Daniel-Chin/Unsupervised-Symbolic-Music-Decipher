@@ -38,7 +38,7 @@ class Interpreter(torch.nn.Module):
         # (batch_size, n_pianoroll_channels, n_frames, n_pitches)
         simplex = self.w.softmax(dim=0)
         if self.strategy_hP.interpreter_sample_not_polyphonic:
-            w = samplePermutation(simplex, n=batch_size).T
+            w = samplePermutation(simplex, n=batch_size).permute(2, 1, 0)
             # (n_pitches, batch_size, n_keys)
             w = w.unsqueeze(3).unsqueeze(4).permute(1, 3, 4, 2, 0)
             # (batch_size, 1, 1, n_keys, n_pitches)
