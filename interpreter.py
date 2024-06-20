@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from shared import *
 from hparams import HParamsDecipher, NoteIsPianoKeyHParam
 from music import PIANO_RANGE
-from sample_with_ste_backward import sampleWithSTEBackward
+from sample_permutation import samplePermutation
 
 class Interpreter(torch.nn.Module):
     def __init__(self, hParams: HParamsDecipher) -> None:
@@ -38,7 +38,7 @@ class Interpreter(torch.nn.Module):
         # (batch_size, n_pianoroll_channels, n_frames, n_pitches)
         simplex = self.w.softmax(dim=0)
         if self.strategy_hP.interpreter_sample_not_polyphonic:
-            w = sampleWithSTEBackward(simplex.T, n=batch_size)
+            w = samplePermutation(simplex, n=batch_size).T
             # (n_pitches, batch_size, n_keys)
             w = w.unsqueeze(3).unsqueeze(4).permute(1, 3, 4, 2, 0)
             # (batch_size, 1, 1, n_keys, n_pitches)

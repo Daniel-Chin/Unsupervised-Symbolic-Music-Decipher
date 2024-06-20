@@ -14,7 +14,7 @@ def main():
             using_piano='2024_m06_d06@03_15_20_p_slow/version_0/checkpoints/epoch=149-step=211050.ckpt', 
             interpreter_sample_not_polyphonic = True,
             init_oracle_w_offset = None, 
-            loss_weight_anti_collapse = 10.0, 
+            loss_weight_anti_collapse = 0.0, 
         ), 
 
         # strategy = DecipherStrategy.Free,
