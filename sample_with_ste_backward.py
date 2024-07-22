@@ -10,6 +10,7 @@ class SampleWithSTEBackward(torch.autograd.Function):
     '''
     Forward: Sample a simplex `probs` Tensor into a one-hot Tensor.  
     Backward: Straight-Through Estimation (STE).  
+    A baseline of gumbel_softmax.
     '''
     @staticmethod
     def forward(_: FunctionCtx, probs: Tensor, n: int):
