@@ -29,6 +29,12 @@ class Interpreter(torch.nn.Module):
             )[:PIANO_N_KEYS, :PIANO_N_KEYS] * 6.7   # logits yielding prob=90%
         self.w = torch.nn.Parameter(w, requires_grad=True)
     
+    def simplex(self):
+        if self.hP.project_w_to_doubly_stochastic:
+            return self.w
+        else:
+            return self.w.softmax(dim=0)
+    
     def forward(self, x: torch.Tensor):
         batch_size, n_pianoroll_channels, n_pitches, n_frames = x.shape
         assert n_pianoroll_channels == 2
@@ -36,9 +42,8 @@ class Interpreter(torch.nn.Module):
         assert n_frames == N_FRAMES_PER_DATAPOINT
         x = x.permute(0, 1, 3, 2)
         # (batch_size, n_pianoroll_channels, n_frames, n_pitches)
-        simplex = self.w.softmax(dim=0)
         if self.strategy_hP.interpreter_sample_not_polyphonic:
-            w = samplePermutation(simplex, n=batch_size).permute(2, 1, 0)
+            w = samplePermutation(self.simplex(), n=batch_size).permute(2, 1, 0)
             # (n_pitches, batch_size, n_keys)
             w = w.unsqueeze(3).unsqueeze(4).permute(1, 3, 4, 2, 0)
             # (batch_size, 1, 1, n_keys, n_pitches)
@@ -48,7 +53,7 @@ class Interpreter(torch.nn.Module):
             # (batch_size, n_pianoroll_channels, n_frames, n_keys, 1)
             x = x.squeeze(4)
         else:
-            x = F.linear(x, simplex)
+            x = F.linear(x, self.simplex())
         # (batch_size, n_pianoroll_channels, n_frames, n_keys)
         x = x.permute(0, 1, 3, 2)
         return x

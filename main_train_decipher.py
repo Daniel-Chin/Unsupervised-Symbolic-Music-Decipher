@@ -16,6 +16,7 @@ def main():
             init_oracle_w_offset = None, 
             loss_weight_anti_collapse = 0.0, 
         ), 
+        project_w_to_doubly_stochastic = True, 
 
         # strategy = DecipherStrategy.Free,
         # strategy_hparam = FreeHParam(

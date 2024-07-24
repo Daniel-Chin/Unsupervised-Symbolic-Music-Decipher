@@ -148,6 +148,7 @@ class FreeHParam(StrategyHParam):
 class HParamsDecipher(AVHHParams):
     strategy: DecipherStrategy
     strategy_hparam: StrategyHParam
+    project_w_to_doubly_stochastic: bool
 
     loss_weight_left: float
     loss_weight_right: float
@@ -158,6 +159,9 @@ class HParamsDecipher(AVHHParams):
         assert isinstance(
             self.strategy_hparam, strategy_types[self.strategy], 
         )
+        if isinstance(self.strategy_hparam, NoteIsPianoKeyHParam):
+            if self.strategy_hparam.loss_weight_anti_collapse > 0:
+                assert self.project_w_to_doubly_stochastic is False, 'mutually exclusive'
 
     def getPianoAbsPaths(self):
         assert isinstance(self.strategy_hparam, NoteIsPianoKeyHParam)

@@ -47,7 +47,7 @@ def decipherSubjectiveEval(
 
     if isinstance(strategy_hP, NoteIsPianoKeyHParam):
         litDecipher = litDecipher.cpu()
-        simplex_decipher = litDecipher.interpreter.w.softmax(dim=0)
+        simplex_decipher = litDecipher.interpreter.simplex()
         simplex_random = torch.randn((
             PIANO_RANGE[1] - PIANO_RANGE[0],
             PIANO_RANGE[1] - PIANO_RANGE[0],
@@ -148,6 +148,7 @@ def testReasonablizer():
             init_oracle_w_offset = None, 
             loss_weight_anti_collapse = 0.0, 
         ), 
+        project_w_to_doubly_stochastic = True,
 
         music_gen_version = 'small',
         batch_size = 2, 
