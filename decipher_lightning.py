@@ -280,19 +280,8 @@ class LitDecipher(TorchworkModule):
     def optimizer_step(self, *a, **kw):
         result = super().optimizer_step(*a, **kw)
         if self.hP.project_w_to_doubly_stochastic:
-            self.sinkhornKnopp()
+            self.interpreter.sinkhornKnopp()
         return result
-    
-    def sinkhornKnopp(self):
-        DIMS = (1, 0)   # strictly simplex along dim 0
-        with torch.no_grad():
-            has_converged = [False] * len(DIMS)
-            while all(has_converged):
-                for dim in DIMS:
-                    s = self.interpreter.w.sum(dim=dim, keepdim=True)
-                    self.interpreter.w.mul_(1 / s)
-                    h_c = (s.log().abs() < 1e-3).all().item()
-                    has_converged[dim] = h_c    # type: ignore
 
 def train(hParams_or_continue_from: HParamsDecipher | str, root_dir: str):
     litDecipher, continue_from = LitDecipher.new(

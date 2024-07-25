@@ -22,12 +22,25 @@ class Interpreter(torch.nn.Module):
                 PIANO_N_KEYS, # n of piano keys
                 PIANO_N_KEYS, # n of midi pitches
             ))
+            if self.hP.project_w_to_doubly_stochastic:
+                self.sinkhornKnopp()
         else:
             o = strategy_hP.init_oracle_w_offset
             w = torch.diag_embed(
                 torch.ones((PIANO_N_KEYS, )), offset=o, 
             )[:PIANO_N_KEYS, :PIANO_N_KEYS] * 6.7   # logits yielding prob=90%
         self.w = torch.nn.Parameter(w, requires_grad=True)
+    
+    def sinkhornKnopp(self):
+        DIMS = (1, 0)   # strictly simplex along dim 0
+        with torch.no_grad():
+            has_converged = [False] * len(DIMS)
+            while all(has_converged):
+                for dim in DIMS:
+                    s = self.w.sum(dim=dim, keepdim=True)
+                    self.w.mul_(1 / s)
+                    h_c = (s.log().abs() < 1e-3).all().item()
+                    has_converged[dim] = h_c    # type: ignore
     
     def simplex(self):
         if self.hP.project_w_to_doubly_stochastic:
