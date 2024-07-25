@@ -34,6 +34,7 @@ class Interpreter(torch.nn.Module):
     def sinkhornKnopp(self):
         DIMS = (1, 0)   # strictly simplex along dim 0
         with torch.no_grad():
+            self.w.clamp_min_(0.0)
             has_converged = [False] * len(DIMS)
             while all(has_converged):
                 for dim in DIMS:
