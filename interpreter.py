@@ -22,6 +22,8 @@ class Interpreter(torch.nn.Module):
                 PIANO_N_KEYS, # n of piano keys
                 PIANO_N_KEYS, # n of midi pitches
             ))
+            if self.hP.project_w_to_doubly_stochastic:
+                w = w.softmax(dim=0)
         else:
             o = strategy_hP.init_oracle_w_offset
             w = torch.diag_embed(
