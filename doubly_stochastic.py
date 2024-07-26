@@ -13,7 +13,7 @@ def sinkhornKnopp(x: Tensor, /):
         for dim in DIMS:
             s = x.sum(dim=dim, keepdim=True)
             x.mul_(1 / s)
-            h_c = (s.log().abs() < 1e-3).all().item()
+            h_c = (s.log().abs() < 1e-6).all().item()
             has_converged[dim] = h_c    # type: ignore
 
 def study():
