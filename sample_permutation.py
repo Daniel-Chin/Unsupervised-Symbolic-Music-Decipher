@@ -1,14 +1,13 @@
 import torch
 from torch import Tensor
-from torch.autograd.function import FunctionCtx
+from torch.autograd.function import FunctionCtx, once_differentiable
 from torch.distributions.categorical import Categorical
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from torchwork_mini import DEVICE
-from sample_with_ste_backward import SampleWithSTEBackward
 
-class SamplePermutation(SampleWithSTEBackward):
+class SamplePermutation(torch.autograd.Function):
     @staticmethod
     def forward(
         functionCtx: FunctionCtx, 
@@ -48,6 +47,11 @@ class SamplePermutation(SampleWithSTEBackward):
             out.div_(out.sum(dim=0))
             available_pitch_mask[LADDER, pitch_i] = 0.0
         return out
+    
+    @once_differentiable
+    @staticmethod
+    def backward(_: FunctionCtx, grad_output: Tensor):
+        return grad_output.sum(dim=1), None, None
 
 def samplePermutation(probs: Tensor, n: int, entropy_guided_sampling: bool = True) -> Tensor:
     return SamplePermutation.apply(probs, n, entropy_guided_sampling) # type: ignore
