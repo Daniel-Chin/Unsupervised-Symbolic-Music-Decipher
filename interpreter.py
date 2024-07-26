@@ -6,6 +6,7 @@ from shared import *
 from hparams import HParamsDecipher, NoteIsPianoKeyHParam
 from music import PIANO_RANGE
 from sample_permutation import samplePermutation
+from doubly_stochastic import sinkhornKnopp
 
 class Interpreter(torch.nn.Module):
     def __init__(self, hParams: HParamsDecipher) -> None:
@@ -34,16 +35,7 @@ class Interpreter(torch.nn.Module):
             self.sinkhornKnopp()
     
     def sinkhornKnopp(self):
-        DIMS = (1, 0)   # strictly simplex along dim 0
-        with torch.no_grad():
-            self.w.clamp_min_(0.0)
-            has_converged = [False] * len(DIMS)
-            while all(has_converged):
-                for dim in DIMS:
-                    s = self.w.sum(dim=dim, keepdim=True)
-                    self.w.mul_(1 / s)
-                    h_c = (s.log().abs() < 1e-3).all().item()
-                    has_converged[dim] = h_c    # type: ignore
+        sinkhornKnopp(self.w)
     
     def simplex(self):
         if self.hP.project_w_to_doubly_stochastic:
