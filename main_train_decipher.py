@@ -42,7 +42,7 @@ def main():
         # music_gen_version = 'small',
         # batch_size = 8, 
 
-        loss_weight_left = 0.0, 
+        loss_weight_left = 1.0, 
         loss_weight_right = 1.0, 
 
         train_set_size = 8000, 
@@ -50,9 +50,9 @@ def main():
         # train_set_size = 8, 
         # val_set_size = 8,
 
-        lr = 1e-2, 
+        lr = 1e-3, 
         lr_decay = 1.0, 
-        max_epochs = 20, 
+        max_epochs = 80, 
         # max_epochs = 2, 
         overfit_first_batch = False, 
         
@@ -65,7 +65,7 @@ def main():
     #     EXPERIMENTS_DIR, 
     #     "2024_m06_d06@17_07_04_d_m_sample_ac_1.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
     # )
-    exp_name = currentTimeDirName() + '_d_r'
+    exp_name = currentTimeDirName() + '_d_lr-3'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)
