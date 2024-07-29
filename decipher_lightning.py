@@ -8,6 +8,7 @@ from torch.utils.data import random_split
 from torch.distributions.categorical import Categorical
 import lightning as L
 from lightning.pytorch.utilities import grad_norm
+from lightning.pytorch.utilities.types import _METRIC
 from lightning.pytorch.loggers import TensorBoardLogger
 from lightning.pytorch.profilers import SimpleProfiler
 from lightning.pytorch.callbacks import DeviceStatsMonitor, ModelSummary
@@ -108,9 +109,19 @@ class LitDecipher(TorchworkModule):
         else:
             raise TypeError(type(hParams.strategy_hparam))
 
-    def log_(self, *a, **kw):
+    def log_(self, name: str, value: _METRIC, also_average_by_epoch: bool = False, **kw):
         hParams = self.hP
-        return super().log(*a, batch_size=hParams.batch_size, **kw)
+        if also_average_by_epoch:
+            self.log_(
+                name, 
+                value, False, **kw, on_step=True, on_epoch=False, 
+            )
+            self.log_(
+                name + '_mean', 
+                value, False, **kw, on_step=False, on_epoch=True, 
+            )
+        else:
+            super().log(name, value, batch_size=hParams.batch_size, **kw)
 
     def setup(self, stage: str):
         super().setup(stage)
@@ -182,13 +193,13 @@ class LitDecipher(TorchworkModule):
         )
         entropy: Tensor = prediction.categorical.entropy()
         # measures MusicGen certainty. Low entropy = high certainty.
-        self.log_('fav/music_gen_entropy', entropy.mean(dim=0))
+        self.log_('fav/music_gen_entropy', entropy.mean(dim=0), True)
 
         loss = torch.zeros(( ), device=self.device)
         def logLoss(name: Optional[str], loss: Tensor, is_fav: bool = False):
             suffix = '' if name is None else '_' + name
             prefix = 'fav/' if is_fav else ''
-            self.log_(prefix + f'{step_name}_loss' + suffix, loss)
+            self.log_(prefix + f'{step_name}_loss' + suffix, loss, True)
         if hParams.loss_weight_left != 0.0:
             loss_left, ce_per_codebook = MyMusicGen.singleton(
                 self.hP.music_gen_version, 
@@ -250,7 +261,7 @@ class LitDecipher(TorchworkModule):
         self.log_(key, norms[key])
 
         if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
-            self.log_('fav/interpreter_mean', self.interpreter.w.mean())
+            self.log_('fav/interpreter_mean', self.interpreter.w.mean(), True)
             if self.global_step % int(self.plot_interpreter_every_x_step) < 4:
                 self.plotInterpreter()
     
