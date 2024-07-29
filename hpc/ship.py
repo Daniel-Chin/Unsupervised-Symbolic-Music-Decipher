@@ -3,25 +3,24 @@
 import os
 from os import path
 import subprocess as sp
+import typing as tp
 
-def main():
-    os.chdir('../experiments')
-    doAll()
-
-def tar(exp_dir_name: str):
-    print('taring', exp_dir_name, '...')
+def tar(src: str, dest: str):
+    print('taring', src, '...')
     with sp.Popen([
-        'tar', '-zcf', exp_dir_name + '.tar.gz', exp_dir_name, 
+        'tar', '-zcf', dest, src, 
     ]) as p:
         # print('  waiting...')
         p.wait()
     # print('  exit')
 
-def doAll():
+def main():
+    os.chdir('../experiments')
+
     list_dir = os.listdir()
     # print(f'{list_dir = }')
-    all_gz = set()
-    all_dir = set()
+    all_gz : tp.Set[str] = set()
+    all_dir: tp.Set[str] = set()
     IGNORE = ['.gitignore', '.', '..']
     for node in list_dir:
         # print(node)
@@ -43,7 +42,7 @@ def doAll():
     print('available:', *available, sep='\n')
     print()
     print('Select. Enter empty string to tar all.')
-    selected = []
+    selected: tp.List[str] = []
     while True:
         op = input('>').strip()
         if not op:
@@ -54,8 +53,18 @@ def doAll():
         selected.append(op)
     if not selected:
         selected = available
-    for dir in selected:
-        tar(dir)
+    jobs = [
+        (x, x + '.tar.gz') for x in selected
+    ]
+    for job in jobs:
+        tar(*job)
+    print('For your convenience to copy:')
+    names = ','.join([dest for src, dest in jobs])
+    print(
+        'scpdan /scratch/nq285/usmd/experiments/'
+        '\\{' + names + '\\}'
+        ' ~/neuralAVH/unsupervised_symbolic_music_decipher/experiments', 
+    )
 
 if __name__ == '__main__':
     main()
