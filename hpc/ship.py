@@ -59,12 +59,14 @@ def main():
     for job in jobs:
         tar(*job)
     print('For your convenience to copy:')
-    names = ','.join([dest for src, dest in jobs])
-    print(
-        'scpdan /scratch/nq285/usmd/experiments/'
-        '\\{' + names + '\\}'
-        ' ~/neuralAVH/unsupervised_symbolic_music_decipher/experiments', 
-    )
+    for _, dest in jobs:
+        print(
+            f'''scpdan /scratch/nq285/usmd/experiments/{
+                dest
+            } ~/neuralAVH/unsupervised_symbolic_music_decipher/experiments''', 
+            end = ' & ', 
+        )
+    print()
 
 if __name__ == '__main__':
     main()
