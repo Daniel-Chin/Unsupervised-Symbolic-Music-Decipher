@@ -112,12 +112,16 @@ class LitDecipher(TorchworkModule):
     def log_(self, name: str, value: _METRIC, also_average_by_epoch: bool = False, **kw):
         hParams = self.hP
         if also_average_by_epoch:
+            parts = name.split('/')
+            mean_name = '/'.join([
+                *parts[:-1], 'mean_' + parts[-1],
+            ])
             self.log_(
                 name, 
                 value, False, **kw, on_step=True, on_epoch=False, 
             )
             self.log_(
-                name + '_mean', 
+                mean_name, 
                 value, False, **kw, on_step=False, on_epoch=True, 
             )
         else:
