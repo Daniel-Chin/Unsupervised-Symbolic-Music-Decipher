@@ -109,20 +109,20 @@ class LitDecipher(TorchworkModule):
         else:
             raise TypeError(type(hParams.strategy_hparam))
 
-    def log_(self, name: str, value: _METRIC, also_average_by_epoch: bool = False, **kw):
+    def log_(
+        self, name: str, value: _METRIC, 
+        also_average_by_epoch: str | None = None,   # "abe"
+        **kw, 
+    ):
         hParams = self.hP
-        if also_average_by_epoch:
-            parts = name.split('/')
-            mean_name = '/'.join([
-                *parts[:-1], 'mean_' + parts[-1],
-            ])
+        if also_average_by_epoch is not None:
             self.log_(
                 name, 
-                value, False, **kw, on_step=True, on_epoch=False, 
+                value, None, **kw, on_step=True, on_epoch=False, 
             )
             self.log_(
-                mean_name, 
-                value, False, **kw, on_step=False, on_epoch=True, 
+                also_average_by_epoch, 
+                value, None, **kw, on_step=False, on_epoch=True, 
             )
         else:
             super().log(name, value, batch_size=hParams.batch_size, **kw)
@@ -197,13 +197,16 @@ class LitDecipher(TorchworkModule):
         )
         entropy: Tensor = prediction.categorical.entropy()
         # measures MusicGen certainty. Low entropy = high certainty.
-        self.log_('fav/music_gen_entropy', entropy.mean(dim=0), True)
+        self.log_(
+            'music_gen_entropy', entropy.mean(dim=0), 
+            'fav/music_gen_entropy_abe', 
+        )
 
         loss = torch.zeros(( ), device=self.device)
         def logLoss(name: Optional[str], loss: Tensor, is_fav: bool = False):
             suffix = '' if name is None else '_' + name
-            prefix = 'fav/' if is_fav else ''
-            self.log_(prefix + f'{step_name}_loss' + suffix, loss, True)
+            full_name = step_name + '_loss' + suffix
+            self.log_(full_name, loss, 'fav/' + full_name + '_abe')
         if hParams.loss_weight_left != 0.0:
             loss_left, ce_per_codebook = MyMusicGen.singleton(
                 self.hP.music_gen_version, 
@@ -265,7 +268,7 @@ class LitDecipher(TorchworkModule):
         self.log_(key, norms[key])
 
         if isinstance(self.hP.strategy_hparam, NoteIsPianoKeyHParam):
-            self.log_('fav/interpreter_mean', self.interpreter.w.mean(), True)
+            self.log_('interpreter_mean', self.interpreter.w.mean(), 'fav/interpreter_mean_abe')
             if self.global_step % int(self.plot_interpreter_every_x_step) < 4:
                 self.plotInterpreter()
     
