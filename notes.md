@@ -25,3 +25,9 @@ I think a 88x88 interpreter may be low-dim and suffer from local minima. Let's t
 Gus: 变与不变， vocabulary within/across song/section. 
 LAUI: 1. conference mentioned in email. 2. Science Advance. 
 LM mapping: creativity & cognition. 
+
+# 8/19
+I cannot find a distribution of permutations that is linear w.r.t. permutation. i.e. the repr of the distribution is linear w.r.t. the permutation matrix. 
+My current impl of sample_permutation (a32660c3f3eb42629736b99686bec42cf5668b14) is not linear. 
+You need linearity to guarantee that the repr will commit to extremes. 
+Now exp results show that they don't commit. The problem could be the lack of linearity. 
