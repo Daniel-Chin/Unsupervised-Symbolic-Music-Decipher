@@ -129,11 +129,16 @@ def registerStrategy(x: DecipherStrategy, /):
 
 class StrategyHParam: pass
 
+class InterpreterPolicy(Enum):
+    SamplePermutation = 'SamplePermutation'
+    SampleSelection = 'SampleSelection'
+    Polyphonic = 'Polyphonic'
+
 @registerStrategy(DecipherStrategy.NoteIsPianoKey)
 @dataclass(frozen=True)
 class NoteIsPianoKeyHParam(StrategyHParam):
     using_piano: str
-    interpreter_sample_not_polyphonic: bool
+    interpreter_policy: InterpreterPolicy
     init_oracle_w_offset: Optional[int]
 
     loss_weight_anti_collapse: float

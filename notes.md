@@ -31,3 +31,6 @@ I cannot find a distribution of permutations that is linear w.r.t. permutation. 
 My current impl of sample_permutation (a32660c3f3eb42629736b99686bec42cf5668b14) is not linear. 
 You need linearity to guarantee that the repr will commit to extremes. 
 Now exp results show that they don't commit. The problem could be the lack of linearity. 
+
+_d_sample_sel
+no more permutations. Permutation too hard. See what happens with selection. 

@@ -1,7 +1,10 @@
 from os import path
 
 from shared import *
-from hparams import HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, FreeHParam, CNN_LSTM_HParam
+from hparams import (
+    HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, 
+    FreeHParam, CNN_LSTM_HParam, InterpreterPolicy, 
+)
 from decipher_lightning import train
 from decipher_subjective_eval import decipherSubjectiveEval
 
@@ -12,7 +15,7 @@ def main():
         strategy = DecipherStrategy.NoteIsPianoKey,
         strategy_hparam = NoteIsPianoKeyHParam(
             using_piano='2024_m06_d06@03_15_20_p_slow/version_0/checkpoints/epoch=149-step=211050.ckpt', 
-            interpreter_sample_not_polyphonic = True,
+            interpreter_policy = InterpreterPolicy.SampleSelection,
             init_oracle_w_offset = None, 
             loss_weight_anti_collapse = 0.0, 
         ), 
@@ -65,7 +68,7 @@ def main():
     #     EXPERIMENTS_DIR, 
     #     "2024_m06_d06@17_07_04_d_m_sample_ac_1.0/version_0/checkpoints/epoch=29-step=15000.ckpt", 
     # )
-    exp_name = currentTimeDirName() + '_d_l'
+    exp_name = currentTimeDirName() + '_d_sample_sel'
     if hParams is not None and not hParams.require_repo_working_tree_clean:
         exp_name += '_dirty_working_tree'
     print(f'{exp_name = }', flush=True)

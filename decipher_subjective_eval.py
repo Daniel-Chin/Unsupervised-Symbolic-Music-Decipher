@@ -4,6 +4,7 @@ import shutil
 
 import torch
 from torch import Tensor
+from torch.distributions.categorical import Categorical
 import scipy.io.wavfile as wavfile
 from tqdm import tqdm
 import pretty_midi
@@ -14,7 +15,10 @@ from music import pitch2name
 from piano_dataset import BatchType
 from decipher_lightning import LitDecipher, LitDecipherDataModule, train
 from midi_reasonablizer import MidiReasonablizer
-from hparams import HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, FreeHParam
+from hparams import (
+    HParamsDecipher, DecipherStrategy, NoteIsPianoKeyHParam, 
+    FreeHParam, InterpreterPolicy, 
+)
 from my_musicgen import MyMusicGen
 from sample_permutation import samplePermutation
 
@@ -29,7 +33,7 @@ def decipherSubjectiveEval(
     print('decipherSubjectiveEval()...', flush=True)
     strategy_hP = litDecipher.hP.strategy_hparam
     if isinstance(strategy_hP, NoteIsPianoKeyHParam):
-        do_sample_not_polyphonic = strategy_hP.interpreter_sample_not_polyphonic
+        interpreter_policy = strategy_hP.interpreter_policy
     elif isinstance(strategy_hP, FreeHParam):
         encodec = MyMusicGen.singleton(litDecipher.hP.music_gen_version).encodec.to(DEVICE)
         encodec.eval()
@@ -84,10 +88,10 @@ def decipherSubjectiveEval(
             if isinstance(strategy_hP, NoteIsPianoKeyHParam):
                 midi = pretty_midi.PrettyMIDI(src)
                 interpreteMidi(
-                    midi, do_sample_not_polyphonic, simplex_decipher, 
+                    midi, interpreter_policy, simplex_decipher, 
                 ).write(filename(subset_name, i, 'decipher', 'mid'))
                 interpreteMidi(
-                    midi, do_sample_not_polyphonic, simplex_random, 
+                    midi, interpreter_policy, simplex_random, 
                 ).write(filename(subset_name, i, 'random', 'mid'))
             elif isinstance(strategy_hP, FreeHParam):
                 wavfile.write(
@@ -97,16 +101,20 @@ def decipherSubjectiveEval(
 
 def interpreteMidi(
     src: pretty_midi.PrettyMIDI, 
-    do_sample_not_polyphonic: bool, 
+    interpreter_policy: InterpreterPolicy, 
     simplex: Tensor,
 ):
-    if do_sample_not_polyphonic:
+    if interpreter_policy == InterpreterPolicy.SamplePermutation:
         sampled = samplePermutation(simplex, n=1).squeeze(1)
+        switcherboard = sampled.argmax(dim=0)
+    if interpreter_policy == InterpreterPolicy.SampleSelection:
+        c = Categorical(probs=simplex)
+        sampled = c.sample()
         switcherboard = sampled.argmax(dim=0)
     midi = pretty_midi.PrettyMIDI()
     piano = pretty_midi.Instrument(0)
     midi.instruments.append(piano)
-    if not do_sample_not_polyphonic:
+    if interpreter_policy == InterpreterPolicy.Polyphonic:
         midiReasonablizer = MidiReasonablizer(piano)
     src_piano, = src.instruments
     src_piano: pretty_midi.Instrument
@@ -115,7 +123,10 @@ def interpreteMidi(
     # printMidi(src_piano)
     for note in src_piano.notes:
         note: pretty_midi.Note
-        if do_sample_not_polyphonic:
+        if interpreter_policy in (
+            InterpreterPolicy.SampleSelection, 
+            InterpreterPolicy.SamplePermutation, 
+        ):
             piano.notes.append(pretty_midi.Note(
                 note.velocity, 
                 switcherboard[note.pitch - PIANO_RANGE[0]].item() + PIANO_RANGE[0], 
@@ -144,7 +155,7 @@ def testReasonablizer():
         strategy = DecipherStrategy.NoteIsPianoKey,
         strategy_hparam = NoteIsPianoKeyHParam(
             using_piano='2024_m06_d03@14_52_28_p_tea/version_0/checkpoints/epoch=49-step=70350.ckpt', 
-            interpreter_sample_not_polyphonic = False,
+            interpreter_policy = InterpreterPolicy.Polyphonic,
             init_oracle_w_offset = None, 
             loss_weight_anti_collapse = 0.0, 
         ), 

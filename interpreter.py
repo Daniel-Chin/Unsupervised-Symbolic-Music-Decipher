@@ -1,9 +1,10 @@
 import torch
 from torch import Tensor
 import torch.nn.functional as F
+from torch.distributions.categorical import Categorical
 
 from shared import *
-from hparams import HParamsDecipher, NoteIsPianoKeyHParam
+from hparams import HParamsDecipher, NoteIsPianoKeyHParam, InterpreterPolicy
 from music import PIANO_RANGE
 from sample_permutation import samplePermutation
 from doubly_stochastic import sinkhornKnopp
@@ -50,8 +51,16 @@ class Interpreter(torch.nn.Module):
         assert n_frames == N_FRAMES_PER_DATAPOINT
         x = x.permute(0, 1, 3, 2)
         # (batch_size, n_pianoroll_channels, n_frames, n_pitches)
-        if self.strategy_hP.interpreter_sample_not_polyphonic:
-            w = samplePermutation(self.simplex(), n=batch_size).permute(2, 1, 0)
+        if self.strategy_hP.interpreter_policy == InterpreterPolicy.Polyphonic:
+            x = F.linear(x, self.simplex())
+        else:
+            if   self.strategy_hP.interpreter_policy == InterpreterPolicy.SamplePermutation:
+                w = samplePermutation(self.simplex(), n=batch_size)
+            elif self.strategy_hP.interpreter_policy == InterpreterPolicy.SampleSelection:
+                w = Categorical(probs=self.simplex()).sample_n(batch_size)
+            else:
+                assert False, self.strategy_hP.interpreter_policy
+            w = w.permute(2, 1, 0)
             # (n_pitches, batch_size, n_keys)
             w = w.unsqueeze(3).unsqueeze(4).permute(1, 3, 4, 2, 0)
             # (batch_size, 1, 1, n_keys, n_pitches)
@@ -60,8 +69,6 @@ class Interpreter(torch.nn.Module):
             x = w @ x
             # (batch_size, n_pianoroll_channels, n_frames, n_keys, 1)
             x = x.squeeze(4)
-        else:
-            x = F.linear(x, self.simplex())
         # (batch_size, n_pianoroll_channels, n_frames, n_keys)
         x = x.permute(0, 1, 3, 2)
         return x
