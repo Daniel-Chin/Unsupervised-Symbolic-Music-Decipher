@@ -34,3 +34,7 @@ Now exp results show that they don't commit. The problem could be the lack of li
 
 _d_sample_sel
 no more permutations. Permutation too hard. See what happens with selection. 
+
+# 9/6
+Gus: Let's use black box to parametrize the distribution over permutations. 
+I think it's great. I'm starting to think 路径 is blackbox. whitebox only emerges after the humans make sense of it.
